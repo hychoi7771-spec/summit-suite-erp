@@ -125,24 +125,32 @@ export function AppSidebar() {
 
   const renderNavItems = (items: typeof mainNavItems) => (
     <SidebarMenu>
-      {items.map((item) => (
-        <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton
-            asChild
-            isActive={location.pathname === item.url}
-            tooltip={item.title}
-          >
-            <NavLink
-              to={item.url}
-              end={item.url === '/'}
-              className="hover:bg-sidebar-accent/50"
-              activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+      {items.map((item) => {
+        const isAccent = 'accent' in item && item.accent;
+        return (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton
+              asChild
+              isActive={location.pathname === item.url}
+              tooltip={item.title}
             >
-              <item.icon className="h-4 w-4" />
-              {!collapsed && <span>{item.title}</span>}
-            </NavLink>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
+              <NavLink
+                to={item.url}
+                end={item.url === '/'}
+                className="hover:bg-sidebar-accent/50"
+                activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+              >
+                <item.icon className={`h-4 w-4 ${isAccent ? 'text-emerald-500' : ''}`} />
+                {!collapsed && (
+                  <span className={isAccent && location.pathname !== item.url ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>
+                    {item.title}
+                  </span>
+                )}
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
       ))}
     </SidebarMenu>
   );
