@@ -59,6 +59,8 @@ const CATEGORIES = [
   { value: 'R&D', label: '🔬 R&D' },
   { value: '인허가', label: '📄 인허가' },
   { value: '생산', label: '🏭 생산' },
+  { value: '물류', label: '📦 물류' },
+  { value: '배송', label: '🚚 배송' },
   { value: '마케팅', label: '📢 마케팅' },
   { value: '영업', label: '💼 영업' },
   { value: '관리', label: '⚙️ 관리' },
@@ -77,6 +79,8 @@ const CATEGORY_COLORS: Record<string, string> = {
   'R&D': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
   '인허가': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
   '생산': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+  '물류': 'bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400',
+  '배송': 'bg-teal-100 text-teal-700 dark:bg-teal-900/30 dark:text-teal-400',
   '마케팅': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
   '영업': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
   '관리': 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
@@ -467,7 +471,22 @@ export default function DailyWorkReport() {
       toast({ title: error.code === '23505' ? '이미 체크인 되었습니다' : '등록 실패', description: error.message, variant: 'destructive' });
       return;
     }
-    toast({ title: '☀️ 체크인 완료! 오늘도 파이팅!' });
+
+    // Auto-sync: create tasks in the tasks table
+    const priorityMap: Record<string, 'low' | 'medium' | 'high'> = { low: 'low', medium: 'medium', high: 'high' };
+    const taskInserts = validTasks.map((t, i) => ({
+      title: t.text.trim(),
+      description: t.detail.trim() || null,
+      assignee_id: profile.id,
+      priority: priorityMap[t.priority] || 'medium',
+      status: 'todo' as const,
+      tags: [t.category],
+      due_date: selectedDate,
+      position: i,
+    }));
+    await supabase.from('tasks').insert(taskInserts);
+
+    toast({ title: '☀️ 체크인 완료! 업무가 자동으로 등록되었습니다.' });
     setDialogOpen(false);
     setNewTasks([{ text: '', detail: '', category: '기타', priority: 'medium' }]);
     setNewNotes('');
