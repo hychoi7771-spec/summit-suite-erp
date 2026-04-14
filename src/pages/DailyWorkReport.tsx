@@ -471,7 +471,22 @@ export default function DailyWorkReport() {
       toast({ title: error.code === '23505' ? '이미 체크인 되었습니다' : '등록 실패', description: error.message, variant: 'destructive' });
       return;
     }
-    toast({ title: '☀️ 체크인 완료! 오늘도 파이팅!' });
+
+    // Auto-sync: create tasks in the tasks table
+    const priorityMap: Record<string, 'low' | 'medium' | 'high'> = { low: 'low', medium: 'medium', high: 'high' };
+    const taskInserts = validTasks.map((t, i) => ({
+      title: t.text.trim(),
+      description: t.detail.trim() || null,
+      assignee_id: profile.id,
+      priority: priorityMap[t.priority] || 'medium',
+      status: 'todo' as const,
+      tags: [t.category],
+      due_date: selectedDate,
+      position: i,
+    }));
+    await supabase.from('tasks').insert(taskInserts);
+
+    toast({ title: '☀️ 체크인 완료! 업무가 자동으로 등록되었습니다.' });
     setDialogOpen(false);
     setNewTasks([{ text: '', detail: '', category: '기타', priority: 'medium' }]);
     setNewNotes('');
