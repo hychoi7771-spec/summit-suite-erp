@@ -45,8 +45,8 @@ export default function Manual() {
   return (
     <div className="animate-fade-in">
       <div className="mb-6">
-        <h1 className="text-2xl font-bold">📘 RecovHub 사용 매뉴얼</h1>
-        <p className="text-sm text-muted-foreground mt-1">리커버리랩 허브 — 전체 기능 가이드 (v2.0)</p>
+        <h1 className="text-2xl font-bold">📘 SHFoodHub 사용 매뉴얼</h1>
+        <p className="text-sm text-muted-foreground mt-1">SHFoodHub — 전체 기능 가이드 (v2.0)</p>
       </div>
 
       <div className="flex gap-6">
@@ -80,7 +80,7 @@ export default function Manual() {
           {/* ── 시스템 개요 ── */}
           <Section id="overview" title="시스템 개요" icon={BookOpen}>
             <p>
-              <strong>RecovHub(리커버리랩 허브)</strong>는 기획자, 디자이너, 마케팅 담당자가 함께 사용하는
+              <strong>SHFoodHub</strong>는 기획자, 디자이너, 마케팅 담당자가 함께 사용하는
               웹 기반 SaaS 협업 플랫폼입니다. Flow, Notion, Jira의 장점을 참고한 직관적인 카드형 업무 관리 구조를 제공합니다.
             </p>
             <InfoBox title="주요 특징">

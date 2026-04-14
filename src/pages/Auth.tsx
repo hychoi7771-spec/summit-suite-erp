@@ -28,9 +28,9 @@ export default function Auth() {
       <Card className="w-full max-w-md">
         <CardHeader className="text-center space-y-4">
           <div className="flex justify-center">
-            <img src={logo} alt="Recovery Lab Korea" className="h-16 w-16 object-contain" />
+            <img src={logo} alt="SHFoodHub" className="h-16 w-16 object-contain" />
           </div>
-          <CardTitle className="text-xl">RecovHub</CardTitle>
+          <CardTitle className="text-xl">SHFoodHub</CardTitle>
           <p className="text-sm text-muted-foreground">팀 계정으로 로그인하세요</p>
         </CardHeader>
         <CardContent>
