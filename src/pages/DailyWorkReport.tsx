@@ -540,7 +540,7 @@ export default function DailyWorkReport() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">데일리 체크인</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            ☀️ 체크인으로 업무 시작 → 🚪 체크아웃으로 완료 여부 기록
+            체크인으로 업무 시작 → 체크아웃으로 완료 여부 기록
           </p>
         </div>
         {isToday && !myReport && (
