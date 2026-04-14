@@ -359,6 +359,45 @@ export type Database = {
           },
         ]
       }
+      daily_report_reactions: {
+        Row: {
+          created_at: string
+          emoji_code: string
+          id: string
+          report_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          emoji_code: string
+          id?: string
+          report_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          emoji_code?: string
+          id?: string
+          report_id?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_report_reactions_report_id_fkey"
+            columns: ["report_id"]
+            isOneToOne: false
+            referencedRelation: "daily_work_reports"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_report_reactions_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       daily_work_reports: {
         Row: {
           ceo_approved: boolean
