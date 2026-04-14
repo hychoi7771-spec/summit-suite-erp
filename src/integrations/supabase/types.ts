@@ -364,6 +364,7 @@ export type Database = {
           ceo_approved: boolean
           ceo_approved_at: string | null
           ceo_approved_by: string | null
+          ceo_comment: string | null
           ceo_stamp_url: string | null
           checked_at: string | null
           completion_checked: boolean
@@ -372,6 +373,7 @@ export type Database = {
           director_approved: boolean
           director_approved_at: string | null
           director_approved_by: string | null
+          director_comment: string | null
           id: string
           morning_tasks: Json
           notes: string | null
@@ -382,6 +384,7 @@ export type Database = {
           ceo_approved?: boolean
           ceo_approved_at?: string | null
           ceo_approved_by?: string | null
+          ceo_comment?: string | null
           ceo_stamp_url?: string | null
           checked_at?: string | null
           completion_checked?: boolean
@@ -390,6 +393,7 @@ export type Database = {
           director_approved?: boolean
           director_approved_at?: string | null
           director_approved_by?: string | null
+          director_comment?: string | null
           id?: string
           morning_tasks?: Json
           notes?: string | null
@@ -400,6 +404,7 @@ export type Database = {
           ceo_approved?: boolean
           ceo_approved_at?: string | null
           ceo_approved_by?: string | null
+          ceo_comment?: string | null
           ceo_stamp_url?: string | null
           checked_at?: string | null
           completion_checked?: boolean
@@ -408,6 +413,7 @@ export type Database = {
           director_approved?: boolean
           director_approved_at?: string | null
           director_approved_by?: string | null
+          director_comment?: string | null
           id?: string
           morning_tasks?: Json
           notes?: string | null

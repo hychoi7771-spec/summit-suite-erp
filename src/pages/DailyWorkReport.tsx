@@ -1,22 +1,35 @@
 import { useState, useEffect } from 'react';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale';
-import { Plus, Check, CheckCircle2, Stamp, Trash2, ChevronLeft, ChevronRight, Clock, CircleDot } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import {
+  Plus, Check, CheckCircle2, Stamp, Trash2, ChevronLeft, ChevronRight,
+  Clock, CircleDot, MessageSquare, AlertTriangle, Flag, Send, ChevronDown, ChevronUp,
+} from 'lucide-react';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Textarea } from '@/components/ui/textarea';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
+import { Separator } from '@/components/ui/separator';
+import { Progress } from '@/components/ui/progress';
+import {
+  Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
+} from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import stampImage from '@/assets/stamp.png';
 
+// --- Types ---
 interface MorningTask {
   id: string;
   text: string;
+  detail: string;
+  category: string;
+  priority: 'high' | 'medium' | 'low';
   completed: boolean;
 }
 
@@ -30,13 +43,417 @@ interface DailyReport {
   director_approved: boolean;
   director_approved_by: string | null;
   director_approved_at: string | null;
+  director_comment: string | null;
   ceo_approved: boolean;
   ceo_approved_by: string | null;
   ceo_approved_at: string | null;
+  ceo_comment: string | null;
   notes: string | null;
   created_at: string;
 }
 
+const CATEGORIES = [
+  { value: '기획', label: '📋 기획' },
+  { value: '디자인', label: '🎨 디자인' },
+  { value: 'R&D', label: '🔬 R&D' },
+  { value: '인허가', label: '📄 인허가' },
+  { value: '생산', label: '🏭 생산' },
+  { value: '마케팅', label: '📢 마케팅' },
+  { value: '영업', label: '💼 영업' },
+  { value: '관리', label: '⚙️ 관리' },
+  { value: '기타', label: '📌 기타' },
+];
+
+const PRIORITY_CONFIG = {
+  high: { label: '긴급', color: 'text-destructive', bg: 'bg-destructive/10 border-destructive/20 text-destructive', icon: AlertTriangle },
+  medium: { label: '보통', color: 'text-warning', bg: 'bg-warning/10 border-warning/20 text-warning', icon: Flag },
+  low: { label: '낮음', color: 'text-muted-foreground', bg: 'bg-muted text-muted-foreground', icon: Flag },
+};
+
+const CATEGORY_COLORS: Record<string, string> = {
+  '기획': 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+  '디자인': 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400',
+  'R&D': 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400',
+  '인허가': 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400',
+  '생산': 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400',
+  '마케팅': 'bg-pink-100 text-pink-700 dark:bg-pink-900/30 dark:text-pink-400',
+  '영업': 'bg-cyan-100 text-cyan-700 dark:bg-cyan-900/30 dark:text-cyan-400',
+  '관리': 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400',
+  '기타': 'bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400',
+};
+
+// --- Sub-components ---
+
+function TaskCreateForm({ tasks, setTasks }: { tasks: Omit<MorningTask, 'id' | 'completed'>[]; setTasks: (t: Omit<MorningTask, 'id' | 'completed'>[]) => void }) {
+  const addTask = () => setTasks([...tasks, { text: '', detail: '', category: '기타', priority: 'medium' }]);
+  const removeTask = (i: number) => setTasks(tasks.filter((_, j) => j !== i));
+  const update = (i: number, patch: Partial<Omit<MorningTask, 'id' | 'completed'>>) => {
+    const copy = [...tasks];
+    copy[i] = { ...copy[i], ...patch };
+    setTasks(copy);
+  };
+
+  return (
+    <div className="space-y-4">
+      {tasks.map((task, i) => (
+        <div key={i} className="p-4 rounded-lg border bg-card space-y-3">
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-muted-foreground w-6">#{i + 1}</span>
+            <Input
+              value={task.text}
+              onChange={e => update(i, { text: e.target.value })}
+              placeholder="업무 제목"
+              className="font-medium"
+            />
+            {tasks.length > 1 && (
+              <Button variant="ghost" size="icon" className="shrink-0 h-8 w-8" onClick={() => removeTask(i)}>
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <Label className="text-xs text-muted-foreground">카테고리</Label>
+              <Select value={task.category} onValueChange={v => update(i, { category: v })}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label className="text-xs text-muted-foreground">우선순위</Label>
+              <Select value={task.priority} onValueChange={v => update(i, { priority: v as 'high' | 'medium' | 'low' })}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="high">🔴 긴급</SelectItem>
+                  <SelectItem value="medium">🟡 보통</SelectItem>
+                  <SelectItem value="low">🟢 낮음</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <div>
+            <Label className="text-xs text-muted-foreground">세부 내용</Label>
+            <Textarea
+              value={task.detail}
+              onChange={e => update(i, { detail: e.target.value })}
+              placeholder="구체적인 작업 내용, 목표, 참고사항 등"
+              rows={2}
+              className="text-sm"
+            />
+          </div>
+        </div>
+      ))}
+      <Button variant="outline" size="sm" onClick={addTask} className="w-full">
+        <Plus className="h-3 w-3 mr-1" /> 업무 추가
+      </Button>
+    </div>
+  );
+}
+
+function ReportCard({
+  report, profile: currentProfile, profiles, userRole, isAdmin, isDirector, isCeo,
+  onToggleTask, onDirectorApprove, onCeoApprove, onDelete, onSubmitComment,
+}: {
+  report: DailyReport;
+  profile: any;
+  profiles: any[];
+  userRole: string;
+  isAdmin: boolean;
+  isDirector: boolean;
+  isCeo: boolean;
+  onToggleTask: (report: DailyReport, taskId: string) => void;
+  onDirectorApprove: (id: string) => void;
+  onCeoApprove: (id: string) => void;
+  onDelete: (id: string) => void;
+  onSubmitComment: (id: string, type: 'director' | 'ceo', comment: string) => void;
+}) {
+  const [expanded, setExpanded] = useState(true);
+  const [commentText, setCommentText] = useState('');
+  const [commentType, setCommentType] = useState<'director' | 'ceo' | null>(null);
+
+  const user = profiles.find(p => p.id === report.user_id);
+  const directorProfile = report.director_approved_by ? profiles.find(p => p.id === report.director_approved_by) : null;
+  const ceoProfile = report.ceo_approved_by ? profiles.find(p => p.id === report.ceo_approved_by) : null;
+  const isOwner = report.user_id === currentProfile?.id;
+  const completedCount = report.morning_tasks.filter(t => t.completed).length;
+  const totalCount = report.morning_tasks.length;
+  const allCompleted = completedCount === totalCount;
+  const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+
+  const categoryGroups = report.morning_tasks.reduce((acc, task) => {
+    const cat = task.category || '기타';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(task);
+    return acc;
+  }, {} as Record<string, MorningTask[]>);
+
+  const getStatusInfo = () => {
+    if (report.ceo_approved) return { label: '최종 승인', className: 'bg-success/10 text-success border-success/20' };
+    if (report.director_approved) return { label: '이사 확인 완료', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' };
+    if (allCompleted) return { label: '완료 체크됨', className: 'bg-warning/10 text-warning border-warning/20' };
+    return { label: '작성 중', className: 'border-border text-muted-foreground' };
+  };
+
+  const status = getStatusInfo();
+
+  const handleSendComment = () => {
+    if (!commentType || !commentText.trim()) return;
+    onSubmitComment(report.id, commentType, commentText.trim());
+    setCommentText('');
+    setCommentType(null);
+  };
+
+  return (
+    <Card className="relative overflow-hidden">
+      {report.ceo_approved && (
+        <div className="absolute top-4 right-4 opacity-25 pointer-events-none">
+          <img src={stampImage} alt="직인" className="h-20 w-20" />
+        </div>
+      )}
+
+      {/* Header */}
+      <div className="px-5 py-4 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Avatar className="h-10 w-10">
+            <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">{user?.avatar || '?'}</AvatarFallback>
+          </Avatar>
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-bold text-sm">{user?.name_kr || '알 수 없음'}</span>
+              <Badge variant="outline" className={`text-[10px] ${status.className}`}>{status.label}</Badge>
+            </div>
+            <p className="text-xs text-muted-foreground">{format(new Date(report.created_at), 'HH:mm')} 등록</p>
+          </div>
+        </div>
+        <div className="flex items-center gap-2">
+          {/* Progress indicator */}
+          <div className="flex items-center gap-2 mr-2">
+            <span className="text-xs font-medium text-muted-foreground">{completedCount}/{totalCount}</span>
+            <div className="w-16">
+              <Progress value={progressPercent} className="h-1.5" />
+            </div>
+          </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setExpanded(!expanded)}>
+            {expanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </Button>
+          {isOwner && !report.director_approved && (
+            <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => onDelete(report.id)}>
+              <Trash2 className="h-3.5 w-3.5 text-destructive" />
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {expanded && (
+        <CardContent className="pt-0 space-y-4">
+          {/* Tasks grouped by category */}
+          {Object.entries(categoryGroups).map(([category, tasks]) => (
+            <div key={category}>
+              <div className="flex items-center gap-2 mb-2">
+                <Badge variant="outline" className={`text-[10px] font-medium ${CATEGORY_COLORS[category] || CATEGORY_COLORS['기타']}`}>
+                  {category}
+                </Badge>
+                <span className="text-[10px] text-muted-foreground">
+                  {tasks.filter(t => t.completed).length}/{tasks.length} 완료
+                </span>
+              </div>
+              <div className="space-y-2 ml-1">
+                {tasks.map(task => {
+                  const prio = PRIORITY_CONFIG[task.priority || 'medium'];
+                  return (
+                    <div
+                      key={task.id}
+                      className={`rounded-lg border p-3 transition-colors ${task.completed ? 'bg-success/5 border-success/20' : 'border-border hover:border-primary/30'} ${isOwner && !report.director_approved ? 'cursor-pointer' : ''}`}
+                      onClick={() => isOwner && !report.director_approved && onToggleTask(report, task.id)}
+                    >
+                      <div className="flex items-start gap-2.5">
+                        {task.completed ? (
+                          <CheckCircle2 className="h-4.5 w-4.5 text-success shrink-0 mt-0.5" />
+                        ) : (
+                          <CircleDot className="h-4.5 w-4.5 text-muted-foreground shrink-0 mt-0.5" />
+                        )}
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-sm font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
+                              {task.text}
+                            </span>
+                            {task.priority === 'high' && (
+                              <Badge variant="outline" className={`text-[9px] px-1.5 py-0 ${prio.bg}`}>
+                                {prio.label}
+                              </Badge>
+                            )}
+                          </div>
+                          {task.detail && (
+                            <p className={`text-xs mt-1 ${task.completed ? 'text-muted-foreground/50 line-through' : 'text-muted-foreground'}`}>
+                              {task.detail}
+                            </p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          ))}
+
+          {report.notes && (
+            <div className="bg-muted/50 rounded-lg p-3">
+              <p className="text-xs font-medium text-muted-foreground mb-1">📝 비고</p>
+              <p className="text-sm">{report.notes}</p>
+            </div>
+          )}
+
+          <Separator />
+
+          {/* Approval flow steps */}
+          <div className="space-y-3">
+            <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">승인 현황</p>
+            <div className="grid grid-cols-3 gap-2">
+              {/* Step 1 */}
+              <div className={`rounded-lg p-3 text-center border ${allCompleted ? 'bg-success/5 border-success/30' : 'border-border'}`}>
+                <div className={`mx-auto h-8 w-8 rounded-full flex items-center justify-center mb-1.5 ${allCompleted ? 'bg-success text-white' : 'bg-muted'}`}>
+                  <Check className="h-4 w-4" />
+                </div>
+                <p className="text-xs font-medium">업무 완료</p>
+                <p className="text-[10px] text-muted-foreground">{completedCount}/{totalCount} 완료</p>
+              </div>
+              {/* Step 2 */}
+              <div className={`rounded-lg p-3 text-center border ${report.director_approved ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' : 'border-border'}`}>
+                <div className={`mx-auto h-8 w-8 rounded-full flex items-center justify-center mb-1.5 ${report.director_approved ? 'bg-blue-500 text-white' : 'bg-muted'}`}>
+                  <Check className="h-4 w-4" />
+                </div>
+                <p className="text-xs font-medium">이사 확인</p>
+                {report.director_approved ? (
+                  <p className="text-[10px] text-muted-foreground">{directorProfile?.name_kr} · {format(new Date(report.director_approved_at!), 'HH:mm')}</p>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground">대기 중</p>
+                )}
+              </div>
+              {/* Step 3 */}
+              <div className={`rounded-lg p-3 text-center border ${report.ceo_approved ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' : 'border-border'}`}>
+                <div className={`mx-auto h-8 w-8 rounded-full flex items-center justify-center mb-1.5 ${report.ceo_approved ? 'bg-red-500 text-white' : 'bg-muted'}`}>
+                  <Stamp className="h-4 w-4" />
+                </div>
+                <p className="text-xs font-medium">대표 직인</p>
+                {report.ceo_approved ? (
+                  <p className="text-[10px] text-muted-foreground">{ceoProfile?.name_kr} · {format(new Date(report.ceo_approved_at!), 'HH:mm')}</p>
+                ) : (
+                  <p className="text-[10px] text-muted-foreground">대기 중</p>
+                )}
+              </div>
+            </div>
+
+            {/* Action buttons for admins */}
+            {(isDirector || isCeo) && allCompleted && !report.director_approved && (
+              <Button size="sm" className="w-full" onClick={() => onDirectorApprove(report.id)}>
+                <Check className="h-4 w-4 mr-1" /> 이사 확인 승인
+              </Button>
+            )}
+            {isCeo && report.director_approved && !report.ceo_approved && (
+              <Button size="sm" variant="outline" className="w-full border-red-200 text-red-600 hover:bg-red-50" onClick={() => onCeoApprove(report.id)}>
+                <Stamp className="h-4 w-4 mr-1" /> 대표 직인 날인
+              </Button>
+            )}
+          </div>
+
+          {/* Feedback / Comments section */}
+          {(report.director_comment || report.ceo_comment || isAdmin) && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
+                  <MessageSquare className="h-3.5 w-3.5" /> 피드백
+                </p>
+
+                {report.director_comment && (
+                  <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Avatar className="h-5 w-5">
+                        <AvatarFallback className="text-[8px] bg-blue-500 text-white">{directorProfile?.avatar || '이'}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-medium">이사 코멘트</span>
+                      {report.director_approved_at && (
+                        <span className="text-[10px] text-muted-foreground">{format(new Date(report.director_approved_at), 'M/d HH:mm')}</span>
+                      )}
+                    </div>
+                    <p className="text-sm pl-7">{report.director_comment}</p>
+                  </div>
+                )}
+
+                {report.ceo_comment && (
+                  <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-1">
+                      <Avatar className="h-5 w-5">
+                        <AvatarFallback className="text-[8px] bg-red-500 text-white">{ceoProfile?.avatar || '대'}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-medium">대표 코멘트</span>
+                      {report.ceo_approved_at && (
+                        <span className="text-[10px] text-muted-foreground">{format(new Date(report.ceo_approved_at), 'M/d HH:mm')}</span>
+                      )}
+                    </div>
+                    <p className="text-sm pl-7">{report.ceo_comment}</p>
+                  </div>
+                )}
+
+                {/* Comment input for admins */}
+                {isAdmin && (
+                  <div className="space-y-2">
+                    {commentType === null ? (
+                      <div className="flex gap-2">
+                        {(isDirector || isCeo) && !report.director_comment && (
+                          <Button variant="outline" size="sm" className="text-xs" onClick={() => setCommentType('director')}>
+                            <MessageSquare className="h-3 w-3 mr-1" /> 이사 코멘트 작성
+                          </Button>
+                        )}
+                        {isCeo && !report.ceo_comment && (
+                          <Button variant="outline" size="sm" className="text-xs" onClick={() => setCommentType('ceo')}>
+                            <MessageSquare className="h-3 w-3 mr-1" /> 대표 코멘트 작성
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1">
+                          <Label className="text-xs text-muted-foreground">
+                            {commentType === 'director' ? '이사' : '대표'} 코멘트
+                          </Label>
+                          <Textarea
+                            value={commentText}
+                            onChange={e => setCommentText(e.target.value)}
+                            placeholder="피드백, 개선사항, 코멘트를 입력하세요..."
+                            rows={2}
+                            className="text-sm"
+                          />
+                        </div>
+                        <div className="flex flex-col gap-1">
+                          <Button size="sm" onClick={handleSendComment} disabled={!commentText.trim()}>
+                            <Send className="h-3 w-3" />
+                          </Button>
+                          <Button size="sm" variant="ghost" onClick={() => { setCommentType(null); setCommentText(''); }}>
+                            취소
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </CardContent>
+      )}
+    </Card>
+  );
+}
+
+// --- Main Page ---
 export default function DailyWorkReport() {
   const { profile, userRole } = useAuth();
   const { toast } = useToast();
@@ -45,7 +462,9 @@ export default function DailyWorkReport() {
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newTasks, setNewTasks] = useState<string[]>(['']);
+  const [newTasks, setNewTasks] = useState<Omit<MorningTask, 'id' | 'completed'>[]>([
+    { text: '', detail: '', category: '기타', priority: 'medium' },
+  ]);
   const [newNotes, setNewNotes] = useState('');
 
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
@@ -54,11 +473,7 @@ export default function DailyWorkReport() {
 
   const fetchData = async () => {
     const [reportsRes, profilesRes] = await Promise.all([
-      supabase
-        .from('daily_work_reports')
-        .select('*')
-        .eq('date', selectedDate)
-        .order('created_at', { ascending: true }),
+      supabase.from('daily_work_reports').select('*').eq('date', selectedDate).order('created_at', { ascending: true }),
       supabase.from('profiles').select('id, user_id, name, name_kr, avatar'),
     ]);
     setReports((reportsRes.data as any[]) || []);
@@ -66,23 +481,25 @@ export default function DailyWorkReport() {
     setLoading(false);
   };
 
-  useEffect(() => {
-    fetchData();
-  }, [selectedDate]);
-
-  const getProfile = (id: string) => profiles.find(p => p.id === id);
+  useEffect(() => { fetchData(); }, [selectedDate]);
 
   const myReport = reports.find(r => r.user_id === profile?.id);
 
   const handleCreateReport = async () => {
     if (!profile) return;
-    const tasks: MorningTask[] = newTasks
-      .filter(t => t.trim())
-      .map((t, i) => ({ id: `task-${Date.now()}-${i}`, text: t.trim(), completed: false }));
-    if (tasks.length === 0) {
+    const validTasks = newTasks.filter(t => t.text.trim());
+    if (validTasks.length === 0) {
       toast({ title: '업무를 하나 이상 입력해주세요', variant: 'destructive' });
       return;
     }
+    const tasks: MorningTask[] = validTasks.map((t, i) => ({
+      id: `task-${Date.now()}-${i}`,
+      text: t.text.trim(),
+      detail: t.detail.trim(),
+      category: t.category,
+      priority: t.priority,
+      completed: false,
+    }));
 
     const { error } = await supabase.from('daily_work_reports').insert({
       user_id: profile.id,
@@ -92,16 +509,12 @@ export default function DailyWorkReport() {
     });
 
     if (error) {
-      if (error.code === '23505') {
-        toast({ title: '이미 오늘 보고서가 등록되어 있습니다', variant: 'destructive' });
-      } else {
-        toast({ title: '등록 실패', description: error.message, variant: 'destructive' });
-      }
+      toast({ title: error.code === '23505' ? '이미 등록된 보고서가 있습니다' : '등록 실패', description: error.message, variant: 'destructive' });
       return;
     }
     toast({ title: '일일업무보고 등록 완료' });
     setDialogOpen(false);
-    setNewTasks(['']);
+    setNewTasks([{ text: '', detail: '', category: '기타', priority: 'medium' }]);
     setNewNotes('');
     fetchData();
   };
@@ -149,89 +562,83 @@ export default function DailyWorkReport() {
     fetchData();
   };
 
+  const handleSubmitComment = async (reportId: string, type: 'director' | 'ceo', comment: string) => {
+    const field = type === 'director' ? 'director_comment' : 'ceo_comment';
+    await supabase.from('daily_work_reports').update({ [field]: comment } as any).eq('id', reportId);
+    toast({ title: `${type === 'director' ? '이사' : '대표'} 코멘트 저장 완료` });
+    fetchData();
+  };
+
   const changeDate = (days: number) => {
     const d = new Date(selectedDate);
     d.setDate(d.getDate() + days);
     setSelectedDate(format(d, 'yyyy-MM-dd'));
   };
 
-  const getStatusBadge = (report: DailyReport) => {
-    if (report.ceo_approved) return <Badge className="bg-success/10 text-success border-success/20">최종 승인</Badge>;
-    if (report.director_approved) return <Badge className="bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400">이사 확인</Badge>;
-    if (report.completion_checked) return <Badge className="bg-warning/10 text-warning border-warning/20">완료 체크</Badge>;
-    return <Badge variant="outline" className="text-muted-foreground">작성 중</Badge>;
-  };
-
   const isToday = selectedDate === format(new Date(), 'yyyy-MM-dd');
+
+  // Summary stats
+  const totalTasks = reports.reduce((sum, r) => sum + r.morning_tasks.length, 0);
+  const completedTasks = reports.reduce((sum, r) => sum + r.morning_tasks.filter(t => t.completed).length, 0);
+  const approvedCount = reports.filter(r => r.ceo_approved).length;
 
   return (
     <div className="space-y-6 animate-fade-in">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-foreground">일일업무보고</h1>
-          <p className="text-sm text-muted-foreground mt-1">오전 업무 등록 → 퇴근 전 완료 체크 → 이사 확인 → 대표 직인 승인</p>
+          <p className="text-sm text-muted-foreground mt-1">업무 등록 → 완료 체크 → 이사 확인 → 대표 직인 승인</p>
         </div>
         {isToday && !myReport && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button><Plus className="h-4 w-4 mr-1" /> 오늘 업무 등록</Button>
             </DialogTrigger>
-            <DialogContent className="max-w-lg">
+            <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
                 <DialogTitle>오늘의 업무 등록</DialogTitle>
+                <DialogDescription>금일 수행할 업무를 카테고리, 우선순위와 함께 등록하세요.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
+                <TaskCreateForm tasks={newTasks} setTasks={setNewTasks} />
                 <div>
-                  <p className="text-sm font-medium mb-2">금일 할 일</p>
-                  {newTasks.map((task, i) => (
-                    <div key={i} className="flex gap-2 mb-2">
-                      <Input
-                        value={task}
-                        onChange={e => {
-                          const copy = [...newTasks];
-                          copy[i] = e.target.value;
-                          setNewTasks(copy);
-                        }}
-                        placeholder={`업무 ${i + 1}`}
-                      />
-                      {newTasks.length > 1 && (
-                        <Button variant="ghost" size="icon" onClick={() => setNewTasks(newTasks.filter((_, j) => j !== i))}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  ))}
-                  <Button variant="outline" size="sm" onClick={() => setNewTasks([...newTasks, ''])}>
-                    <Plus className="h-3 w-3 mr-1" /> 업무 추가
-                  </Button>
-                </div>
-                <div>
-                  <p className="text-sm font-medium mb-2">비고</p>
+                  <Label className="text-sm font-medium">비고</Label>
                   <Textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="참고 사항..." rows={2} />
                 </div>
-                <Button onClick={handleCreateReport} className="w-full">등록</Button>
+                <Button onClick={handleCreateReport} className="w-full" size="lg">등록</Button>
               </div>
             </DialogContent>
           </Dialog>
         )}
       </div>
 
-      {/* Date navigation */}
-      <div className="flex items-center gap-3">
-        <Button variant="outline" size="icon" onClick={() => changeDate(-1)}>
-          <ChevronLeft className="h-4 w-4" />
-        </Button>
-        <div className="text-center">
-          <p className="text-lg font-semibold">{format(new Date(selectedDate), 'yyyy년 M월 d일 (EEE)', { locale: ko })}</p>
-          {isToday && <Badge variant="outline" className="text-xs">오늘</Badge>}
-        </div>
-        <Button variant="outline" size="icon" onClick={() => changeDate(1)}>
-          <ChevronRight className="h-4 w-4" />
-        </Button>
-        {!isToday && (
-          <Button variant="ghost" size="sm" onClick={() => setSelectedDate(format(new Date(), 'yyyy-MM-dd'))}>
-            오늘로
+      {/* Date navigation + summary */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" onClick={() => changeDate(-1)}>
+            <ChevronLeft className="h-4 w-4" />
           </Button>
+          <div className="text-center">
+            <p className="text-lg font-semibold">{format(new Date(selectedDate), 'yyyy년 M월 d일 (EEE)', { locale: ko })}</p>
+            {isToday && <Badge variant="outline" className="text-xs">오늘</Badge>}
+          </div>
+          <Button variant="outline" size="icon" onClick={() => changeDate(1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          {!isToday && (
+            <Button variant="ghost" size="sm" onClick={() => setSelectedDate(format(new Date(), 'yyyy-MM-dd'))}>
+              오늘로
+            </Button>
+          )}
+        </div>
+
+        {reports.length > 0 && (
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            <span>보고서 <strong className="text-foreground">{reports.length}</strong>건</span>
+            <span>업무 <strong className="text-foreground">{completedTasks}/{totalTasks}</strong> 완료</span>
+            <span>최종승인 <strong className="text-foreground">{approvedCount}</strong>건</span>
+          </div>
         )}
       </div>
 
@@ -247,138 +654,23 @@ export default function DailyWorkReport() {
         </div>
       ) : (
         <div className="space-y-4">
-          {reports.map(report => {
-            const user = getProfile(report.user_id);
-            const directorProfile = report.director_approved_by ? getProfile(report.director_approved_by) : null;
-            const ceoProfile = report.ceo_approved_by ? getProfile(report.ceo_approved_by) : null;
-            const isOwner = report.user_id === profile?.id;
-            const allCompleted = report.morning_tasks.every(t => t.completed);
-
-            return (
-              <Card key={report.id} className="relative overflow-hidden">
-                {report.ceo_approved && (
-                  <div className="absolute top-3 right-3 opacity-30">
-                    <img src={stampImage} alt="직인" className="h-16 w-16" />
-                  </div>
-                )}
-                <CardHeader className="pb-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <Avatar className="h-9 w-9">
-                        <AvatarFallback className="bg-primary text-primary-foreground text-xs">{user?.avatar || '?'}</AvatarFallback>
-                      </Avatar>
-                      <div>
-                        <p className="font-semibold text-sm">{user?.name_kr || user?.name || '알 수 없음'}</p>
-                        <p className="text-xs text-muted-foreground">{format(new Date(report.created_at), 'HH:mm')} 등록</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {getStatusBadge(report)}
-                      {isOwner && !report.director_approved && (
-                        <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleDelete(report.id)}>
-                          <Trash2 className="h-3.5 w-3.5 text-destructive" />
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  {/* Task list */}
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-2">금일 업무</p>
-                    <div className="space-y-1.5">
-                      {report.morning_tasks.map((task) => (
-                        <div
-                          key={task.id}
-                          className={`flex items-center gap-2 p-2 rounded-md border ${task.completed ? 'bg-success/5 border-success/20' : 'border-border'} ${isOwner && !report.director_approved ? 'cursor-pointer hover:bg-muted/50' : ''}`}
-                          onClick={() => isOwner && !report.director_approved && handleToggleTask(report, task.id)}
-                        >
-                          {task.completed ? (
-                            <CheckCircle2 className="h-4 w-4 text-success shrink-0" />
-                          ) : (
-                            <CircleDot className="h-4 w-4 text-muted-foreground shrink-0" />
-                          )}
-                          <span className={`text-sm ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.text}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {report.notes && (
-                    <div>
-                      <p className="text-xs font-medium text-muted-foreground uppercase tracking-wider mb-1">비고</p>
-                      <p className="text-sm text-muted-foreground">{report.notes}</p>
-                    </div>
-                  )}
-
-                  {/* Approval flow */}
-                  <div className="flex items-center gap-4 pt-2 border-t border-border/50">
-                    {/* Step 1: Completion check */}
-                    <div className="flex items-center gap-1.5">
-                      <div className={`h-6 w-6 rounded-full flex items-center justify-center ${allCompleted ? 'bg-success text-white' : 'bg-muted'}`}>
-                        <Check className="h-3.5 w-3.5" />
-                      </div>
-                      <span className="text-xs text-muted-foreground">완료 체크</span>
-                    </div>
-
-                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
-
-                    {/* Step 2: Director approval */}
-                    <div className="flex items-center gap-1.5">
-                      {report.director_approved ? (
-                        <>
-                          <div className="h-6 w-6 rounded-full bg-blue-500 text-white flex items-center justify-center">
-                            <Check className="h-3.5 w-3.5" />
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            이사 확인 ({directorProfile?.name_kr})
-                          </span>
-                        </>
-                      ) : (isDirector || isCeo) && allCompleted ? (
-                        <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleDirectorApprove(report.id)}>
-                          <Check className="h-3 w-3 mr-1" /> 이사 확인
-                        </Button>
-                      ) : (
-                        <>
-                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
-                            <Check className="h-3.5 w-3.5 text-muted-foreground" />
-                          </div>
-                          <span className="text-xs text-muted-foreground">이사 확인 대기</span>
-                        </>
-                      )}
-                    </div>
-
-                    <ChevronRight className="h-3 w-3 text-muted-foreground" />
-
-                    {/* Step 3: CEO stamp */}
-                    <div className="flex items-center gap-1.5">
-                      {report.ceo_approved ? (
-                        <>
-                          <div className="h-6 w-6 rounded-full bg-red-500 text-white flex items-center justify-center">
-                            <Stamp className="h-3.5 w-3.5" />
-                          </div>
-                          <span className="text-xs text-muted-foreground">
-                            직인 승인 ({ceoProfile?.name_kr})
-                          </span>
-                        </>
-                      ) : isCeo && report.director_approved ? (
-                        <Button size="sm" variant="outline" className="h-7 text-xs border-red-200 text-red-600 hover:bg-red-50" onClick={() => handleCeoApprove(report.id)}>
-                          <Stamp className="h-3 w-3 mr-1" /> 직인 날인
-                        </Button>
-                      ) : (
-                        <>
-                          <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
-                            <Stamp className="h-3.5 w-3.5 text-muted-foreground" />
-                          </div>
-                          <span className="text-xs text-muted-foreground">직인 승인 대기</span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
+          {reports.map(report => (
+            <ReportCard
+              key={report.id}
+              report={report}
+              profile={profile}
+              profiles={profiles}
+              userRole={userRole || 'staff'}
+              isAdmin={isAdmin}
+              isDirector={isDirector}
+              isCeo={isCeo}
+              onToggleTask={handleToggleTask}
+              onDirectorApprove={handleDirectorApprove}
+              onCeoApprove={handleCeoApprove}
+              onDelete={handleDelete}
+              onSubmitComment={handleSubmitComment}
+            />
+          ))}
         </div>
       )}
     </div>
