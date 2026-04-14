@@ -49,12 +49,12 @@ const mainNavItems = [
   { title: '대시보드', url: '/', icon: LayoutDashboard },
   { title: '프로젝트', url: '/projects', icon: FolderKanban },
   { title: '업무', url: '/tasks', icon: ListTodo },
+  { title: '데일리 체크인', url: '/daily-report', icon: ClipboardCheck, accent: true },
   { title: '디자인 시안', url: '/design-reviews', icon: Palette },
   { title: '회의록', url: '/meetings', icon: ClipboardList },
   { title: '일정', url: '/calendar', icon: CalendarDays },
   { title: '런칭 관리', url: '/launch', icon: Rocket },
   { title: '파일', url: '/library', icon: FolderArchive },
-  { title: '데일리 체크인', url: '/daily-report', icon: ClipboardCheck },
   { title: '알림', url: '/notices', icon: Bell },
 ];
 
@@ -125,25 +125,32 @@ export function AppSidebar() {
 
   const renderNavItems = (items: typeof mainNavItems) => (
     <SidebarMenu>
-      {items.map((item) => (
-        <SidebarMenuItem key={item.title}>
-          <SidebarMenuButton
-            asChild
-            isActive={location.pathname === item.url}
-            tooltip={item.title}
-          >
-            <NavLink
-              to={item.url}
-              end={item.url === '/'}
-              className="hover:bg-sidebar-accent/50"
-              activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+      {items.map((item) => {
+        const isAccent = 'accent' in item && (item as any).accent;
+        return (
+          <SidebarMenuItem key={item.title}>
+            <SidebarMenuButton
+              asChild
+              isActive={location.pathname === item.url}
+              tooltip={item.title}
             >
-              <item.icon className="h-4 w-4" />
-              {!collapsed && <span>{item.title}</span>}
-            </NavLink>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
+              <NavLink
+                to={item.url}
+                end={item.url === '/'}
+                className="hover:bg-sidebar-accent/50"
+                activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
+              >
+                <item.icon className={`h-4 w-4 ${isAccent ? 'text-emerald-500' : ''}`} />
+                {!collapsed && (
+                  <span className={isAccent && location.pathname !== item.url ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>
+                    {item.title}
+                  </span>
+                )}
+              </NavLink>
+            </SidebarMenuButton>
+          </SidebarMenuItem>
+        );
+      })}
     </SidebarMenu>
   );
 
