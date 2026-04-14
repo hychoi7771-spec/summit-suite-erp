@@ -49,12 +49,12 @@ const mainNavItems = [
   { title: '대시보드', url: '/', icon: LayoutDashboard },
   { title: '프로젝트', url: '/projects', icon: FolderKanban },
   { title: '업무', url: '/tasks', icon: ListTodo },
+  { title: '데일리 체크인', url: '/daily-report', icon: ClipboardCheck, accent: true },
   { title: '디자인 시안', url: '/design-reviews', icon: Palette },
   { title: '회의록', url: '/meetings', icon: ClipboardList },
   { title: '일정', url: '/calendar', icon: CalendarDays },
   { title: '런칭 관리', url: '/launch', icon: Rocket },
   { title: '파일', url: '/library', icon: FolderArchive },
-  { title: '데일리 체크인', url: '/daily-report', icon: ClipboardCheck },
   { title: '알림', url: '/notices', icon: Bell },
 ];
 
