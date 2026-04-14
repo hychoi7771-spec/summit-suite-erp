@@ -369,61 +369,68 @@ function ReportCard({
               <Separator />
               <div className="space-y-3">
                 <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider flex items-center gap-1">
-                  <MessageSquare className="h-3.5 w-3.5" /> 피드백
+                  <MessageSquare className="h-3.5 w-3.5" /> 코멘트
                 </p>
 
-                {report.director_comment && (
-                  <div className="bg-blue-50 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Avatar className="h-5 w-5">
-                        <AvatarFallback className="text-[8px] bg-blue-500 text-white">{directorProfile?.avatar || '이'}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-xs font-medium">이사 코멘트</span>
-                      {report.director_approved_at && (
-                        <span className="text-[10px] text-muted-foreground">{format(new Date(report.director_approved_at), 'M/d HH:mm')}</span>
-                      )}
+                {report.director_comment && (() => {
+                  const commenter = report.director_approved_by ? profiles.find(p => p.id === report.director_approved_by) : null;
+                  return (
+                    <div className="bg-muted/50 border rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Avatar className="h-5 w-5">
+                          <AvatarFallback className="text-[8px] bg-primary text-primary-foreground">{commenter?.avatar || '?'}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs font-medium">{commenter?.name_kr || '알 수 없음'}</span>
+                        {report.director_approved_at && (
+                          <span className="text-[10px] text-muted-foreground">{format(new Date(report.director_approved_at), 'M/d HH:mm')}</span>
+                        )}
+                      </div>
+                      <p className="text-sm pl-7">{report.director_comment}</p>
                     </div>
-                    <p className="text-sm pl-7">{report.director_comment}</p>
-                  </div>
-                )}
+                  );
+                })()}
 
-                {report.ceo_comment && (
-                  <div className="bg-red-50 dark:bg-red-900/10 border border-red-200 dark:border-red-800 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Avatar className="h-5 w-5">
-                        <AvatarFallback className="text-[8px] bg-red-500 text-white">{ceoProfile?.avatar || '대'}</AvatarFallback>
-                      </Avatar>
-                      <span className="text-xs font-medium">대표 코멘트</span>
-                      {report.ceo_approved_at && (
-                        <span className="text-[10px] text-muted-foreground">{format(new Date(report.ceo_approved_at), 'M/d HH:mm')}</span>
-                      )}
+                {report.ceo_comment && (() => {
+                  const commenter = report.ceo_approved_by ? profiles.find(p => p.id === report.ceo_approved_by) : null;
+                  return (
+                    <div className="bg-muted/50 border rounded-lg p-3">
+                      <div className="flex items-center gap-2 mb-1">
+                        <Avatar className="h-5 w-5">
+                          <AvatarFallback className="text-[8px] bg-primary text-primary-foreground">{commenter?.avatar || '?'}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs font-medium">{commenter?.name_kr || '알 수 없음'}</span>
+                        {report.ceo_approved_at && (
+                          <span className="text-[10px] text-muted-foreground">{format(new Date(report.ceo_approved_at), 'M/d HH:mm')}</span>
+                        )}
+                      </div>
+                      <p className="text-sm pl-7">{report.ceo_comment}</p>
                     </div>
-                    <p className="text-sm pl-7">{report.ceo_comment}</p>
-                  </div>
-                )}
+                  );
+                })()}
 
                 {/* Comment input for admins */}
                 {isAdmin && (
                   <div className="space-y-2">
                     {commentType === null ? (
-                      <div className="flex gap-2">
-                        {(isDirector || isCeo) && !report.director_comment && (
-                          <Button variant="outline" size="sm" className="text-xs" onClick={() => setCommentType('director')}>
-                            <MessageSquare className="h-3 w-3 mr-1" /> 이사 코멘트 작성
+                      <>
+                        {((isDirector || isCeo) && !report.director_comment) || (isCeo && !report.ceo_comment) ? (
+                          <Button variant="outline" size="sm" className="text-xs" onClick={() => {
+                            if ((isDirector || isCeo) && !report.director_comment) setCommentType('director');
+                            else if (isCeo && !report.ceo_comment) setCommentType('ceo');
+                          }}>
+                            <MessageSquare className="h-3 w-3 mr-1" /> 코멘트 작성
                           </Button>
-                        )}
-                        {isCeo && !report.ceo_comment && (
-                          <Button variant="outline" size="sm" className="text-xs" onClick={() => setCommentType('ceo')}>
-                            <MessageSquare className="h-3 w-3 mr-1" /> 대표 코멘트 작성
-                          </Button>
-                        )}
-                      </div>
+                        ) : null}
+                      </>
                     ) : (
                       <div className="flex gap-2 items-end">
                         <div className="flex-1">
-                          <Label className="text-xs text-muted-foreground">
-                            {commentType === 'director' ? '이사' : '대표'} 코멘트
-                          </Label>
+                          <div className="flex items-center gap-2 mb-1.5">
+                            <Avatar className="h-5 w-5">
+                              <AvatarFallback className="text-[8px] bg-primary text-primary-foreground">{currentProfile?.avatar || '?'}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs font-medium">{currentProfile?.name_kr || '알 수 없음'}</span>
+                          </div>
                           <Textarea
                             value={commentText}
                             onChange={e => setCommentText(e.target.value)}
