@@ -126,7 +126,7 @@ export function AppSidebar() {
   const renderNavItems = (items: typeof mainNavItems) => (
     <SidebarMenu>
       {items.map((item) => {
-        const isAccent = 'accent' in item && item.accent;
+        const isAccent = 'accent' in item && (item as any).accent;
         return (
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton
@@ -151,7 +151,6 @@ export function AppSidebar() {
           </SidebarMenuItem>
         );
       })}
-      ))}
     </SidebarMenu>
   );
 
