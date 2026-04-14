@@ -4,6 +4,7 @@ import { ko } from 'date-fns/locale';
 import {
   Plus, Check, CheckCircle2, Stamp, Trash2, ChevronLeft, ChevronRight,
   Clock, CircleDot, MessageSquare, AlertTriangle, Flag, Send, ChevronDown, ChevronUp,
+  LogIn, LogOut,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -21,6 +22,7 @@ import {
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { EmojiReactionBar } from '@/components/daily/EmojiReactionBar';
 import stampImage from '@/assets/stamp.png';
 
 // --- Types ---
@@ -115,9 +117,7 @@ function TaskCreateForm({ tasks, setTasks }: { tasks: Omit<MorningTask, 'id' | '
             <div>
               <Label className="text-xs text-muted-foreground">카테고리</Label>
               <Select value={task.category} onValueChange={v => update(i, { category: v })}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
                 </SelectContent>
@@ -126,9 +126,7 @@ function TaskCreateForm({ tasks, setTasks }: { tasks: Omit<MorningTask, 'id' | '
             <div>
               <Label className="text-xs text-muted-foreground">우선순위</Label>
               <Select value={task.priority} onValueChange={v => update(i, { priority: v as 'high' | 'medium' | 'low' })}>
-                <SelectTrigger className="h-8 text-xs">
-                  <SelectValue />
-                </SelectTrigger>
+                <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="high">🔴 긴급</SelectItem>
                   <SelectItem value="medium">🟡 보통</SelectItem>
@@ -185,6 +183,7 @@ function ReportCard({
   const totalCount = report.morning_tasks.length;
   const allCompleted = completedCount === totalCount;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+  const isCheckedOut = report.completion_checked;
 
   const categoryGroups = report.morning_tasks.reduce((acc, task) => {
     const cat = task.category || '기타';
@@ -194,10 +193,10 @@ function ReportCard({
   }, {} as Record<string, MorningTask[]>);
 
   const getStatusInfo = () => {
-    if (report.ceo_approved) return { label: '최종 승인', className: 'bg-success/10 text-success border-success/20' };
-    if (report.director_approved) return { label: '이사 확인 완료', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400' };
-    if (allCompleted) return { label: '완료 체크됨', className: 'bg-warning/10 text-warning border-warning/20' };
-    return { label: '작성 중', className: 'border-border text-muted-foreground' };
+    if (report.ceo_approved) return { label: '최종 승인', className: 'bg-success/10 text-success border-success/20', icon: '✅' };
+    if (report.director_approved) return { label: '이사 확인', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: '📋' };
+    if (isCheckedOut) return { label: '체크아웃 완료', className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', icon: '🚪' };
+    return { label: '체크인', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', icon: '☀️' };
   };
 
   const status = getStatusInfo();
@@ -226,13 +225,23 @@ function ReportCard({
           <div>
             <div className="flex items-center gap-2">
               <span className="font-bold text-sm">{user?.name_kr || '알 수 없음'}</span>
-              <Badge variant="outline" className={`text-[10px] ${status.className}`}>{status.label}</Badge>
+              <Badge variant="outline" className={`text-[10px] ${status.className}`}>
+                {status.icon} {status.label}
+              </Badge>
             </div>
-            <p className="text-xs text-muted-foreground">{format(new Date(report.created_at), 'HH:mm')} 등록</p>
+            <p className="text-xs text-muted-foreground">
+              <LogIn className="h-3 w-3 inline mr-0.5" />
+              {format(new Date(report.created_at), 'HH:mm')} 체크인
+              {report.checked_at && (
+                <span className="ml-2">
+                  <LogOut className="h-3 w-3 inline mr-0.5" />
+                  {format(new Date(report.checked_at), 'HH:mm')} 체크아웃
+                </span>
+              )}
+            </p>
           </div>
         </div>
         <div className="flex items-center gap-2">
-          {/* Progress indicator */}
           <div className="flex items-center gap-2 mr-2">
             <span className="text-xs font-medium text-muted-foreground">{completedCount}/{totalCount}</span>
             <div className="w-16">
@@ -248,6 +257,11 @@ function ReportCard({
             </Button>
           )}
         </div>
+      </div>
+
+      {/* Emoji reactions - always visible */}
+      <div className="px-5 pb-2">
+        <EmojiReactionBar reportId={report.id} profiles={profiles} />
       </div>
 
       {expanded && (
@@ -310,21 +324,38 @@ function ReportCard({
             </div>
           )}
 
+          {/* Check-out button for owner */}
+          {isOwner && !isCheckedOut && (
+            <>
+              <Separator />
+              <div className="bg-orange-50 dark:bg-orange-900/10 border border-orange-200 dark:border-orange-800/30 rounded-lg p-4 text-center space-y-2">
+                <p className="text-sm font-medium">퇴근 전 업무 완료 여부를 체크하고 체크아웃하세요</p>
+                <p className="text-xs text-muted-foreground">각 업무를 클릭하여 완료/미완료를 표시한 후 체크아웃 버튼을 누르세요</p>
+                <Button
+                  onClick={() => onToggleTask(report, '__checkout__')}
+                  className="bg-orange-500 hover:bg-orange-600 text-white"
+                >
+                  <LogOut className="h-4 w-4 mr-1" /> 체크아웃
+                </Button>
+              </div>
+            </>
+          )}
+
           <Separator />
 
           {/* Approval flow steps */}
           <div className="space-y-3">
             <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">승인 현황</p>
             <div className="grid grid-cols-3 gap-2">
-              {/* Step 1 */}
-              <div className={`rounded-lg p-3 text-center border ${allCompleted ? 'bg-success/5 border-success/30' : 'border-border'}`}>
-                <div className={`mx-auto h-8 w-8 rounded-full flex items-center justify-center mb-1.5 ${allCompleted ? 'bg-success text-white' : 'bg-muted'}`}>
-                  <Check className="h-4 w-4" />
+              {/* Step 1: Check-out */}
+              <div className={`rounded-lg p-3 text-center border ${isCheckedOut ? 'bg-success/5 border-success/30' : 'border-border'}`}>
+                <div className={`mx-auto h-8 w-8 rounded-full flex items-center justify-center mb-1.5 ${isCheckedOut ? 'bg-success text-white' : 'bg-muted'}`}>
+                  <LogOut className="h-4 w-4" />
                 </div>
-                <p className="text-xs font-medium">업무 완료</p>
+                <p className="text-xs font-medium">체크아웃</p>
                 <p className="text-[10px] text-muted-foreground">{completedCount}/{totalCount} 완료</p>
               </div>
-              {/* Step 2 */}
+              {/* Step 2: Director */}
               <div className={`rounded-lg p-3 text-center border ${report.director_approved ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800' : 'border-border'}`}>
                 <div className={`mx-auto h-8 w-8 rounded-full flex items-center justify-center mb-1.5 ${report.director_approved ? 'bg-blue-500 text-white' : 'bg-muted'}`}>
                   <Check className="h-4 w-4" />
@@ -336,7 +367,7 @@ function ReportCard({
                   <p className="text-[10px] text-muted-foreground">대기 중</p>
                 )}
               </div>
-              {/* Step 3 */}
+              {/* Step 3: CEO */}
               <div className={`rounded-lg p-3 text-center border ${report.ceo_approved ? 'bg-red-50 border-red-200 dark:bg-red-900/20 dark:border-red-800' : 'border-border'}`}>
                 <div className={`mx-auto h-8 w-8 rounded-full flex items-center justify-center mb-1.5 ${report.ceo_approved ? 'bg-red-500 text-white' : 'bg-muted'}`}>
                   <Stamp className="h-4 w-4" />
@@ -351,7 +382,7 @@ function ReportCard({
             </div>
 
             {/* Action buttons for admins */}
-            {(isDirector || isCeo) && allCompleted && !report.director_approved && (
+            {(isDirector || isCeo) && isCheckedOut && !report.director_approved && (
               <Button size="sm" className="w-full" onClick={() => onDirectorApprove(report.id)}>
                 <Check className="h-4 w-4 mr-1" /> 이사 확인 승인
               </Button>
@@ -516,10 +547,10 @@ export default function DailyWorkReport() {
     });
 
     if (error) {
-      toast({ title: error.code === '23505' ? '이미 등록된 보고서가 있습니다' : '등록 실패', description: error.message, variant: 'destructive' });
+      toast({ title: error.code === '23505' ? '이미 체크인 되었습니다' : '등록 실패', description: error.message, variant: 'destructive' });
       return;
     }
-    toast({ title: '일일업무보고 등록 완료' });
+    toast({ title: '☀️ 체크인 완료! 오늘도 파이팅!' });
     setDialogOpen(false);
     setNewTasks([{ text: '', detail: '', category: '기타', priority: 'medium' }]);
     setNewNotes('');
@@ -528,14 +559,23 @@ export default function DailyWorkReport() {
 
   const handleToggleTask = async (report: DailyReport, taskId: string) => {
     if (report.user_id !== profile?.id) return;
+
+    // Checkout action
+    if (taskId === '__checkout__') {
+      await supabase.from('daily_work_reports').update({
+        completion_checked: true,
+        checked_at: new Date().toISOString(),
+      }).eq('id', report.id);
+      toast({ title: '🚪 체크아웃 완료! 수고하셨습니다.' });
+      fetchData();
+      return;
+    }
+
     const updatedTasks = report.morning_tasks.map(t =>
       t.id === taskId ? { ...t, completed: !t.completed } : t
     );
-    const allCompleted = updatedTasks.every(t => t.completed);
     await supabase.from('daily_work_reports').update({
       morning_tasks: updatedTasks as any,
-      completion_checked: allCompleted,
-      checked_at: allCompleted ? new Date().toISOString() : null,
     }).eq('id', report.id);
     fetchData();
   };
@@ -572,7 +612,7 @@ export default function DailyWorkReport() {
   const handleSubmitComment = async (reportId: string, type: 'director' | 'ceo', comment: string) => {
     const field = type === 'director' ? 'director_comment' : 'ceo_comment';
     await supabase.from('daily_work_reports').update({ [field]: comment } as any).eq('id', reportId);
-    toast({ title: `${type === 'director' ? '이사' : '대표'} 코멘트 저장 완료` });
+    toast({ title: '코멘트 저장 완료' });
     fetchData();
   };
 
@@ -584,28 +624,31 @@ export default function DailyWorkReport() {
 
   const isToday = selectedDate === format(new Date(), 'yyyy-MM-dd');
 
-  // Summary stats
   const totalTasks = reports.reduce((sum, r) => sum + r.morning_tasks.length, 0);
   const completedTasks = reports.reduce((sum, r) => sum + r.morning_tasks.filter(t => t.completed).length, 0);
-  const approvedCount = reports.filter(r => r.ceo_approved).length;
+  const checkedOutCount = reports.filter(r => r.completion_checked).length;
 
   return (
     <div className="space-y-6 animate-fade-in">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">일일업무보고</h1>
-          <p className="text-sm text-muted-foreground mt-1">업무 등록 → 완료 체크 → 이사 확인 → 대표 직인 승인</p>
+          <h1 className="text-2xl font-bold text-foreground">데일리 체크인</h1>
+          <p className="text-sm text-muted-foreground mt-1">
+            ☀️ 체크인으로 업무 시작 → 🚪 체크아웃으로 완료 여부 기록
+          </p>
         </div>
         {isToday && !myReport && (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4 mr-1" /> 오늘 업무 등록</Button>
+              <Button className="gap-1.5">
+                <LogIn className="h-4 w-4" /> 체크인
+              </Button>
             </DialogTrigger>
             <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>오늘의 업무 등록</DialogTitle>
-                <DialogDescription>금일 수행할 업무를 카테고리, 우선순위와 함께 등록하세요.</DialogDescription>
+                <DialogTitle>☀️ 오늘의 체크인</DialogTitle>
+                <DialogDescription>오늘 수행할 업무를 가볍게 등록하세요.</DialogDescription>
               </DialogHeader>
               <div className="space-y-4">
                 <TaskCreateForm tasks={newTasks} setTasks={setNewTasks} />
@@ -613,7 +656,9 @@ export default function DailyWorkReport() {
                   <Label className="text-sm font-medium">비고</Label>
                   <Textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="참고 사항..." rows={2} />
                 </div>
-                <Button onClick={handleCreateReport} className="w-full" size="lg">등록</Button>
+                <Button onClick={handleCreateReport} className="w-full" size="lg">
+                  <LogIn className="h-4 w-4 mr-1" /> 체크인
+                </Button>
               </div>
             </DialogContent>
           </Dialog>
@@ -642,9 +687,9 @@ export default function DailyWorkReport() {
 
         {reports.length > 0 && (
           <div className="flex items-center gap-4 text-xs text-muted-foreground">
-            <span>보고서 <strong className="text-foreground">{reports.length}</strong>건</span>
+            <span>체크인 <strong className="text-foreground">{reports.length}</strong>명</span>
             <span>업무 <strong className="text-foreground">{completedTasks}/{totalTasks}</strong> 완료</span>
-            <span>최종승인 <strong className="text-foreground">{approvedCount}</strong>건</span>
+            <span>체크아웃 <strong className="text-foreground">{checkedOutCount}</strong>명</span>
           </div>
         )}
       </div>
@@ -657,7 +702,7 @@ export default function DailyWorkReport() {
       ) : reports.length === 0 ? (
         <div className="text-center py-16">
           <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-muted-foreground">이 날짜에 등록된 보고서가 없습니다</p>
+          <p className="text-muted-foreground">아직 체크인한 팀원이 없습니다</p>
         </div>
       ) : (
         <div className="space-y-4">
