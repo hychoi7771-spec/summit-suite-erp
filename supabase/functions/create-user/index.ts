@@ -15,37 +15,48 @@ Deno.serve(async (req) => {
   try {
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const serviceRoleKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const adminClient = createClient(supabaseUrl, serviceRoleKey);
 
     const authHeader = req.headers.get("Authorization");
-    if (!authHeader) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
 
-    const adminClient = createClient(supabaseUrl, serviceRoleKey);
-    const { data: { user: caller } } = await adminClient.auth.getUser(
-      authHeader.replace("Bearer ", "")
-    );
-    if (!caller) {
-      return new Response(JSON.stringify({ error: "Unauthorized" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
+    // Check if any users exist (bootstrap mode)
+    const { count } = await adminClient
+      .from("profiles")
+      .select("*", { count: "exact", head: true });
 
-    const { data: roleData } = await adminClient
-      .from("user_roles")
-      .select("role")
-      .eq("user_id", caller.id)
-      .single();
+    const isBootstrap = count === 0;
 
-    if (!roleData || !["ceo", "general_director"].includes(roleData.role)) {
-      return new Response(JSON.stringify({ error: "Forbidden: admin only" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!isBootstrap) {
+      // Normal mode: require admin auth
+      if (!authHeader) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: { user: caller } } = await adminClient.auth.getUser(
+        authHeader.replace("Bearer ", "")
+      );
+      if (!caller) {
+        return new Response(JSON.stringify({ error: "Unauthorized" }), {
+          status: 401,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const { data: roleData } = await adminClient
+        .from("user_roles")
+        .select("role")
+        .eq("user_id", caller.id)
+        .single();
+
+      if (!roleData || !["ceo", "general_director"].includes(roleData.role)) {
+        return new Response(JSON.stringify({ error: "Forbidden: admin only" }), {
+          status: 403,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     const { login_id, password, name, name_kr, role } = await req.json();
@@ -56,7 +67,6 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Convert login_id to email format
     const email = login_id.includes("@") ? login_id : `${login_id}@${EMAIL_DOMAIN}`;
 
     const { data: newUser, error: createError } = await adminClient.auth.admin.createUser({
@@ -73,10 +83,12 @@ Deno.serve(async (req) => {
       });
     }
 
-    if (role && role !== "staff" && newUser.user) {
+    // Set role (bootstrap first user as specified role, default ceo)
+    const targetRole = role || (isBootstrap ? "ceo" : "staff");
+    if (newUser.user) {
       await adminClient
         .from("user_roles")
-        .update({ role })
+        .update({ role: targetRole })
         .eq("user_id", newUser.user.id);
     }
 
