@@ -1,0 +1,1 @@
+CREATE POLICY "Users delete own logs" ON public.daily_logs FOR DELETE TO authenticated USING (user_id = (SELECT profiles.id FROM profiles WHERE profiles.user_id = auth.uid()));

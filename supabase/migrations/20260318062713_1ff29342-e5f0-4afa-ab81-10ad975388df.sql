@@ -1,0 +1,1 @@
+ALTER TABLE public.surveys ADD COLUMN description_image_urls text[] DEFAULT '{}'::text[];

@@ -1,0 +1,1 @@
+ALTER TABLE public.product_comments ADD COLUMN mentioned_user_ids uuid[] DEFAULT '{}'::uuid[];
