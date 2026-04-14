@@ -43,7 +43,7 @@ export default function TeamManagement() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [creating, setCreating] = useState(false);
-  const [newUser, setNewUser] = useState({ email: '', password: '', name: '', name_kr: '', role: 'staff' });
+  const [newUser, setNewUser] = useState({ login_id: '', password: '', name: '', name_kr: '', role: 'staff' });
 
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
 
@@ -93,7 +93,7 @@ export default function TeamManagement() {
   };
 
   const handleCreateUser = async () => {
-    if (!newUser.email || !newUser.password || !newUser.name || !newUser.name_kr) {
+    if (!newUser.login_id || !newUser.password || !newUser.name || !newUser.name_kr) {
       toast({ title: '모든 필드를 입력해주세요', variant: 'destructive' });
       return;
     }
@@ -108,7 +108,7 @@ export default function TeamManagement() {
         toast({ title: '생성 실패', description: res.data?.error || res.error?.message, variant: 'destructive' });
       } else {
         toast({ title: `${newUser.name_kr} 계정이 생성되었습니다` });
-        setNewUser({ email: '', password: '', name: '', name_kr: '', role: 'staff' });
+        setNewUser({ login_id: '', password: '', name: '', name_kr: '', role: 'staff' });
         setShowCreateDialog(false);
         fetchData();
       }
@@ -159,8 +159,8 @@ export default function TeamManagement() {
                   <Input value={newUser.name} onChange={e => setNewUser(p => ({ ...p, name: e.target.value }))} placeholder="James Park" />
                 </div>
                 <div className="space-y-1.5">
-                  <Label>이메일</Label>
-                  <Input type="email" value={newUser.email} onChange={e => setNewUser(p => ({ ...p, email: e.target.value }))} placeholder="name@company.com" />
+                  <Label>아이디</Label>
+                  <Input value={newUser.login_id} onChange={e => setNewUser(p => ({ ...p, login_id: e.target.value }))} placeholder="영문 아이디 (예: rita)" />
                 </div>
                 <div className="space-y-1.5">
                   <Label>초기 비밀번호</Label>
