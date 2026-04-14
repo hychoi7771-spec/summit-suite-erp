@@ -7,8 +7,10 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import logo from '@/assets/logo.jpg';
 
+const EMAIL_DOMAIN = 'shfoodhub.local';
+
 export default function Auth() {
-  const [email, setEmail] = useState('');
+  const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const { toast } = useToast();
@@ -16,9 +18,10 @@ export default function Auth() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
+    const email = loginId.includes('@') ? loginId : `${loginId}@${EMAIL_DOMAIN}`;
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      toast({ title: '로그인 실패', description: error.message, variant: 'destructive' });
+      toast({ title: '로그인 실패', description: '아이디 또는 비밀번호를 확인해주세요.', variant: 'destructive' });
     }
     setLoading(false);
   };
@@ -36,8 +39,8 @@ export default function Auth() {
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
             <div className="space-y-2">
-              <Label htmlFor="login-email">이메일</Label>
-              <Input id="login-email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="name@company.com" required />
+              <Label htmlFor="login-id">아이디</Label>
+              <Input id="login-id" type="text" value={loginId} onChange={e => setLoginId(e.target.value)} placeholder="아이디를 입력하세요" required />
             </div>
             <div className="space-y-2">
               <Label htmlFor="login-password">비밀번호</Label>
