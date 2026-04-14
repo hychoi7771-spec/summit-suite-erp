@@ -118,7 +118,7 @@ export default function Dashboard() {
     <div className="space-y-6 animate-fade-in">
       <div>
         <h1 className="text-2xl font-bold">대시보드</h1>
-        <p className="text-muted-foreground text-sm mt-1">Recovery Lab Korea — 경영 현황</p>
+        <p className="text-muted-foreground text-sm mt-1">SHFoodHub — 경영 현황</p>
       </div>
 
       {/* 통계 카드 */}

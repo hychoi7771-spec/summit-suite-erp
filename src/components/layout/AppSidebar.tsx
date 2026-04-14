@@ -23,6 +23,7 @@ import {
   FileEdit,
   FolderOpen,
   Rocket,
+  ClipboardCheck,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -53,6 +54,7 @@ const mainNavItems = [
   { title: '일정', url: '/calendar', icon: CalendarDays },
   { title: '런칭 관리', url: '/launch', icon: Rocket },
   { title: '파일', url: '/library', icon: FolderArchive },
+  { title: '일일업무보고', url: '/daily-report', icon: ClipboardCheck },
   { title: '알림', url: '/notices', icon: Bell },
 ];
 
@@ -149,11 +151,11 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="p-4">
         <div className="flex items-center gap-3">
-          <img src={logo} alt="Recovery Lab Korea" className="h-8 w-8 rounded-lg object-contain shrink-0" />
+          <img src={logo} alt="SHFoodHub" className="h-8 w-8 rounded-lg object-contain shrink-0" />
           {!collapsed && (
             <div className="min-w-0">
-              <h2 className="text-sm font-bold text-sidebar-foreground truncate">RecovHub</h2>
-              <p className="text-xs text-sidebar-muted truncate">리커버리랩 허브</p>
+              <h2 className="text-sm font-bold text-sidebar-foreground truncate">SHFoodHub</h2>
+              <p className="text-xs text-sidebar-muted truncate">리타방앗간 허브</p>
             </div>
           )}
         </div>
@@ -232,7 +234,7 @@ export function AppSidebar() {
 
       <SidebarFooter className="p-3">
         {!collapsed && (
-          <p className="text-[10px] text-sidebar-muted text-center">RecovHub © 2026</p>
+          <p className="text-[10px] text-sidebar-muted text-center">SHFoodHub © 2026</p>
         )}
       </SidebarFooter>
     </Sidebar>

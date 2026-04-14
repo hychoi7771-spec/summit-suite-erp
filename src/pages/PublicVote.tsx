@@ -123,8 +123,8 @@ export default function PublicVote() {
     <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <div className={`w-full ${hasImages ? 'max-w-4xl' : 'max-w-md'}`}>
         <div className="flex items-center justify-center gap-2 mb-6">
-          <img src={logo} alt="RecovHub" className="h-8 w-8 rounded-lg object-contain" />
-          <span className="text-lg font-bold text-foreground">RecovHub 설문</span>
+          <img src={logo} alt="SHFoodHub" className="h-8 w-8 rounded-lg object-contain" />
+          <span className="text-lg font-bold text-foreground">SHFoodHub 설문</span>
         </div>
 
         {loading ? (

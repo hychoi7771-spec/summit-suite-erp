@@ -359,6 +359,85 @@ export type Database = {
           },
         ]
       }
+      daily_work_reports: {
+        Row: {
+          ceo_approved: boolean
+          ceo_approved_at: string | null
+          ceo_approved_by: string | null
+          ceo_stamp_url: string | null
+          checked_at: string | null
+          completion_checked: boolean
+          created_at: string
+          date: string
+          director_approved: boolean
+          director_approved_at: string | null
+          director_approved_by: string | null
+          id: string
+          morning_tasks: Json
+          notes: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          ceo_approved?: boolean
+          ceo_approved_at?: string | null
+          ceo_approved_by?: string | null
+          ceo_stamp_url?: string | null
+          checked_at?: string | null
+          completion_checked?: boolean
+          created_at?: string
+          date?: string
+          director_approved?: boolean
+          director_approved_at?: string | null
+          director_approved_by?: string | null
+          id?: string
+          morning_tasks?: Json
+          notes?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          ceo_approved?: boolean
+          ceo_approved_at?: string | null
+          ceo_approved_by?: string | null
+          ceo_stamp_url?: string | null
+          checked_at?: string | null
+          completion_checked?: boolean
+          created_at?: string
+          date?: string
+          director_approved?: boolean
+          director_approved_at?: string | null
+          director_approved_by?: string | null
+          id?: string
+          morning_tasks?: Json
+          notes?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "daily_work_reports_ceo_approved_by_fkey"
+            columns: ["ceo_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_work_reports_director_approved_by_fkey"
+            columns: ["director_approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "daily_work_reports_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       design_annotations: {
         Row: {
           created_at: string
