@@ -435,6 +435,8 @@ export default function DailyWorkReport() {
     { text: '', detail: '', category: '기타', priority: 'medium' },
   ]);
   const [newNotes, setNewNotes] = useState('');
+  const [checkoutConfirmOpen, setCheckoutConfirmOpen] = useState(false);
+  const [checkoutTargetReport, setCheckoutTargetReport] = useState<DailyReport | null>(null);
 
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
 
@@ -505,12 +507,8 @@ export default function DailyWorkReport() {
     if (report.user_id !== profile?.id) return;
 
     if (taskId === '__checkout__') {
-      await supabase.from('daily_work_reports').update({
-        completion_checked: true,
-        checked_at: new Date().toISOString(),
-      }).eq('id', report.id);
-      toast({ title: '🚪 체크아웃 완료! 수고하셨습니다.' });
-      fetchData();
+      setCheckoutTargetReport(report);
+      setCheckoutConfirmOpen(true);
       return;
     }
 
