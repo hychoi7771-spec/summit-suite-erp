@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { useState, useEffect, useMemo } from 'react';
+import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import {
   Plus, CheckCircle2, Trash2, ChevronLeft, ChevronRight,
   Clock, CircleDot, MessageSquare, AlertTriangle, Flag, Send, ChevronDown, ChevronUp,
-  LogIn, LogOut,
+  LogIn, LogOut, Users, LayoutList, Table2,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -23,6 +23,8 @@ import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { EmojiReactionBar } from '@/components/daily/EmojiReactionBar';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 
 // --- Types ---
 interface MorningTask {
@@ -421,6 +423,7 @@ export default function DailyWorkReport() {
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
+  const [viewMode, setViewMode] = useState<'timeline' | 'person' | 'table'>('timeline');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newTasks, setNewTasks] = useState<Omit<MorningTask, 'id' | 'completed'>[]>([
@@ -599,7 +602,24 @@ export default function DailyWorkReport() {
         )}
       </div>
 
-      {/* Reports list */}
+      {/* View mode tabs */}
+      {!loading && reports.length > 0 && (
+        <Tabs value={viewMode} onValueChange={v => setViewMode(v as any)}>
+          <TabsList>
+            <TabsTrigger value="timeline" className="gap-1.5 text-xs">
+              <LayoutList className="h-3.5 w-3.5" /> 타임라인
+            </TabsTrigger>
+            <TabsTrigger value="person" className="gap-1.5 text-xs">
+              <Users className="h-3.5 w-3.5" /> 담당자별
+            </TabsTrigger>
+            <TabsTrigger value="table" className="gap-1.5 text-xs">
+              <Table2 className="h-3.5 w-3.5" /> 업무 현황표
+            </TabsTrigger>
+          </TabsList>
+        </Tabs>
+      )}
+
+      {/* Reports */}
       {loading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
@@ -609,7 +629,7 @@ export default function DailyWorkReport() {
           <Clock className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
           <p className="text-muted-foreground">아직 체크인한 팀원이 없습니다</p>
         </div>
-      ) : (
+      ) : viewMode === 'timeline' ? (
         <div className="space-y-4">
           {reports.map(report => (
             <ReportCard
@@ -623,7 +643,207 @@ export default function DailyWorkReport() {
             />
           ))}
         </div>
+      ) : viewMode === 'person' ? (
+        <PersonView reports={reports} profiles={profiles} />
+      ) : (
+        <TaskTableView reports={reports} profiles={profiles} />
       )}
+    </div>
+  );
+}
+
+// --- Person-based Summary View ---
+function PersonView({ reports, profiles }: { reports: DailyReport[]; profiles: any[] }) {
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {reports.map(report => {
+        const user = profiles.find(p => p.id === report.user_id);
+        const completedCount = report.morning_tasks.filter(t => t.completed).length;
+        const totalCount = report.morning_tasks.length;
+        const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+        const isCheckedOut = report.completion_checked;
+
+        const categoryGroups = report.morning_tasks.reduce((acc, task) => {
+          const cat = task.category || '기타';
+          if (!acc[cat]) acc[cat] = [];
+          acc[cat].push(task);
+          return acc;
+        }, {} as Record<string, MorningTask[]>);
+
+        return (
+          <Card key={report.id} className="overflow-hidden">
+            {/* Person header */}
+            <div className="px-4 py-3 border-b bg-muted/30 flex items-center justify-between">
+              <div className="flex items-center gap-2.5">
+                <Avatar className="h-9 w-9">
+                  <AvatarFallback className="bg-primary text-primary-foreground text-xs font-bold">{user?.avatar || '?'}</AvatarFallback>
+                </Avatar>
+                <div>
+                  <span className="font-bold text-sm">{user?.name_kr || '알 수 없음'}</span>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <Badge variant="outline" className={`text-[10px] ${isCheckedOut ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400' : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'}`}>
+                      {isCheckedOut ? '🚪 체크아웃' : '☀️ 체크인'}
+                    </Badge>
+                    <span className="text-[10px] text-muted-foreground">{completedCount}/{totalCount} 완료</span>
+                  </div>
+                </div>
+              </div>
+              <div className="text-right">
+                <span className="text-lg font-bold text-primary">{progressPercent}%</span>
+                <Progress value={progressPercent} className="h-1.5 w-16 mt-1" />
+              </div>
+            </div>
+
+            <CardContent className="p-4 space-y-3">
+              {Object.entries(categoryGroups).map(([category, tasks]) => (
+                <div key={category}>
+                  <Badge variant="outline" className={`text-[10px] font-medium mb-1.5 ${CATEGORY_COLORS[category] || CATEGORY_COLORS['기타']}`}>
+                    {category}
+                  </Badge>
+                  <div className="space-y-1.5">
+                    {tasks.map(task => (
+                      <div key={task.id} className="flex items-start gap-2 text-sm">
+                        {task.completed ? (
+                          <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
+                        ) : (
+                          <CircleDot className="h-4 w-4 text-muted-foreground shrink-0 mt-0.5" />
+                        )}
+                        <span className={task.completed ? 'line-through text-muted-foreground' : ''}>
+                          {task.text}
+                        </span>
+                        {task.priority === 'high' && (
+                          <Badge variant="outline" className="text-[9px] px-1 py-0 bg-destructive/10 text-destructive border-destructive/20 shrink-0">긴급</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ))}
+
+              {report.notes && (
+                <p className="text-xs text-muted-foreground bg-muted/50 rounded p-2">📝 {report.notes}</p>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })}
+    </div>
+  );
+}
+
+// --- Task Summary Table View ---
+function TaskTableView({ reports, profiles }: { reports: DailyReport[]; profiles: any[] }) {
+  const allTasks = useMemo(() => {
+    return reports.flatMap(report => {
+      const user = profiles.find(p => p.id === report.user_id);
+      return report.morning_tasks.map(task => ({
+        ...task,
+        userName: user?.name_kr || '알 수 없음',
+        userAvatar: user?.avatar || '?',
+        isCheckedOut: report.completion_checked,
+        checkinTime: report.created_at,
+        checkoutTime: report.checked_at,
+      }));
+    });
+  }, [reports, profiles]);
+
+  // Group by category
+  const byCategory = useMemo(() => {
+    const map: Record<string, typeof allTasks> = {};
+    allTasks.forEach(task => {
+      const cat = task.category || '기타';
+      if (!map[cat]) map[cat] = [];
+      map[cat].push(task);
+    });
+    return map;
+  }, [allTasks]);
+
+  const completedAll = allTasks.filter(t => t.completed).length;
+  const totalAll = allTasks.length;
+
+  return (
+    <div className="space-y-4">
+      {/* Summary stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <Card className="p-3">
+          <p className="text-xs text-muted-foreground">전체 업무</p>
+          <p className="text-xl font-bold">{totalAll}</p>
+        </Card>
+        <Card className="p-3">
+          <p className="text-xs text-muted-foreground">완료</p>
+          <p className="text-xl font-bold text-success">{completedAll}</p>
+        </Card>
+        <Card className="p-3">
+          <p className="text-xs text-muted-foreground">진행중</p>
+          <p className="text-xl font-bold text-warning">{totalAll - completedAll}</p>
+        </Card>
+        <Card className="p-3">
+          <p className="text-xs text-muted-foreground">완료율</p>
+          <p className="text-xl font-bold text-primary">{totalAll > 0 ? Math.round((completedAll / totalAll) * 100) : 0}%</p>
+        </Card>
+      </div>
+
+      {/* Tasks table */}
+      <Card>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[100px]">담당자</TableHead>
+                <TableHead className="w-[80px]">카테고리</TableHead>
+                <TableHead>업무 내용</TableHead>
+                <TableHead className="w-[70px]">우선순위</TableHead>
+                <TableHead className="w-[70px]">상태</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {Object.entries(byCategory).map(([category, tasks]) => (
+                tasks.map((task, idx) => (
+                  <TableRow key={task.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-1.5">
+                        <Avatar className="h-5 w-5">
+                          <AvatarFallback className="text-[8px] bg-primary text-primary-foreground">{task.userAvatar}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs font-medium truncate">{task.userName}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[9px] ${CATEGORY_COLORS[category] || CATEGORY_COLORS['기타']}`}>
+                        {category}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div>
+                        <span className={`text-sm ${task.completed ? 'line-through text-muted-foreground' : ''}`}>{task.text}</span>
+                        {task.detail && <p className="text-xs text-muted-foreground mt-0.5 truncate max-w-[300px]">{task.detail}</p>}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant="outline" className={`text-[9px] ${PRIORITY_CONFIG[task.priority || 'medium'].bg}`}>
+                        {PRIORITY_CONFIG[task.priority || 'medium'].label}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      {task.completed ? (
+                        <div className="flex items-center gap-1 text-success">
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                          <span className="text-xs">완료</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-1 text-muted-foreground">
+                          <CircleDot className="h-3.5 w-3.5" />
+                          <span className="text-xs">진행중</span>
+                        </div>
+                      )}
+                    </TableCell>
+                  </TableRow>
+                ))
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
     </div>
   );
 }
