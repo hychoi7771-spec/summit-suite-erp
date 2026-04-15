@@ -628,7 +628,7 @@ export default function DailyWorkReport() {
 
       {/* Reports */}
       {viewMode === 'yearly' ? (
-        <YearlyView selectedDate={selectedDate} profiles={profiles} />
+        <YearlyView selectedDate={selectedDate} profiles={profiles} onNavigateToWeek={(date) => { setSelectedDate(date); setViewMode('weekly'); }} />
       ) : viewMode === 'monthly' ? (
         <MonthlyView selectedDate={selectedDate} profiles={profiles} />
       ) : viewMode === 'weekly' ? (
@@ -1335,7 +1335,7 @@ function MonthlyView({ selectedDate, profiles }: { selectedDate: string; profile
 }
 
 // --- Yearly Summary View (W1~W52) ---
-function YearlyView({ selectedDate, profiles }: { selectedDate: string; profiles: any[] }) {
+function YearlyView({ selectedDate, profiles, onNavigateToWeek }: { selectedDate: string; profiles: any[]; onNavigateToWeek: (date: string) => void }) {
   const [yearReports, setYearReports] = useState<DailyReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [yearOffset, setYearOffset] = useState(0);
