@@ -288,6 +288,8 @@ function ReportCard({
   }, {} as Record<string, MorningTask[]>);
 
   const getStatusInfo = () => {
+    if (report.ceo_approved) return { label: '최종 승인', className: 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400', icon: '🔖' };
+    if (report.director_approved) return { label: '이사 확인', className: 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400', icon: '✅' };
     if (isCheckedOut) return { label: '체크아웃 완료', className: 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400', icon: '🚪' };
     return { label: '체크인', className: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400', icon: '☀️' };
   };
