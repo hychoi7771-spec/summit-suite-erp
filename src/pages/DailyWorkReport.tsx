@@ -1677,23 +1677,7 @@ function YearlyView({ selectedDate, profiles, onNavigateToWeek }: { selectedDate
           </Table>
         </div>
       </Card>
-      {/* Checkout confirmation dialog */}
-      <AlertDialog open={checkoutConfirmOpen} onOpenChange={setCheckoutConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>🚪 체크아웃 하시겠습니까?</AlertDialogTitle>
-            <AlertDialogDescription>
-              체크아웃 후에는 업무 완료 상태를 변경할 수 없습니다. 모든 업무의 완료 여부를 확인한 후 진행해주세요.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>취소</AlertDialogCancel>
-            <AlertDialogAction onClick={handleCheckoutConfirm} className="bg-orange-500 hover:bg-orange-600">
-              체크아웃
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
+}
 }
