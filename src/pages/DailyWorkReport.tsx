@@ -4,7 +4,7 @@ import { ko } from 'date-fns/locale';
 import {
   Plus, CheckCircle2, Trash2, ChevronLeft, ChevronRight,
   Clock, CircleDot, MessageSquare, AlertTriangle, Flag, Send, ChevronDown, ChevronUp,
-  LogIn, LogOut, Users, LayoutList, Table2,
+  LogIn, LogOut, Users, LayoutList, Table2, CalendarDays,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -423,7 +423,7 @@ export default function DailyWorkReport() {
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [viewMode, setViewMode] = useState<'timeline' | 'person' | 'table'>('timeline');
+  const [viewMode, setViewMode] = useState<'timeline' | 'person' | 'table' | 'weekly'>('timeline');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newTasks, setNewTasks] = useState<Omit<MorningTask, 'id' | 'completed'>[]>([
@@ -603,24 +603,27 @@ export default function DailyWorkReport() {
       </div>
 
       {/* View mode tabs */}
-      {!loading && reports.length > 0 && (
-        <Tabs value={viewMode} onValueChange={v => setViewMode(v as any)}>
-          <TabsList>
-            <TabsTrigger value="timeline" className="gap-1.5 text-xs">
-              <LayoutList className="h-3.5 w-3.5" /> 타임라인
-            </TabsTrigger>
-            <TabsTrigger value="person" className="gap-1.5 text-xs">
-              <Users className="h-3.5 w-3.5" /> 담당자별
-            </TabsTrigger>
-            <TabsTrigger value="table" className="gap-1.5 text-xs">
-              <Table2 className="h-3.5 w-3.5" /> 업무 현황표
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
+      <Tabs value={viewMode} onValueChange={v => setViewMode(v as any)}>
+        <TabsList>
+          <TabsTrigger value="timeline" className="gap-1.5 text-xs">
+            <LayoutList className="h-3.5 w-3.5" /> 타임라인
+          </TabsTrigger>
+          <TabsTrigger value="person" className="gap-1.5 text-xs">
+            <Users className="h-3.5 w-3.5" /> 담당자별
+          </TabsTrigger>
+          <TabsTrigger value="table" className="gap-1.5 text-xs">
+            <Table2 className="h-3.5 w-3.5" /> 업무 현황표
+          </TabsTrigger>
+          <TabsTrigger value="weekly" className="gap-1.5 text-xs">
+            <CalendarDays className="h-3.5 w-3.5" /> 주간 요약
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Reports */}
-      {loading ? (
+      {viewMode === 'weekly' ? (
+        <WeeklyView selectedDate={selectedDate} profiles={profiles} />
+      ) : loading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
@@ -844,6 +847,195 @@ function TaskTableView({ reports, profiles }: { reports: DailyReport[]; profiles
           </Table>
         </div>
       </Card>
+    </div>
+  );
+}
+
+// --- Weekly Summary View ---
+function WeeklyView({ selectedDate, profiles }: { selectedDate: string; profiles: any[] }) {
+  const [weekReports, setWeekReports] = useState<DailyReport[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const baseDate = new Date(selectedDate);
+  const weekStart = startOfWeek(baseDate, { weekStartsOn: 1 }); // Monday
+  const weekEnd = endOfWeek(baseDate, { weekStartsOn: 1 }); // Sunday
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd }).slice(0, 5); // Mon-Fri
+
+  useEffect(() => {
+    const fetchWeek = async () => {
+      setLoading(true);
+      const startStr = format(weekStart, 'yyyy-MM-dd');
+      const endStr = format(weekDays[4], 'yyyy-MM-dd');
+      const { data } = await supabase
+        .from('daily_work_reports')
+        .select('*')
+        .gte('date', startStr)
+        .lte('date', endStr)
+        .order('created_at', { ascending: true });
+      setWeekReports((data as any[]) || []);
+      setLoading(false);
+    };
+    fetchWeek();
+  }, [selectedDate]);
+
+  // Get unique users who have reports this week
+  const activeUserIds = useMemo(() => {
+    const ids = new Set(weekReports.map(r => r.user_id));
+    return Array.from(ids);
+  }, [weekReports]);
+
+  // Build per-user, per-day stats
+  const userData = useMemo(() => {
+    return activeUserIds.map(userId => {
+      const user = profiles.find(p => p.id === userId);
+      const days = weekDays.map(day => {
+        const dateStr = format(day, 'yyyy-MM-dd');
+        const report = weekReports.find(r => r.user_id === userId && r.date === dateStr);
+        if (!report) return { date: dateStr, total: 0, completed: 0, rate: null as number | null, checkedOut: false };
+        const total = report.morning_tasks.length;
+        const completed = report.morning_tasks.filter(t => t.completed).length;
+        return { date: dateStr, total, completed, rate: total > 0 ? Math.round((completed / total) * 100) : 0, checkedOut: report.completion_checked };
+      });
+      const weekTotal = days.reduce((s, d) => s + d.total, 0);
+      const weekCompleted = days.reduce((s, d) => s + d.completed, 0);
+      const weekRate = weekTotal > 0 ? Math.round((weekCompleted / weekTotal) * 100) : null;
+      return { userId, user, days, weekTotal, weekCompleted, weekRate };
+    });
+  }, [activeUserIds, weekReports, weekDays, profiles]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  if (activeUserIds.length === 0) {
+    return (
+      <div className="text-center py-16">
+        <CalendarDays className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+        <p className="text-muted-foreground">이번 주 체크인 기록이 없습니다</p>
+      </div>
+    );
+  }
+
+  const getRateColor = (rate: number | null) => {
+    if (rate === null) return 'text-muted-foreground/40';
+    if (rate >= 80) return 'text-success';
+    if (rate >= 50) return 'text-warning';
+    return 'text-destructive';
+  };
+
+  const getRateBg = (rate: number | null) => {
+    if (rate === null) return 'bg-muted/30';
+    if (rate >= 80) return 'bg-success/10';
+    if (rate >= 50) return 'bg-warning/10';
+    return 'bg-destructive/10';
+  };
+
+  return (
+    <div className="space-y-4">
+      <div className="text-sm text-muted-foreground">
+        {format(weekStart, 'M월 d일', { locale: ko })} ~ {format(weekDays[4], 'M월 d일 (EEE)', { locale: ko })} 주간 요약
+      </div>
+
+      <Card>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[120px] sticky left-0 bg-background z-10">담당자</TableHead>
+                {weekDays.map(day => (
+                  <TableHead key={day.toISOString()} className="text-center min-w-[90px]">
+                    <div>{format(day, 'EEE', { locale: ko })}</div>
+                    <div className="text-[10px] font-normal text-muted-foreground">{format(day, 'M/d')}</div>
+                  </TableHead>
+                ))}
+                <TableHead className="text-center min-w-[80px] bg-muted/30">주간 평균</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {userData.map(({ userId, user, days, weekTotal, weekCompleted, weekRate }) => (
+                <TableRow key={userId}>
+                  <TableCell className="sticky left-0 bg-background z-10">
+                    <div className="flex items-center gap-2">
+                      <Avatar className="h-6 w-6">
+                        <AvatarFallback className="text-[9px] bg-primary text-primary-foreground font-bold">{user?.avatar || '?'}</AvatarFallback>
+                      </Avatar>
+                      <span className="text-xs font-medium">{user?.name_kr || '알 수 없음'}</span>
+                    </div>
+                  </TableCell>
+                  {days.map((day, i) => (
+                    <TableCell key={i} className={`text-center ${getRateBg(day.rate)}`}>
+                      {day.rate !== null ? (
+                        <div>
+                          <span className={`text-sm font-bold ${getRateColor(day.rate)}`}>{day.rate}%</span>
+                          <div className="text-[10px] text-muted-foreground mt-0.5">
+                            {day.completed}/{day.total}
+                            {day.checkedOut && <span className="ml-1">🚪</span>}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-xs text-muted-foreground/40">—</span>
+                      )}
+                    </TableCell>
+                  ))}
+                  <TableCell className={`text-center bg-muted/30 ${getRateBg(weekRate)}`}>
+                    {weekRate !== null ? (
+                      <div>
+                        <span className={`text-sm font-bold ${getRateColor(weekRate)}`}>{weekRate}%</span>
+                        <div className="text-[10px] text-muted-foreground mt-0.5">{weekCompleted}/{weekTotal}</div>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground/40">—</span>
+                    )}
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+
+      {/* Per-person weekly breakdown cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+        {userData.map(({ userId, user, days, weekRate }) => (
+          <Card key={userId} className="p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Avatar className="h-7 w-7">
+                  <AvatarFallback className="text-[9px] bg-primary text-primary-foreground font-bold">{user?.avatar || '?'}</AvatarFallback>
+                </Avatar>
+                <span className="text-sm font-bold">{user?.name_kr || '알 수 없음'}</span>
+              </div>
+              {weekRate !== null && (
+                <span className={`text-lg font-bold ${getRateColor(weekRate)}`}>{weekRate}%</span>
+              )}
+            </div>
+            <div className="flex gap-1">
+              {days.map((day, i) => {
+                const height = day.rate !== null ? Math.max(day.rate, 8) : 4;
+                return (
+                  <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                    <div className="w-full h-16 flex items-end">
+                      <div
+                        className={`w-full rounded-t transition-all ${
+                          day.rate === null ? 'bg-muted/40' :
+                          day.rate >= 80 ? 'bg-success' :
+                          day.rate >= 50 ? 'bg-warning' : 'bg-destructive'
+                        }`}
+                        style={{ height: `${height}%` }}
+                      />
+                    </div>
+                    <span className="text-[10px] text-muted-foreground">{format(weekDays[i], 'EEE', { locale: ko })}</span>
+                  </div>
+                );
+              })}
+            </div>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }
