@@ -603,24 +603,27 @@ export default function DailyWorkReport() {
       </div>
 
       {/* View mode tabs */}
-      {!loading && reports.length > 0 && (
-        <Tabs value={viewMode} onValueChange={v => setViewMode(v as any)}>
-          <TabsList>
-            <TabsTrigger value="timeline" className="gap-1.5 text-xs">
-              <LayoutList className="h-3.5 w-3.5" /> 타임라인
-            </TabsTrigger>
-            <TabsTrigger value="person" className="gap-1.5 text-xs">
-              <Users className="h-3.5 w-3.5" /> 담당자별
-            </TabsTrigger>
-            <TabsTrigger value="table" className="gap-1.5 text-xs">
-              <Table2 className="h-3.5 w-3.5" /> 업무 현황표
-            </TabsTrigger>
-          </TabsList>
-        </Tabs>
-      )}
+      <Tabs value={viewMode} onValueChange={v => setViewMode(v as any)}>
+        <TabsList>
+          <TabsTrigger value="timeline" className="gap-1.5 text-xs">
+            <LayoutList className="h-3.5 w-3.5" /> 타임라인
+          </TabsTrigger>
+          <TabsTrigger value="person" className="gap-1.5 text-xs">
+            <Users className="h-3.5 w-3.5" /> 담당자별
+          </TabsTrigger>
+          <TabsTrigger value="table" className="gap-1.5 text-xs">
+            <Table2 className="h-3.5 w-3.5" /> 업무 현황표
+          </TabsTrigger>
+          <TabsTrigger value="weekly" className="gap-1.5 text-xs">
+            <CalendarDays className="h-3.5 w-3.5" /> 주간 요약
+          </TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Reports */}
-      {loading ? (
+      {viewMode === 'weekly' ? (
+        <WeeklyView selectedDate={selectedDate} profiles={profiles} />
+      ) : loading ? (
         <div className="flex justify-center py-12">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
         </div>
