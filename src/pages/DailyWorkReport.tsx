@@ -724,7 +724,18 @@ export default function DailyWorkReport() {
     fetchData();
   };
 
-  const handleApprove = async (report: DailyReport, type: 'director' | 'ceo') => {
+  const handleUpdateTasks = async (report: DailyReport, updatedTasks: MorningTask[]) => {
+    const { error } = await supabase.from('daily_work_reports').update({
+      morning_tasks: updatedTasks as any,
+    }).eq('id', report.id);
+    if (error) {
+      toast({ title: '업무 수정 실패', variant: 'destructive' });
+    } else {
+      toast({ title: '✅ 업무가 수정되었습니다' });
+      fetchData();
+    }
+  };
+
     if (!profile) return;
     if (type === 'director') {
       await supabase.from('daily_work_reports').update({
