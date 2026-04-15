@@ -391,11 +391,12 @@ function ReportCard({
           {isOwner && !isCheckedOut && (
             <>
               <Separator />
-              <div className="bg-accent/50 border border-border rounded-lg p-4 text-center space-y-2">
-                <p className="text-sm font-medium">퇴근 전 업무 완료 여부를 체크하고 체크아웃하세요</p>
+              <div className="bg-orange-50 dark:bg-orange-950/30 border-2 border-orange-300 dark:border-orange-700 rounded-xl p-5 text-center space-y-3">
+                <div className="text-2xl">🚪</div>
+                <p className="text-base font-bold text-orange-700 dark:text-orange-400">퇴근 전 체크아웃을 잊지 마세요!</p>
                 <p className="text-xs text-muted-foreground">각 업무를 클릭하여 완료/미완료를 표시한 후 체크아웃 버튼을 누르세요</p>
-                <Button onClick={() => onToggleTask(report, '__checkout__')} variant="secondary">
-                  <LogOut className="h-4 w-4 mr-1" /> 체크아웃
+                <Button onClick={() => onToggleTask(report, '__checkout__')} size="lg" className="bg-orange-500 hover:bg-orange-600 text-white px-8 shadow-md">
+                  <LogOut className="h-5 w-5 mr-2" /> 체크아웃
                 </Button>
               </div>
             </>
@@ -546,31 +547,42 @@ export default function DailyWorkReport() {
             체크인으로 업무 시작 → 체크아웃으로 완료 여부 기록
           </p>
         </div>
-        {isToday && !myReport && (
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-1.5">
-                <LogIn className="h-4 w-4" /> 체크인
-              </Button>
-            </DialogTrigger>
-            <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
-              <DialogHeader>
-                <DialogTitle>☀️ 오늘의 체크인</DialogTitle>
-                <DialogDescription>오늘 수행할 업무를 가볍게 등록하세요.</DialogDescription>
-              </DialogHeader>
-              <div className="space-y-4">
-                <TaskCreateForm tasks={newTasks} setTasks={setNewTasks} />
-                <div>
-                  <Label className="text-sm font-medium">비고</Label>
-                  <Textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="참고 사항..." rows={2} />
-                </div>
-                <Button onClick={handleCreateReport} className="w-full" size="lg">
-                  <LogIn className="h-4 w-4 mr-1" /> 체크인
+        <div className="flex items-center gap-2">
+          {isToday && !myReport && (
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+              <DialogTrigger asChild>
+                <Button size="lg" className="gap-2 px-6 shadow-lg animate-pulse hover:animate-none bg-emerald-600 hover:bg-emerald-700 text-white">
+                  <LogIn className="h-5 w-5" /> ☀️ 체크인
                 </Button>
-              </div>
-            </DialogContent>
-          </Dialog>
-        )}
+              </DialogTrigger>
+              <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
+                <DialogHeader>
+                  <DialogTitle>☀️ 오늘의 체크인</DialogTitle>
+                  <DialogDescription>오늘 수행할 업무를 가볍게 등록하세요.</DialogDescription>
+                </DialogHeader>
+                <div className="space-y-4">
+                  <TaskCreateForm tasks={newTasks} setTasks={setNewTasks} />
+                  <div>
+                    <Label className="text-sm font-medium">비고</Label>
+                    <Textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="참고 사항..." rows={2} />
+                  </div>
+                  <Button onClick={handleCreateReport} className="w-full" size="lg">
+                    <LogIn className="h-4 w-4 mr-1" /> 체크인
+                  </Button>
+                </div>
+              </DialogContent>
+            </Dialog>
+          )}
+          {isToday && myReport && !myReport.completion_checked && (
+            <Button
+              size="lg"
+              className="gap-2 px-6 shadow-lg animate-pulse hover:animate-none bg-orange-500 hover:bg-orange-600 text-white"
+              onClick={() => handleToggleTask(myReport, '__checkout__')}
+            >
+              <LogOut className="h-5 w-5" /> 🚪 체크아웃
+            </Button>
+          )}
+        </div>
       </div>
 
       {/* Date navigation + summary */}
