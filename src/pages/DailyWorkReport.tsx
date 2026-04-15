@@ -4,7 +4,7 @@ import { ko } from 'date-fns/locale';
 import {
   Plus, CheckCircle2, Trash2, ChevronLeft, ChevronRight,
   Clock, CircleDot, MessageSquare, AlertTriangle, Flag, Send, ChevronDown, ChevronUp,
-  LogIn, LogOut, Users, LayoutList, Table2, CalendarDays, Calendar as CalendarIcon, BarChart3,
+  LogIn, LogOut, Users, LayoutList, Table2, CalendarDays, Calendar as CalendarIcon, BarChart3, Download,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -1456,7 +1456,56 @@ function YearlyView({ selectedDate, profiles, onNavigateToWeek }: { selectedDate
             <Button variant="ghost" size="sm" className="text-xs" onClick={() => setYearOffset(0)}>올해</Button>
           )}
         </div>
-        {isCurrentYear && <Badge variant="outline" className="text-xs">올해</Badge>}
+        <div className="flex items-center gap-2">
+          {isCurrentYear && <Badge variant="outline" className="text-xs">올해</Badge>}
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-xs gap-1"
+            onClick={() => {
+              const BOM = '\uFEFF';
+              const headers = ['담당자', '체크인 일수', '총 업무', '완료', '완료율',
+                ...teamWeeklyStats.map(ws => `W${ws.weekNum}`)];
+              const rows = userData.map(({ userId, user, totalTasks, completedTasks, rate, checkinDays }) => {
+                const userWeekRates = teamWeeklyStats.map(ws => {
+                  const weekDates = ws.days.map(d => format(d, 'yyyy-MM-dd'));
+                  const ur = yearReports.filter(r => r.user_id === userId && weekDates.includes(r.date));
+                  const t = ur.reduce((s, r) => s + r.morning_tasks.length, 0);
+                  const c = ur.reduce((s, r) => s + r.morning_tasks.filter(tk => tk.completed).length, 0);
+                  return t > 0 ? `${Math.round((c / t) * 100)}%` : '';
+                });
+                return [
+                  user?.name_kr || '알 수 없음',
+                  checkinDays,
+                  totalTasks,
+                  completedTasks,
+                  rate !== null ? `${rate}%` : '',
+                  ...userWeekRates,
+                ];
+              });
+              // Team total row
+              rows.push([
+                '팀 전체',
+                yearReports.length,
+                totalAll,
+                completedAll,
+                totalAll > 0 ? `${Math.round((completedAll / totalAll) * 100)}%` : '',
+                ...teamWeeklyStats.map(ws => ws.rate !== null ? `${ws.rate}%` : ''),
+              ]);
+              const csv = BOM + [headers, ...rows].map(r => r.map(c => `"${c}"`).join(',')).join('\n');
+              const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+              const url = URL.createObjectURL(blob);
+              const a = document.createElement('a');
+              a.href = url;
+              a.download = `연간요약_${year}.csv`;
+              a.click();
+              URL.revokeObjectURL(url);
+            }}
+          >
+            <Download className="h-3.5 w-3.5" />
+            CSV 내보내기
+          </Button>
+        </div>
       </div>
 
       {/* Summary stats */}
