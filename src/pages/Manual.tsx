@@ -281,6 +281,120 @@ export default function Manual() {
             </InfoBox>
           </Section>
 
+          {/* ── 일일업무보고 (NEW) ── */}
+          <Section id="daily-report" title="일일업무보고" icon={ClipboardCheck}>
+            <NewBadge />
+            <p>매일의 업무를 등록하고, 퇴근 전 완료 여부를 체크한 뒤 이사 확인과 대표이사 최종 승인까지 진행하는 <strong>4단계 일일업무보고 시스템</strong>입니다. 사이드바 메인 메뉴에서 접근합니다.</p>
+
+            <SubSection title="전체 플로우">
+              <div className="space-y-3 my-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center justify-center h-8 w-8 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold shrink-0">1</span>
+                  <div>
+                    <p className="text-sm font-semibold">☀️ 오전 체크인</p>
+                    <p className="text-xs text-muted-foreground">출근 후 금일 할 업무를 등록합니다</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center justify-center h-8 w-8 rounded-full bg-orange-100 text-orange-700 text-sm font-bold shrink-0">2</span>
+                  <div>
+                    <p className="text-sm font-semibold">🚪 퇴근 전 체크아웃</p>
+                    <p className="text-xs text-muted-foreground">각 업무의 완료 여부를 체크한 뒤 체크아웃합니다</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center justify-center h-8 w-8 rounded-full bg-purple-100 text-purple-700 text-sm font-bold shrink-0">3</span>
+                  <div>
+                    <p className="text-sm font-semibold">✅ 이사 확인</p>
+                    <p className="text-xs text-muted-foreground">이사(총괄이사)가 보고서를 확인하고 승인합니다</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
+                  <span className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-700 text-sm font-bold shrink-0">4</span>
+                  <div>
+                    <p className="text-sm font-semibold">🔖 대표이사 최종 승인</p>
+                    <p className="text-xs text-muted-foreground">대표이사가 직인을 날인하여 최종 승인합니다</p>
+                  </div>
+                </div>
+              </div>
+            </SubSection>
+
+            <SubSection title="1단계: 체크인 (업무 등록)">
+              <Steps items={[
+                '일일업무보고 페이지에서 초록색 "☀️ 체크인" 버튼을 클릭합니다.',
+                '체크인 다이얼로그에서 오늘 할 업무를 입력합니다.',
+                '각 업무에 카테고리(기획/디자인/R&D/마케팅/기타)와 우선순위(높음/보통/낮음)를 지정합니다.',
+                '"+" 버튼으로 업무를 추가하고, 필요 시 비고란에 메모를 작성합니다.',
+                '"체크인" 버튼을 클릭하면 오늘의 보고서가 생성되고, 등록한 업무가 업무 보드에도 자동 등록됩니다.',
+              ]} />
+              <InfoBox title="참고">
+                하루에 1회만 체크인 가능합니다. 이미 체크인한 경우 체크인 버튼 대신 체크아웃 버튼이 표시됩니다.
+              </InfoBox>
+            </SubSection>
+
+            <SubSection title="2단계: 체크아웃 (완료 체크)">
+              <Steps items={[
+                '퇴근 전, 보고서의 각 업무 항목을 클릭하여 완료(✅) 또는 미완료(⭕) 상태를 표시합니다.',
+                '모든 업무의 완료 여부를 확인한 뒤, 주황색 "🚪 체크아웃" 버튼을 클릭합니다.',
+                '확인 다이얼로그에서 "체크아웃"을 클릭하여 확정합니다.',
+                '체크아웃 후에는 업무 완료 상태를 변경할 수 없으므로 신중하게 확인하세요.',
+              ]} />
+              <InfoBox title="체크아웃 버튼 위치" variant="warning">
+                체크아웃 버튼은 두 곳에 표시됩니다: ① 페이지 상단 헤더 (주황색 펄스 버튼), ② 본인 보고서 카드 하단 (주황색 강조 영역). 본인이 작성한 보고서에만 표시됩니다.
+              </InfoBox>
+            </SubSection>
+
+            <SubSection title="3단계: 이사(총괄이사) 확인">
+              <p>체크아웃이 완료된 보고서에는 "승인 현황" 영역이 표시됩니다.</p>
+              <Steps items={[
+                '이사(총괄이사) 계정으로 로그인합니다.',
+                '일일업무보고 페이지에서 체크아웃 완료된 보고서를 확인합니다.',
+                '보고서 카드 하단의 승인 현황에서 보라색 "✅ 확인 승인" 버튼을 클릭합니다.',
+                '확인 승인 후 상태가 "이사 확인 완료"로 변경되며, 승인 시간이 기록됩니다.',
+              ]} />
+              <InfoBox title="참고">
+                이사 확인 버튼은 이사(총괄이사) 직급으로 로그인한 경우에만 표시됩니다. 체크아웃되지 않은 보고서에는 승인 현황이 표시되지 않습니다.
+              </InfoBox>
+            </SubSection>
+
+            <SubSection title="4단계: 대표이사 최종 승인 (직인)">
+              <Steps items={[
+                '대표이사 계정으로 로그인합니다.',
+                '일일업무보고 페이지에서 이사 확인이 완료된 보고서를 확인합니다.',
+                '승인 현황에서 파란색 "🔖 직인 승인" 버튼을 클릭합니다.',
+                '최종 승인 후 보고서에 직인 이미지가 표시되며, 상태가 "최종 승인"으로 변경됩니다.',
+              ]} />
+              <InfoBox title="승인 순서" variant="warning">
+                대표이사 승인은 반드시 이사 확인이 완료된 후에만 가능합니다. 이사 확인이 없는 보고서에는 대표이사 승인 버튼이 표시되지 않습니다.
+              </InfoBox>
+            </SubSection>
+
+            <SubSection title="보고서 상태 표시">
+              <div className="space-y-2 my-2">
+                {[
+                  { icon: '☀️', label: '체크인', desc: '업무가 등록된 상태 (초록색)', color: 'bg-emerald-100 text-emerald-700' },
+                  { icon: '🚪', label: '체크아웃 완료', desc: '퇴근 전 완료 체크가 끝난 상태 (주황색)', color: 'bg-orange-100 text-orange-700' },
+                  { icon: '✅', label: '이사 확인', desc: '이사가 보고서를 확인한 상태 (보라색)', color: 'bg-purple-100 text-purple-700' },
+                  { icon: '🔖', label: '최종 승인', desc: '대표이사 직인 승인 완료 (파란색)', color: 'bg-blue-100 text-blue-700' },
+                ].map(s => (
+                  <div key={s.label} className="flex items-center gap-3 p-2.5 rounded-lg border bg-muted/30">
+                    <Badge variant="outline" className={`text-xs ${s.color}`}>{s.icon} {s.label}</Badge>
+                    <span className="text-xs text-muted-foreground">{s.desc}</span>
+                  </div>
+                ))}
+              </div>
+            </SubSection>
+
+            <SubSection title="추가 기능">
+              <ul className="list-disc list-inside space-y-1">
+                <li><strong>이모지 리액션</strong> — 보고서에 이모지로 반응을 남길 수 있습니다</li>
+                <li><strong>댓글</strong> — 보고서 카드 하단에서 팀원과 소통할 수 있습니다</li>
+                <li><strong>보기 전환</strong> — 타임라인/인원별/테이블/주간/월간/연간 보기 지원</li>
+                <li><strong>보고서 삭제</strong> — 본인 보고서 또는 관리자가 삭제 가능 (확인 대화상자 포함)</li>
+              </ul>
+            </SubSection>
+          </Section>
+
           {/* ── 디자인 시안 (NEW) ── */}
           <Section id="design-reviews" title="디자인 시안" icon={Palette}>
             <NewBadge />
