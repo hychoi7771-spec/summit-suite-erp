@@ -521,7 +521,19 @@ export default function DailyWorkReport() {
     fetchData();
   };
 
-  const handleDelete = async (reportId: string) => {
+  const handleCheckoutConfirm = async () => {
+    if (!checkoutTargetReport) return;
+    await supabase.from('daily_work_reports').update({
+      completion_checked: true,
+      checked_at: new Date().toISOString(),
+    }).eq('id', checkoutTargetReport.id);
+    toast({ title: '🚪 체크아웃 완료! 수고하셨습니다.' });
+    setCheckoutConfirmOpen(false);
+    setCheckoutTargetReport(null);
+    fetchData();
+  };
+
+
     await supabase.from('daily_work_reports').delete().eq('id', reportId);
     toast({ title: '보고서 삭제 완료' });
     fetchData();
