@@ -421,6 +421,59 @@ function ReportCard({
             </>
           )}
 
+          {/* Director/CEO Approval Section */}
+          {isCheckedOut && (
+            <div className="space-y-3">
+              <Separator />
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">📋 승인 현황</p>
+              
+              {/* Director approval */}
+              <div className={`rounded-lg border-2 p-4 ${report.director_approved ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800' : 'border-dashed border-muted-foreground/30'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{report.director_approved ? '✅' : '⏳'}</span>
+                    <div>
+                      <p className="text-sm font-semibold">{report.director_approved ? '이사 확인 완료' : '이사 확인 대기'}</p>
+                      {report.director_approved && report.director_approved_at && (
+                        <p className="text-xs text-muted-foreground">{format(new Date(report.director_approved_at), 'yyyy-MM-dd HH:mm')}</p>
+                      )}
+                    </div>
+                  </div>
+                  {isDirector && !report.director_approved && (
+                    <Button onClick={() => onApprove(report, 'director')} className="bg-purple-600 hover:bg-purple-700 text-white">
+                      ✅ 확인 승인
+                    </Button>
+                  )}
+                </div>
+              </div>
+
+              {/* CEO approval */}
+              <div className={`rounded-lg border-2 p-4 ${report.ceo_approved ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800' : 'border-dashed border-muted-foreground/30'}`}>
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg">{report.ceo_approved ? '🔖' : '⏳'}</span>
+                    <div>
+                      <p className="text-sm font-semibold">{report.ceo_approved ? '대표 최종 승인' : '대표 승인 대기'}</p>
+                      {report.ceo_approved && report.ceo_approved_at && (
+                        <p className="text-xs text-muted-foreground">{format(new Date(report.ceo_approved_at), 'yyyy-MM-dd HH:mm')}</p>
+                      )}
+                    </div>
+                  </div>
+                  {isCeo && report.director_approved && !report.ceo_approved && (
+                    <Button onClick={() => onApprove(report, 'ceo')} className="bg-blue-600 hover:bg-blue-700 text-white">
+                      🔖 직인 승인
+                    </Button>
+                  )}
+                </div>
+                {report.ceo_approved && (
+                  <div className="mt-3 flex justify-end">
+                    <img src="/src/assets/stamp.png" alt="직인" className="h-16 w-16 opacity-80" />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <Separator />
 
           {/* Comments section - all users can comment */}
@@ -545,6 +598,26 @@ export default function DailyWorkReport() {
     toast({ title: '🚪 체크아웃 완료! 수고하셨습니다.' });
     setCheckoutConfirmOpen(false);
     setCheckoutTargetReport(null);
+    fetchData();
+  };
+
+  const handleApprove = async (report: DailyReport, type: 'director' | 'ceo') => {
+    if (!profile) return;
+    if (type === 'director') {
+      await supabase.from('daily_work_reports').update({
+        director_approved: true,
+        director_approved_at: new Date().toISOString(),
+        director_approved_by: profile.id,
+      }).eq('id', report.id);
+      toast({ title: '✅ 이사 확인 완료' });
+    } else {
+      await supabase.from('daily_work_reports').update({
+        ceo_approved: true,
+        ceo_approved_at: new Date().toISOString(),
+        ceo_approved_by: profile.id,
+      }).eq('id', report.id);
+      toast({ title: '🔖 대표 직인 승인 완료' });
+    }
     fetchData();
   };
 
@@ -692,8 +765,10 @@ export default function DailyWorkReport() {
               profile={profile}
               profiles={profiles}
               isAdmin={isAdmin}
+              userRole={userRole}
               onToggleTask={handleToggleTask}
               onDelete={handleDelete}
+              onApprove={handleApprove}
             />
           ))}
         </div>
