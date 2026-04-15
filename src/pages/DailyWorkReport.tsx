@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
+import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek, addWeeks, subWeeks, isSameWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import {
   Plus, CheckCircle2, Trash2, ChevronLeft, ChevronRight,
@@ -855,11 +855,13 @@ function TaskTableView({ reports, profiles }: { reports: DailyReport[]; profiles
 function WeeklyView({ selectedDate, profiles }: { selectedDate: string; profiles: any[] }) {
   const [weekReports, setWeekReports] = useState<DailyReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  const baseDate = new Date(selectedDate);
-  const weekStart = startOfWeek(baseDate, { weekStartsOn: 1 }); // Monday
-  const weekEnd = endOfWeek(baseDate, { weekStartsOn: 1 }); // Sunday
-  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd }).slice(0, 5); // Mon-Fri
+  const baseDate = addWeeks(new Date(selectedDate), weekOffset);
+  const weekStart = startOfWeek(baseDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(baseDate, { weekStartsOn: 1 });
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd }).slice(0, 5);
+  const isCurrentWeek = isSameWeek(new Date(), baseDate, { weekStartsOn: 1 });
 
   useEffect(() => {
     const fetchWeek = async () => {
@@ -876,7 +878,7 @@ function WeeklyView({ selectedDate, profiles }: { selectedDate: string; profiles
       setLoading(false);
     };
     fetchWeek();
-  }, [selectedDate]);
+  }, [selectedDate, weekOffset]);
 
   // Get unique users who have reports this week
   const activeUserIds = useMemo(() => {
