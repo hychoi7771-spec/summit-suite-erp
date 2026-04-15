@@ -259,7 +259,7 @@ function CommentsSection({ reportId, profiles, currentProfile, isAdmin }: {
 
 function ReportCard({
   report, profile: currentProfile, profiles, isAdmin, userRole,
-  onToggleTask, onDelete, onApprove,
+  onToggleTask, onDelete, onApprove, onUpdateTasks,
 }: {
   report: DailyReport;
   profile: any;
@@ -269,8 +269,19 @@ function ReportCard({
   onToggleTask: (report: DailyReport, taskId: string) => void;
   onDelete: (id: string) => void;
   onApprove: (report: DailyReport, type: 'director' | 'ceo') => void;
+  onUpdateTasks: (report: DailyReport, tasks: MorningTask[]) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
+  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+  const [addingTask, setAddingTask] = useState(false);
+  const [newTaskText, setNewTaskText] = useState('');
+  const [newTaskDetail, setNewTaskDetail] = useState('');
+  const [newTaskCategory, setNewTaskCategory] = useState('기타');
+  const [newTaskPriority, setNewTaskPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [editText, setEditText] = useState('');
+  const [editDetail, setEditDetail] = useState('');
+  const [editCategory, setEditCategory] = useState('');
+  const [editPriority, setEditPriority] = useState<'high' | 'medium' | 'low'>('medium');
 
   const user = profiles.find(p => p.id === report.user_id);
   const isOwner = report.user_id === currentProfile?.id;
