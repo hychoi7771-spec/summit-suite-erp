@@ -16,6 +16,7 @@ const sections = [
   { id: 'projects', label: '프로젝트 관리', icon: FolderKanban },
   { id: 'tasks', label: '업무관리', icon: ListTodo },
   { id: 'gantt', label: '간트차트', icon: GanttChartSquare },
+  { id: 'daily-report', label: '일일업무보고', icon: ClipboardCheck },
   { id: 'design-reviews', label: '디자인 시안', icon: Palette },
   { id: 'calendar', label: '캘린더', icon: CalendarDays },
   { id: 'library', label: '파일/자료실', icon: FolderArchive },
