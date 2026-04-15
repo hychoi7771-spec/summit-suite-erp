@@ -1680,4 +1680,3 @@ function YearlyView({ selectedDate, profiles, onNavigateToWeek }: { selectedDate
     </div>
   );
 }
-}
