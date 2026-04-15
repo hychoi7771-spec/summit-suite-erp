@@ -374,6 +374,44 @@ function ReportCard({
               <div className="space-y-2 ml-1">
                 {tasks.map(task => {
                   const prio = PRIORITY_CONFIG[task.priority || 'medium'];
+                  const isEditing = editingTaskId === task.id;
+
+                  if (isEditing && isOwner && !isCheckedOut) {
+                    return (
+                      <div key={task.id} className="rounded-lg border-2 border-primary/40 p-3 space-y-2 bg-primary/5">
+                        <Input value={editText} onChange={e => setEditText(e.target.value)} placeholder="업무 제목" className="font-medium text-sm" />
+                        <div className="grid grid-cols-2 gap-2">
+                          <Select value={editCategory} onValueChange={setEditCategory}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                            </SelectContent>
+                          </Select>
+                          <Select value={editPriority} onValueChange={v => setEditPriority(v as any)}>
+                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="high">🔴 긴급</SelectItem>
+                              <SelectItem value="medium">🟡 보통</SelectItem>
+                              <SelectItem value="low">🟢 낮음</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <Textarea value={editDetail} onChange={e => setEditDetail(e.target.value)} placeholder="세부 내용" rows={2} className="text-sm" />
+                        <div className="flex gap-2 justify-end">
+                          <Button variant="ghost" size="sm" onClick={() => setEditingTaskId(null)}>취소</Button>
+                          <Button size="sm" onClick={() => {
+                            if (!editText.trim()) return;
+                            const updated = report.morning_tasks.map(t =>
+                              t.id === task.id ? { ...t, text: editText.trim(), detail: editDetail.trim(), category: editCategory, priority: editPriority } : t
+                            );
+                            onUpdateTasks(report, updated);
+                            setEditingTaskId(null);
+                          }}>저장</Button>
+                        </div>
+                      </div>
+                    );
+                  }
+
                   return (
                     <div
                       key={task.id}
@@ -403,6 +441,27 @@ function ReportCard({
                             </p>
                           )}
                         </div>
+                        {isOwner && !isCheckedOut && (
+                          <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
+                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                              setEditingTaskId(task.id);
+                              setEditText(task.text);
+                              setEditDetail(task.detail || '');
+                              setEditCategory(task.category || '기타');
+                              setEditPriority(task.priority || 'medium');
+                            }}>
+                              <span className="text-xs">✏️</span>
+                            </Button>
+                            {report.morning_tasks.length > 1 && (
+                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
+                                const updated = report.morning_tasks.filter(t => t.id !== task.id);
+                                onUpdateTasks(report, updated);
+                              }}>
+                                <Trash2 className="h-3 w-3 text-destructive" />
+                              </Button>
+                            )}
+                          </div>
+                        )}
                       </div>
                     </div>
                   );
@@ -410,6 +469,58 @@ function ReportCard({
               </div>
             </div>
           ))}
+
+          {/* Add task button for owner before checkout */}
+          {isOwner && !isCheckedOut && (
+            <>
+              {addingTask ? (
+                <div className="rounded-lg border-2 border-dashed border-primary/30 p-4 space-y-3 bg-primary/5">
+                  <Input value={newTaskText} onChange={e => setNewTaskText(e.target.value)} placeholder="업무 제목" className="font-medium text-sm" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Select value={newTaskCategory} onValueChange={setNewTaskCategory}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
+                      </SelectContent>
+                    </Select>
+                    <Select value={newTaskPriority} onValueChange={v => setNewTaskPriority(v as any)}>
+                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="high">🔴 긴급</SelectItem>
+                        <SelectItem value="medium">🟡 보통</SelectItem>
+                        <SelectItem value="low">🟢 낮음</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Textarea value={newTaskDetail} onChange={e => setNewTaskDetail(e.target.value)} placeholder="세부 내용" rows={2} className="text-sm" />
+                  <div className="flex gap-2 justify-end">
+                    <Button variant="ghost" size="sm" onClick={() => { setAddingTask(false); setNewTaskText(''); setNewTaskDetail(''); }}>취소</Button>
+                    <Button size="sm" onClick={() => {
+                      if (!newTaskText.trim()) return;
+                      const newTask: MorningTask = {
+                        id: `task-${Date.now()}`,
+                        text: newTaskText.trim(),
+                        detail: newTaskDetail.trim(),
+                        category: newTaskCategory,
+                        priority: newTaskPriority,
+                        completed: false,
+                      };
+                      onUpdateTasks(report, [...report.morning_tasks, newTask]);
+                      setAddingTask(false);
+                      setNewTaskText('');
+                      setNewTaskDetail('');
+                      setNewTaskCategory('기타');
+                      setNewTaskPriority('medium');
+                    }}>추가</Button>
+                  </div>
+                </div>
+              ) : (
+                <Button variant="outline" size="sm" className="w-full" onClick={() => setAddingTask(true)}>
+                  <Plus className="h-3 w-3 mr-1" /> 업무 추가
+                </Button>
+              )}
+            </>
+          )}
 
           {report.notes && (
             <div className="bg-muted/50 rounded-lg p-3">
@@ -781,6 +892,7 @@ export default function DailyWorkReport() {
               onToggleTask={handleToggleTask}
               onDelete={handleDelete}
               onApprove={handleApprove}
+              onUpdateTasks={handleUpdateTasks}
             />
           ))}
         </div>
