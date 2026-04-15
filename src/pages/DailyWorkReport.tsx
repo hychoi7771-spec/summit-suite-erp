@@ -736,6 +736,7 @@ export default function DailyWorkReport() {
     }
   };
 
+  const handleApprove = async (report: DailyReport, type: 'director' | 'ceo') => {
     if (!profile) return;
     if (type === 'director') {
       await supabase.from('daily_work_reports').update({
