@@ -131,6 +131,38 @@ export default function Manual() {
             <InfoBox title="참고" variant="warning">
               계정은 관리자(대표이사, 이사)만 생성할 수 있습니다. 계정이 없는 경우 관리자에게 요청하세요.
             </InfoBox>
+            <SubSection title="팀원 계정 정보">
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm border-collapse">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-2 pr-4 font-semibold">이름</th>
+                      <th className="text-left py-2 pr-4 font-semibold">직급</th>
+                      <th className="text-left py-2 pr-4 font-semibold">아이디</th>
+                      <th className="text-left py-2 font-semibold">비밀번호</th>
+                    </tr>
+                  </thead>
+                  <tbody className="text-muted-foreground">
+                    {[
+                      { name: '이기태', role: '부장', id: 'gitae', pw: 'admin123' },
+                      { name: '여인혜', role: '차장', id: 'inhye', pw: 'admin123' },
+                      { name: '박가영', role: '대리', id: 'gayoung', pw: 'admin123' },
+                      { name: '박진아', role: '사원', id: 'jina', pw: 'admin123' },
+                    ].map((u, i) => (
+                      <tr key={u.id} className={i < 3 ? 'border-b border-border/50' : ''}>
+                        <td className="py-2 pr-4 font-medium text-foreground">{u.name}</td>
+                        <td className="py-2 pr-4">{u.role}</td>
+                        <td className="py-2 pr-4"><code className="bg-muted px-1.5 py-0.5 rounded text-xs">{u.id}</code></td>
+                        <td className="py-2"><code className="bg-muted px-1.5 py-0.5 rounded text-xs">{u.pw}</code></td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              <InfoBox title="보안 안내" variant="warning">
+                초기 비밀번호는 로그인 후 변경하는 것을 권장합니다. 대표이사 및 이사 계정 정보는 보안상 별도로 관리됩니다.
+              </InfoBox>
+            </SubSection>
           </Section>
 
           {/* ── 대시보드 ── */}
