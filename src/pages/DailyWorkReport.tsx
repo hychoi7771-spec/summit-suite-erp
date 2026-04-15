@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addWeeks, subWeeks, addMonths, subMonths, isSameWeek, isSameMonth, getDay } from 'date-fns';
+import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addWeeks, subWeeks, addMonths, subMonths, isSameWeek, isSameMonth, getDay, getWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import {
   Plus, CheckCircle2, Trash2, ChevronLeft, ChevronRight,
@@ -950,6 +950,7 @@ function WeeklyView({ selectedDate, profiles }: { selectedDate: string; profiles
           </Button>
           <div className="text-center">
             <p className="text-sm font-semibold">
+              <span className="text-primary mr-1.5">W{getWeek(weekStart, { weekStartsOn: 1 })}</span>
               {format(weekStart, 'M월 d일', { locale: ko })} ~ {format(weekDays[4], 'M월 d일', { locale: ko })}
             </p>
           </div>
@@ -1225,14 +1226,17 @@ function MonthlyView({ selectedDate, profiles }: { selectedDate: string; profile
                 <TableHeader>
                   <TableRow>
                     <TableHead className="w-[120px] sticky left-0 bg-background z-10">담당자</TableHead>
-                    {weeks.map(([weekKey, days], i) => (
-                      <TableHead key={weekKey} className="text-center min-w-[90px]">
-                        <div className="text-xs">{i + 1}주차</div>
-                        <div className="text-[10px] font-normal text-muted-foreground">
-                          {format(days[0], 'M/d')}~{format(days[days.length - 1], 'M/d')}
-                        </div>
-                      </TableHead>
-                    ))}
+                    {weeks.map(([weekKey, days]) => {
+                      const wNum = getWeek(days[0], { weekStartsOn: 1 });
+                      return (
+                        <TableHead key={weekKey} className="text-center min-w-[90px]">
+                          <div className="text-xs font-bold text-primary">W{wNum}</div>
+                          <div className="text-[10px] font-normal text-muted-foreground">
+                            {format(days[0], 'M/d')}~{format(days[days.length - 1], 'M/d')}
+                          </div>
+                        </TableHead>
+                      );
+                    })}
                     <TableHead className="text-center min-w-[80px] bg-muted/30">월간</TableHead>
                   </TableRow>
                 </TableHeader>
