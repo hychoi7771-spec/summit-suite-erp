@@ -1490,10 +1490,11 @@ function YearlyView({ selectedDate, profiles, onNavigateToWeek }: { selectedDate
           {teamWeeklyStats.map(ws => (
             <div
               key={ws.weekNum}
-              className={`aspect-square rounded-sm ${getHeatColor(ws.rate)} relative group cursor-default transition-transform hover:scale-150 hover:z-10 ${
+              onClick={() => onNavigateToWeek(format(ws.start, 'yyyy-MM-dd'))}
+              className={`aspect-square rounded-sm ${getHeatColor(ws.rate)} relative group cursor-pointer transition-transform hover:scale-150 hover:z-10 ${
                 isCurrentYear && ws.weekNum === currentWeekNum ? 'ring-2 ring-primary ring-offset-1' : ''
               }`}
-              title={`W${ws.weekNum}: ${ws.rate !== null ? ws.rate + '%' : '데이터 없음'}`}
+              title={`W${ws.weekNum}: ${ws.rate !== null ? ws.rate + '%' : '데이터 없음'} — 클릭하여 주간 요약으로 이동`}
             >
               <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-20">
                 <div className="bg-popover text-popover-foreground border rounded-md shadow-md px-2 py-1 text-[10px] whitespace-nowrap">
