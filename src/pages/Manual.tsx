@@ -242,22 +242,7 @@ export default function Manual() {
             </SubSection>
 
             <SubSection title="데일리 로그">
-              <p>매일의 업무 기록을 3가지 섹션으로 작성합니다.</p>
-              <div className="space-y-2 my-3">
-                <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-success shrink-0" />
-                  <span className="text-sm"><strong>완료한 업무</strong> — 오늘 완료한 작업 기록</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-info shrink-0" />
-                  <span className="text-sm"><strong>예정된 업무</strong> — 내일 또는 향후 계획</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="h-3 w-3 rounded-full bg-warning shrink-0" />
-                  <span className="text-sm"><strong>이슈 및 요청사항</strong> — 장애 요소, 도움 요청 등</span>
-                </div>
-              </div>
-              <p className="text-sm text-muted-foreground">목록 / 캘린더 보기를 전환할 수 있으며, 본인 로그는 수정 및 삭제가 가능합니다.</p>
+              <p>매일의 업무 기록을 작성합니다. 상세 내용은 <strong>일일업무보고</strong> 섹션을 참고하세요.</p>
             </SubSection>
           </Section>
 
