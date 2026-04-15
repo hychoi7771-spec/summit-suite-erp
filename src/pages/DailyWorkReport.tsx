@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
+import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek, addWeeks, subWeeks, isSameWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import {
   Plus, CheckCircle2, Trash2, ChevronLeft, ChevronRight,
@@ -855,11 +855,13 @@ function TaskTableView({ reports, profiles }: { reports: DailyReport[]; profiles
 function WeeklyView({ selectedDate, profiles }: { selectedDate: string; profiles: any[] }) {
   const [weekReports, setWeekReports] = useState<DailyReport[]>([]);
   const [loading, setLoading] = useState(true);
+  const [weekOffset, setWeekOffset] = useState(0);
 
-  const baseDate = new Date(selectedDate);
-  const weekStart = startOfWeek(baseDate, { weekStartsOn: 1 }); // Monday
-  const weekEnd = endOfWeek(baseDate, { weekStartsOn: 1 }); // Sunday
-  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd }).slice(0, 5); // Mon-Fri
+  const baseDate = addWeeks(new Date(selectedDate), weekOffset);
+  const weekStart = startOfWeek(baseDate, { weekStartsOn: 1 });
+  const weekEnd = endOfWeek(baseDate, { weekStartsOn: 1 });
+  const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd }).slice(0, 5);
+  const isCurrentWeek = isSameWeek(new Date(), baseDate, { weekStartsOn: 1 });
 
   useEffect(() => {
     const fetchWeek = async () => {
@@ -876,7 +878,7 @@ function WeeklyView({ selectedDate, profiles }: { selectedDate: string; profiles
       setLoading(false);
     };
     fetchWeek();
-  }, [selectedDate]);
+  }, [selectedDate, weekOffset]);
 
   // Get unique users who have reports this week
   const activeUserIds = useMemo(() => {
@@ -936,8 +938,26 @@ function WeeklyView({ selectedDate, profiles }: { selectedDate: string; profiles
 
   return (
     <div className="space-y-4">
-      <div className="text-sm text-muted-foreground">
-        {format(weekStart, 'M월 d일', { locale: ko })} ~ {format(weekDays[4], 'M월 d일 (EEE)', { locale: ko })} 주간 요약
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset(o => o - 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <div className="text-center">
+            <p className="text-sm font-semibold">
+              {format(weekStart, 'M월 d일', { locale: ko })} ~ {format(weekDays[4], 'M월 d일', { locale: ko })}
+            </p>
+          </div>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setWeekOffset(o => o + 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          {!isCurrentWeek && (
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => setWeekOffset(0)}>
+              이번 주
+            </Button>
+          )}
+        </div>
+        {isCurrentWeek && <Badge variant="outline" className="text-xs">이번 주</Badge>}
       </div>
 
       <Card>
