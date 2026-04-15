@@ -1,10 +1,10 @@
-import { useState, useEffect } from 'react';
-import { format } from 'date-fns';
+import { useState, useEffect, useMemo } from 'react';
+import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import {
   Plus, CheckCircle2, Trash2, ChevronLeft, ChevronRight,
   Clock, CircleDot, MessageSquare, AlertTriangle, Flag, Send, ChevronDown, ChevronUp,
-  LogIn, LogOut,
+  LogIn, LogOut, Users, LayoutList, Table2,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
