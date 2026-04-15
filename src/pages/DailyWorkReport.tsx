@@ -1,10 +1,10 @@
 import { useState, useEffect, useMemo } from 'react';
-import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, addWeeks, subWeeks, addMonths, subMonths, isSameWeek, isSameMonth, getDay, getWeek } from 'date-fns';
+import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addWeeks, subWeeks, addMonths, subMonths, addYears, subYears, isSameWeek, isSameMonth, isSameYear, getDay, getWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import {
   Plus, CheckCircle2, Trash2, ChevronLeft, ChevronRight,
   Clock, CircleDot, MessageSquare, AlertTriangle, Flag, Send, ChevronDown, ChevronUp,
-  LogIn, LogOut, Users, LayoutList, Table2, CalendarDays, Calendar as CalendarIcon,
+  LogIn, LogOut, Users, LayoutList, Table2, CalendarDays, Calendar as CalendarIcon, BarChart3,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -423,7 +423,7 @@ export default function DailyWorkReport() {
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [viewMode, setViewMode] = useState<'timeline' | 'person' | 'table' | 'weekly' | 'monthly'>('timeline');
+  const [viewMode, setViewMode] = useState<'timeline' | 'person' | 'table' | 'weekly' | 'monthly' | 'yearly'>('timeline');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newTasks, setNewTasks] = useState<Omit<MorningTask, 'id' | 'completed'>[]>([
@@ -620,11 +620,16 @@ export default function DailyWorkReport() {
           <TabsTrigger value="monthly" className="gap-1.5 text-xs">
             <CalendarIcon className="h-3.5 w-3.5" /> 월간 요약
           </TabsTrigger>
+          <TabsTrigger value="yearly" className="gap-1.5 text-xs">
+            <BarChart3 className="h-3.5 w-3.5" /> 연간 요약
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
       {/* Reports */}
-      {viewMode === 'monthly' ? (
+      {viewMode === 'yearly' ? (
+        <YearlyView selectedDate={selectedDate} profiles={profiles} />
+      ) : viewMode === 'monthly' ? (
         <MonthlyView selectedDate={selectedDate} profiles={profiles} />
       ) : viewMode === 'weekly' ? (
         <WeeklyView selectedDate={selectedDate} profiles={profiles} />
