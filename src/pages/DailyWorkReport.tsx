@@ -1333,3 +1333,256 @@ function MonthlyView({ selectedDate, profiles }: { selectedDate: string; profile
     </div>
   );
 }
+
+// --- Yearly Summary View (W1~W52) ---
+function YearlyView({ selectedDate, profiles }: { selectedDate: string; profiles: any[] }) {
+  const [yearReports, setYearReports] = useState<DailyReport[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [yearOffset, setYearOffset] = useState(0);
+
+  const baseDate = addYears(new Date(selectedDate), yearOffset);
+  const year = baseDate.getFullYear();
+  const yearStart = startOfYear(baseDate);
+  const yearEnd = endOfYear(baseDate);
+  const isCurrentYear = isSameYear(new Date(), baseDate);
+
+  // Build all weeks of the year (Mon-based)
+  const allWeeks = useMemo(() => {
+    const weeks: { weekNum: number; start: Date; end: Date; days: Date[] }[] = [];
+    let current = startOfWeek(yearStart, { weekStartsOn: 1 });
+    const seen = new Set<number>();
+
+    while (current <= yearEnd) {
+      const wEnd = endOfWeek(current, { weekStartsOn: 1 });
+      const weekDays = eachDayOfInterval({ start: current, end: wEnd }).filter(d => {
+        const day = getDay(d);
+        return day >= 1 && day <= 5 && d.getFullYear() === year;
+      });
+      if (weekDays.length > 0) {
+        const wNum = getWeek(current, { weekStartsOn: 1 });
+        if (!seen.has(wNum)) {
+          seen.add(wNum);
+          weeks.push({ weekNum: wNum, start: weekDays[0], end: weekDays[weekDays.length - 1], days: weekDays });
+        }
+      }
+      current = addWeeks(current, 1);
+    }
+    return weeks;
+  }, [year]);
+
+  useEffect(() => {
+    const fetchYear = async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from('daily_work_reports')
+        .select('*')
+        .gte('date', format(yearStart, 'yyyy-MM-dd'))
+        .lte('date', format(yearEnd, 'yyyy-MM-dd'))
+        .order('created_at', { ascending: true });
+      setYearReports((data as any[]) || []);
+      setLoading(false);
+    };
+    fetchYear();
+  }, [selectedDate, yearOffset]);
+
+  const activeUserIds = useMemo(() => Array.from(new Set(yearReports.map(r => r.user_id))), [yearReports]);
+
+  // Team-level weekly stats
+  const teamWeeklyStats = useMemo(() => {
+    return allWeeks.map(week => {
+      const weekDates = week.days.map(d => format(d, 'yyyy-MM-dd'));
+      const weekReports = yearReports.filter(r => weekDates.includes(r.date));
+      const total = weekReports.reduce((s, r) => s + r.morning_tasks.length, 0);
+      const completed = weekReports.reduce((s, r) => s + r.morning_tasks.filter(t => t.completed).length, 0);
+      const rate = total > 0 ? Math.round((completed / total) * 100) : null;
+      const checkins = weekReports.length;
+      return { ...week, total, completed, rate, checkins };
+    });
+  }, [allWeeks, yearReports]);
+
+  // Per-user yearly stats
+  const userData = useMemo(() => {
+    return activeUserIds.map(userId => {
+      const user = profiles.find(p => p.id === userId);
+      const userReports = yearReports.filter(r => r.user_id === userId);
+      const totalTasks = userReports.reduce((s, r) => s + r.morning_tasks.length, 0);
+      const completedTasks = userReports.reduce((s, r) => s + r.morning_tasks.filter(t => t.completed).length, 0);
+      const rate = totalTasks > 0 ? Math.round((completedTasks / totalTasks) * 100) : null;
+      const checkinDays = userReports.length;
+      return { userId, user, totalTasks, completedTasks, rate, checkinDays };
+    });
+  }, [activeUserIds, yearReports, profiles]);
+
+  const getRateColor = (rate: number | null) => {
+    if (rate === null) return 'text-muted-foreground/40';
+    if (rate >= 80) return 'text-success';
+    if (rate >= 50) return 'text-warning';
+    return 'text-destructive';
+  };
+
+  const getHeatColor = (rate: number | null) => {
+    if (rate === null) return 'bg-muted/20';
+    if (rate >= 80) return 'bg-success';
+    if (rate >= 50) return 'bg-warning';
+    if (rate > 0) return 'bg-destructive';
+    return 'bg-muted/40';
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  const totalAll = yearReports.reduce((s, r) => s + r.morning_tasks.length, 0);
+  const completedAll = yearReports.reduce((s, r) => s + r.morning_tasks.filter(t => t.completed).length, 0);
+  const currentWeekNum = getWeek(new Date(), { weekStartsOn: 1 });
+
+  return (
+    <div className="space-y-4">
+      {/* Year navigation */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setYearOffset(o => o - 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <p className="text-sm font-semibold">{year}년 연간 요약</p>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setYearOffset(o => o + 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          {!isCurrentYear && (
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => setYearOffset(0)}>올해</Button>
+          )}
+        </div>
+        {isCurrentYear && <Badge variant="outline" className="text-xs">올해</Badge>}
+      </div>
+
+      {/* Summary stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3">
+        <Card className="p-3">
+          <p className="text-xs text-muted-foreground">참여 인원</p>
+          <p className="text-xl font-bold">{activeUserIds.length}명</p>
+        </Card>
+        <Card className="p-3">
+          <p className="text-xs text-muted-foreground">총 업무</p>
+          <p className="text-xl font-bold">{totalAll}</p>
+        </Card>
+        <Card className="p-3">
+          <p className="text-xs text-muted-foreground">완료</p>
+          <p className="text-xl font-bold text-success">{completedAll}</p>
+        </Card>
+        <Card className="p-3">
+          <p className="text-xs text-muted-foreground">완료율</p>
+          <p className="text-xl font-bold text-primary">{totalAll > 0 ? Math.round((completedAll / totalAll) * 100) : 0}%</p>
+        </Card>
+        <Card className="p-3">
+          <p className="text-xs text-muted-foreground">총 체크인</p>
+          <p className="text-xl font-bold">{yearReports.length}회</p>
+        </Card>
+      </div>
+
+      {/* Heatmap - Team weekly completion rate */}
+      <Card className="p-4">
+        <p className="text-xs font-semibold text-muted-foreground mb-3">📊 주차별 팀 완료율 히트맵 (W1~W{allWeeks.length})</p>
+        <div className="grid grid-cols-13 sm:grid-cols-26 gap-1">
+          {teamWeeklyStats.map(ws => (
+            <div
+              key={ws.weekNum}
+              className={`aspect-square rounded-sm ${getHeatColor(ws.rate)} relative group cursor-default transition-transform hover:scale-150 hover:z-10 ${
+                isCurrentYear && ws.weekNum === currentWeekNum ? 'ring-2 ring-primary ring-offset-1' : ''
+              }`}
+              title={`W${ws.weekNum}: ${ws.rate !== null ? ws.rate + '%' : '데이터 없음'}`}
+            >
+              <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-1 hidden group-hover:block z-20">
+                <div className="bg-popover text-popover-foreground border rounded-md shadow-md px-2 py-1 text-[10px] whitespace-nowrap">
+                  <div className="font-bold">W{ws.weekNum}</div>
+                  <div>{format(ws.start, 'M/d')}~{format(ws.end, 'M/d')}</div>
+                  {ws.rate !== null ? (
+                    <div>{ws.completed}/{ws.total} ({ws.rate}%) · {ws.checkins}명</div>
+                  ) : (
+                    <div>데이터 없음</div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="flex items-center gap-3 mt-3 text-[10px] text-muted-foreground">
+          <span>범례:</span>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-muted/20" /> 없음</div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-destructive" /> ~49%</div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-warning" /> 50~79%</div>
+          <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm bg-success" /> 80%+</div>
+          {isCurrentYear && <div className="flex items-center gap-1"><div className="w-3 h-3 rounded-sm ring-2 ring-primary" /> 이번 주</div>}
+        </div>
+      </Card>
+
+      {/* Per-person yearly summary */}
+      <Card>
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead className="w-[140px] sticky left-0 bg-background z-10">담당자</TableHead>
+                <TableHead className="text-center w-[80px]">체크인 일수</TableHead>
+                <TableHead className="text-center w-[80px]">총 업무</TableHead>
+                <TableHead className="text-center w-[80px]">완료</TableHead>
+                <TableHead className="text-center w-[80px]">완료율</TableHead>
+                <TableHead className="text-center min-w-[200px]">연간 추이</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {userData.map(({ userId, user, totalTasks, completedTasks, rate, checkinDays }) => {
+                // Per-user weekly mini sparkline
+                const userWeekRates = teamWeeklyStats.map(ws => {
+                  const weekDates = ws.days.map(d => format(d, 'yyyy-MM-dd'));
+                  const ur = yearReports.filter(r => r.user_id === userId && weekDates.includes(r.date));
+                  const t = ur.reduce((s, r) => s + r.morning_tasks.length, 0);
+                  const c = ur.reduce((s, r) => s + r.morning_tasks.filter(tk => tk.completed).length, 0);
+                  return t > 0 ? Math.round((c / t) * 100) : null;
+                });
+
+                return (
+                  <TableRow key={userId}>
+                    <TableCell className="sticky left-0 bg-background z-10">
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-6 w-6">
+                          <AvatarFallback className="text-[9px] bg-primary text-primary-foreground font-bold">{user?.avatar || '?'}</AvatarFallback>
+                        </Avatar>
+                        <span className="text-xs font-medium">{user?.name_kr || '알 수 없음'}</span>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center text-sm font-medium">{checkinDays}일</TableCell>
+                    <TableCell className="text-center text-sm">{totalTasks}</TableCell>
+                    <TableCell className="text-center text-sm text-success font-medium">{completedTasks}</TableCell>
+                    <TableCell className={`text-center text-sm font-bold ${getRateColor(rate)}`}>
+                      {rate !== null ? `${rate}%` : '—'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-end gap-px h-6">
+                        {userWeekRates.map((r, i) => (
+                          <div
+                            key={i}
+                            className={`flex-1 rounded-t-sm min-w-[2px] ${
+                              r === null ? 'bg-muted/20' :
+                              r >= 80 ? 'bg-success' :
+                              r >= 50 ? 'bg-warning' : 'bg-destructive'
+                            }`}
+                            style={{ height: r !== null ? `${Math.max(r, 10)}%` : '8%' }}
+                            title={`W${teamWeeklyStats[i]?.weekNum}: ${r !== null ? r + '%' : '—'}`}
+                          />
+                        ))}
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+            </TableBody>
+          </Table>
+        </div>
+      </Card>
+    </div>
+  );
+}
