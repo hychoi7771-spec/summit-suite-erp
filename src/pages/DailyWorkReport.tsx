@@ -19,6 +19,10 @@ import { Progress } from '@/components/ui/progress';
 import {
   Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -431,6 +435,8 @@ export default function DailyWorkReport() {
     { text: '', detail: '', category: '기타', priority: 'medium' },
   ]);
   const [newNotes, setNewNotes] = useState('');
+  const [checkoutConfirmOpen, setCheckoutConfirmOpen] = useState(false);
+  const [checkoutTargetReport, setCheckoutTargetReport] = useState<DailyReport | null>(null);
 
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
 
@@ -501,12 +507,8 @@ export default function DailyWorkReport() {
     if (report.user_id !== profile?.id) return;
 
     if (taskId === '__checkout__') {
-      await supabase.from('daily_work_reports').update({
-        completion_checked: true,
-        checked_at: new Date().toISOString(),
-      }).eq('id', report.id);
-      toast({ title: '🚪 체크아웃 완료! 수고하셨습니다.' });
-      fetchData();
+      setCheckoutTargetReport(report);
+      setCheckoutConfirmOpen(true);
       return;
     }
 
@@ -519,8 +521,20 @@ export default function DailyWorkReport() {
     fetchData();
   };
 
-  const handleDelete = async (reportId: string) => {
-    await supabase.from('daily_work_reports').delete().eq('id', reportId);
+  const handleCheckoutConfirm = async () => {
+    if (!checkoutTargetReport) return;
+    await supabase.from('daily_work_reports').update({
+      completion_checked: true,
+      checked_at: new Date().toISOString(),
+    }).eq('id', checkoutTargetReport.id);
+    toast({ title: '🚪 체크아웃 완료! 수고하셨습니다.' });
+    setCheckoutConfirmOpen(false);
+    setCheckoutTargetReport(null);
+    fetchData();
+  };
+
+
+    const handleDelete = async (reportId: string) => {
     toast({ title: '보고서 삭제 완료' });
     fetchData();
   };
@@ -673,6 +687,24 @@ export default function DailyWorkReport() {
       ) : (
         <TaskTableView reports={reports} profiles={profiles} />
       )}
+
+      {/* Checkout confirmation dialog */}
+      <AlertDialog open={checkoutConfirmOpen} onOpenChange={setCheckoutConfirmOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>🚪 체크아웃 하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>
+              체크아웃 후에는 업무 완료 상태를 변경할 수 없습니다. 모든 업무의 완료 여부를 확인한 후 진행해주세요.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>취소</AlertDialogCancel>
+            <AlertDialogAction onClick={handleCheckoutConfirm} className="bg-orange-500 hover:bg-orange-600">
+              체크아웃
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
