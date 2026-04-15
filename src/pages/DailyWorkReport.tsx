@@ -29,6 +29,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { EmojiReactionBar } from '@/components/daily/EmojiReactionBar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
+import stampImg from '@/assets/stamp.png';
 
 // --- Types ---
 interface MorningTask {
@@ -467,7 +468,7 @@ function ReportCard({
                 </div>
                 {report.ceo_approved && (
                   <div className="mt-3 flex justify-end">
-                    <img src="/src/assets/stamp.png" alt="직인" className="h-16 w-16 opacity-80" />
+                    <img src={stampImg} alt="직인" className="h-16 w-16 opacity-80" />
                   </div>
                 )}
               </div>
