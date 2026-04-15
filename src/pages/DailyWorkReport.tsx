@@ -534,7 +534,7 @@ export default function DailyWorkReport() {
   };
 
 
-    await supabase.from('daily_work_reports').delete().eq('id', reportId);
+    const handleDelete = async (reportId: string) => {
     toast({ title: '보고서 삭제 완료' });
     fetchData();
   };
