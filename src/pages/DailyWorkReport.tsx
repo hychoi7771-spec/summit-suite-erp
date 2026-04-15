@@ -1315,7 +1315,7 @@ function MonthlyView({ selectedDate, profiles }: { selectedDate: string; profile
                             style={{ height: `${height}%` }}
                           />
                         </div>
-                        <span className="text-[10px] text-muted-foreground">{i + 1}주</span>
+                        <span className="text-[10px] text-muted-foreground">W{getWeek(new Date(weeks[i][0]), { weekStartsOn: 1 })}</span>
                       </div>
                     );
                   })}
