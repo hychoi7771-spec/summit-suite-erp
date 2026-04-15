@@ -5,7 +5,7 @@ import {
   LayoutDashboard, FolderKanban, ListTodo, Palette, Users, Receipt, BarChart3,
   FolderArchive, CalendarDays, UserCog, Megaphone, Stamp, Bell,
   ChevronRight, BookOpen, Shield, LogIn, GanttChartSquare, MessageSquare, Link2, History,
-  Briefcase, FileEdit, AtSign, Folder,
+  Briefcase, FileEdit, AtSign, Folder, ClipboardCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
