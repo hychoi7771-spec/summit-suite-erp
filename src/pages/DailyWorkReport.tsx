@@ -1064,3 +1064,263 @@ function WeeklyView({ selectedDate, profiles }: { selectedDate: string; profiles
     </div>
   );
 }
+
+// --- Monthly Summary View ---
+function MonthlyView({ selectedDate, profiles }: { selectedDate: string; profiles: any[] }) {
+  const [monthReports, setMonthReports] = useState<DailyReport[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [monthOffset, setMonthOffset] = useState(0);
+
+  const baseDate = addMonths(new Date(selectedDate), monthOffset);
+  const monthStart = startOfMonth(baseDate);
+  const monthEnd = endOfMonth(baseDate);
+  const isCurrentMonth = isSameMonth(new Date(), baseDate);
+
+  // Get all weekdays (Mon-Fri) in the month
+  const weekdaysInMonth = useMemo(() => {
+    return eachDayOfInterval({ start: monthStart, end: monthEnd }).filter(d => {
+      const day = getDay(d);
+      return day >= 1 && day <= 5;
+    });
+  }, [monthStart.getTime(), monthEnd.getTime()]);
+
+  // Group weekdays by week number
+  const weeks = useMemo(() => {
+    const map: Record<string, Date[]> = {};
+    weekdaysInMonth.forEach(d => {
+      const ws = format(startOfWeek(d, { weekStartsOn: 1 }), 'yyyy-MM-dd');
+      if (!map[ws]) map[ws] = [];
+      map[ws].push(d);
+    });
+    return Object.entries(map).sort(([a], [b]) => a.localeCompare(b));
+  }, [weekdaysInMonth]);
+
+  useEffect(() => {
+    const fetchMonth = async () => {
+      setLoading(true);
+      const { data } = await supabase
+        .from('daily_work_reports')
+        .select('*')
+        .gte('date', format(monthStart, 'yyyy-MM-dd'))
+        .lte('date', format(monthEnd, 'yyyy-MM-dd'))
+        .order('created_at', { ascending: true });
+      setMonthReports((data as any[]) || []);
+      setLoading(false);
+    };
+    fetchMonth();
+  }, [selectedDate, monthOffset]);
+
+  const activeUserIds = useMemo(() => {
+    return Array.from(new Set(monthReports.map(r => r.user_id)));
+  }, [monthReports]);
+
+  const userData = useMemo(() => {
+    return activeUserIds.map(userId => {
+      const user = profiles.find(p => p.id === userId);
+      const userReports = monthReports.filter(r => r.user_id === userId);
+
+      // Per-week stats
+      const weekStats = weeks.map(([weekKey, days]) => {
+        let total = 0, completed = 0, checkinDays = 0;
+        days.forEach(day => {
+          const dateStr = format(day, 'yyyy-MM-dd');
+          const report = userReports.find(r => r.date === dateStr);
+          if (report) {
+            checkinDays++;
+            total += report.morning_tasks.length;
+            completed += report.morning_tasks.filter(t => t.completed).length;
+          }
+        });
+        const rate = total > 0 ? Math.round((completed / total) * 100) : null;
+        return { weekKey, total, completed, checkinDays, workdays: days.length, rate };
+      });
+
+      const monthTotal = weekStats.reduce((s, w) => s + w.total, 0);
+      const monthCompleted = weekStats.reduce((s, w) => s + w.completed, 0);
+      const monthRate = monthTotal > 0 ? Math.round((monthCompleted / monthTotal) * 100) : null;
+      const checkinTotal = weekStats.reduce((s, w) => s + w.checkinDays, 0);
+
+      return { userId, user, weekStats, monthTotal, monthCompleted, monthRate, checkinTotal };
+    });
+  }, [activeUserIds, monthReports, weeks, profiles]);
+
+  const getRateColor = (rate: number | null) => {
+    if (rate === null) return 'text-muted-foreground/40';
+    if (rate >= 80) return 'text-success';
+    if (rate >= 50) return 'text-warning';
+    return 'text-destructive';
+  };
+
+  const getRateBg = (rate: number | null) => {
+    if (rate === null) return 'bg-muted/30';
+    if (rate >= 80) return 'bg-success/10';
+    if (rate >= 50) return 'bg-warning/10';
+    return 'bg-destructive/10';
+  };
+
+  if (loading) {
+    return (
+      <div className="flex justify-center py-12">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Month navigation */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset(o => o - 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <p className="text-sm font-semibold">{format(baseDate, 'yyyy년 M월', { locale: ko })}</p>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => setMonthOffset(o => o + 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+          {!isCurrentMonth && (
+            <Button variant="ghost" size="sm" className="text-xs" onClick={() => setMonthOffset(0)}>이번 달</Button>
+          )}
+        </div>
+        {isCurrentMonth && <Badge variant="outline" className="text-xs">이번 달</Badge>}
+      </div>
+
+      {activeUserIds.length === 0 ? (
+        <div className="text-center py-16">
+          <CalendarIcon className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
+          <p className="text-muted-foreground">이번 달 체크인 기록이 없습니다</p>
+        </div>
+      ) : (
+        <>
+          {/* Summary stats */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <Card className="p-3">
+              <p className="text-xs text-muted-foreground">참여 인원</p>
+              <p className="text-xl font-bold">{activeUserIds.length}명</p>
+            </Card>
+            <Card className="p-3">
+              <p className="text-xs text-muted-foreground">총 업무</p>
+              <p className="text-xl font-bold">{userData.reduce((s, u) => s + u.monthTotal, 0)}</p>
+            </Card>
+            <Card className="p-3">
+              <p className="text-xs text-muted-foreground">완료 업무</p>
+              <p className="text-xl font-bold text-success">{userData.reduce((s, u) => s + u.monthCompleted, 0)}</p>
+            </Card>
+            <Card className="p-3">
+              <p className="text-xs text-muted-foreground">팀 평균 완료율</p>
+              <p className="text-xl font-bold text-primary">
+                {(() => {
+                  const t = userData.reduce((s, u) => s + u.monthTotal, 0);
+                  const c = userData.reduce((s, u) => s + u.monthCompleted, 0);
+                  return t > 0 ? Math.round((c / t) * 100) : 0;
+                })()}%
+              </p>
+            </Card>
+          </div>
+
+          {/* Weekly breakdown table */}
+          <Card>
+            <div className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[120px] sticky left-0 bg-background z-10">담당자</TableHead>
+                    {weeks.map(([weekKey, days], i) => (
+                      <TableHead key={weekKey} className="text-center min-w-[90px]">
+                        <div className="text-xs">{i + 1}주차</div>
+                        <div className="text-[10px] font-normal text-muted-foreground">
+                          {format(days[0], 'M/d')}~{format(days[days.length - 1], 'M/d')}
+                        </div>
+                      </TableHead>
+                    ))}
+                    <TableHead className="text-center min-w-[80px] bg-muted/30">월간</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {userData.map(({ userId, user, weekStats, monthRate, checkinTotal, monthCompleted, monthTotal }) => (
+                    <TableRow key={userId}>
+                      <TableCell className="sticky left-0 bg-background z-10">
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-6 w-6">
+                            <AvatarFallback className="text-[9px] bg-primary text-primary-foreground font-bold">{user?.avatar || '?'}</AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <span className="text-xs font-medium">{user?.name_kr || '알 수 없음'}</span>
+                            <div className="text-[10px] text-muted-foreground">{checkinTotal}일 출석</div>
+                          </div>
+                        </div>
+                      </TableCell>
+                      {weekStats.map((ws, i) => (
+                        <TableCell key={i} className={`text-center ${getRateBg(ws.rate)}`}>
+                          {ws.rate !== null ? (
+                            <div>
+                              <span className={`text-sm font-bold ${getRateColor(ws.rate)}`}>{ws.rate}%</span>
+                              <div className="text-[10px] text-muted-foreground mt-0.5">
+                                {ws.completed}/{ws.total} · {ws.checkinDays}일
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-muted-foreground/40">—</span>
+                          )}
+                        </TableCell>
+                      ))}
+                      <TableCell className={`text-center bg-muted/30 ${getRateBg(monthRate)}`}>
+                        {monthRate !== null ? (
+                          <div>
+                            <span className={`text-sm font-bold ${getRateColor(monthRate)}`}>{monthRate}%</span>
+                            <div className="text-[10px] text-muted-foreground mt-0.5">{monthCompleted}/{monthTotal}</div>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-muted-foreground/40">—</span>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </Card>
+
+          {/* Per-person monthly bar chart cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+            {userData.map(({ userId, user, weekStats, monthRate }) => (
+              <Card key={userId} className="p-4">
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <Avatar className="h-7 w-7">
+                      <AvatarFallback className="text-[9px] bg-primary text-primary-foreground font-bold">{user?.avatar || '?'}</AvatarFallback>
+                    </Avatar>
+                    <span className="text-sm font-bold">{user?.name_kr || '알 수 없음'}</span>
+                  </div>
+                  {monthRate !== null && (
+                    <span className={`text-lg font-bold ${getRateColor(monthRate)}`}>{monthRate}%</span>
+                  )}
+                </div>
+                <div className="flex gap-1">
+                  {weekStats.map((ws, i) => {
+                    const height = ws.rate !== null ? Math.max(ws.rate, 8) : 4;
+                    return (
+                      <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                        <div className="w-full h-16 flex items-end">
+                          <div
+                            className={`w-full rounded-t transition-all ${
+                              ws.rate === null ? 'bg-muted/40' :
+                              ws.rate >= 80 ? 'bg-success' :
+                              ws.rate >= 50 ? 'bg-warning' : 'bg-destructive'
+                            }`}
+                            style={{ height: `${height}%` }}
+                          />
+                        </div>
+                        <span className="text-[10px] text-muted-foreground">{i + 1}주</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              </Card>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
