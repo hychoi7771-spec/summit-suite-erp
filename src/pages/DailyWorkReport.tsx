@@ -423,7 +423,7 @@ export default function DailyWorkReport() {
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
-  const [viewMode, setViewMode] = useState<'timeline' | 'person' | 'table' | 'weekly'>('timeline');
+  const [viewMode, setViewMode] = useState<'timeline' | 'person' | 'table' | 'weekly' | 'monthly'>('timeline');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [newTasks, setNewTasks] = useState<Omit<MorningTask, 'id' | 'completed'>[]>([
@@ -617,11 +617,16 @@ export default function DailyWorkReport() {
           <TabsTrigger value="weekly" className="gap-1.5 text-xs">
             <CalendarDays className="h-3.5 w-3.5" /> 주간 요약
           </TabsTrigger>
+          <TabsTrigger value="monthly" className="gap-1.5 text-xs">
+            <CalendarIcon className="h-3.5 w-3.5" /> 월간 요약
+          </TabsTrigger>
         </TabsList>
       </Tabs>
 
       {/* Reports */}
-      {viewMode === 'weekly' ? (
+      {viewMode === 'monthly' ? (
+        <MonthlyView selectedDate={selectedDate} profiles={profiles} />
+      ) : viewMode === 'weekly' ? (
         <WeeklyView selectedDate={selectedDate} profiles={profiles} />
       ) : loading ? (
         <div className="flex justify-center py-12">
