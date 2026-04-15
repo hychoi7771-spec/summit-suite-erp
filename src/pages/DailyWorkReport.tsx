@@ -257,15 +257,17 @@ function CommentsSection({ reportId, profiles, currentProfile, isAdmin }: {
 }
 
 function ReportCard({
-  report, profile: currentProfile, profiles, isAdmin,
-  onToggleTask, onDelete,
+  report, profile: currentProfile, profiles, isAdmin, userRole,
+  onToggleTask, onDelete, onApprove,
 }: {
   report: DailyReport;
   profile: any;
   profiles: any[];
   isAdmin: boolean;
+  userRole: string | null;
   onToggleTask: (report: DailyReport, taskId: string) => void;
   onDelete: (id: string) => void;
+  onApprove: (report: DailyReport, type: 'director' | 'ceo') => void;
 }) {
   const [expanded, setExpanded] = useState(true);
 
@@ -275,6 +277,8 @@ function ReportCard({
   const totalCount = report.morning_tasks.length;
   const progressPercent = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
   const isCheckedOut = report.completion_checked;
+  const isDirector = userRole === 'general_director';
+  const isCeo = userRole === 'ceo';
 
   const categoryGroups = report.morning_tasks.reduce((acc, task) => {
     const cat = task.category || '기타';
