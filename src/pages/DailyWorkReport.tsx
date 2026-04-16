@@ -282,6 +282,7 @@ function ReportCard({
   const [editDetail, setEditDetail] = useState('');
   const [editCategory, setEditCategory] = useState('');
   const [editPriority, setEditPriority] = useState<'high' | 'medium' | 'low'>('medium');
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const user = profiles.find(p => p.id === report.user_id);
   const isOwner = report.user_id === currentProfile?.id;
@@ -360,6 +361,16 @@ function ReportCard({
 
       {expanded && (
         <CardContent className="pt-0 space-y-4">
+          {/* Guide text for owners */}
+          {isOwner && !isCheckedOut && (
+            <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5 flex items-center gap-2">
+              <span className="text-sm">💡</span>
+              <p className="text-xs text-primary font-medium">
+                각 업무의 <strong>완료/미완료</strong> 버튼을 눌러 상태를 변경하세요. 수정·삭제도 각 업무 우측에서 가능합니다.
+              </p>
+            </div>
+          )}
+
           {/* Tasks grouped by category */}
           {Object.entries(categoryGroups).map(([category, tasks]) => (
             <div key={category}>
@@ -415,15 +426,16 @@ function ReportCard({
                   return (
                     <div
                       key={task.id}
-                      className={`rounded-lg border p-3 transition-colors ${task.completed ? 'bg-success/5 border-success/20' : 'border-border hover:border-primary/30'} ${isOwner && !isCheckedOut ? 'cursor-pointer' : ''}`}
-                      onClick={() => isOwner && !isCheckedOut && onToggleTask(report, task.id)}
+                      className={`rounded-lg border p-3 transition-colors ${task.completed ? 'bg-success/5 border-success/20' : 'border-border'}`}
                     >
                       <div className="flex items-start gap-2.5">
+                        {/* Status icon */}
                         {task.completed ? (
                           <CheckCircle2 className="h-4.5 w-4.5 text-success shrink-0 mt-0.5" />
                         ) : (
                           <CircleDot className="h-4.5 w-4.5 text-muted-foreground shrink-0 mt-0.5" />
                         )}
+                        {/* Task content */}
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
                             <span className={`text-sm font-medium ${task.completed ? 'line-through text-muted-foreground' : ''}`}>
@@ -441,24 +453,62 @@ function ReportCard({
                             </p>
                           )}
                         </div>
+                        {/* Action buttons - always visible for owner */}
                         {isOwner && !isCheckedOut && (
-                          <div className="flex gap-1 shrink-0" onClick={e => e.stopPropagation()}>
-                            <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
-                              setEditingTaskId(task.id);
-                              setEditText(task.text);
-                              setEditDetail(task.detail || '');
-                              setEditCategory(task.category || '기타');
-                              setEditPriority(task.priority || 'medium');
-                            }}>
-                              <span className="text-xs">✏️</span>
+                          <div className="flex items-center gap-1.5 shrink-0">
+                            {/* Toggle complete/incomplete button - prominent */}
+                            <Button
+                              variant={task.completed ? "outline" : "default"}
+                              size="sm"
+                              className={`h-7 text-[11px] px-2.5 font-semibold ${task.completed
+                                ? 'border-muted-foreground/30 text-muted-foreground hover:bg-muted'
+                                : 'bg-success hover:bg-success/90 text-white shadow-sm'
+                              }`}
+                              onClick={(e) => { e.stopPropagation(); onToggleTask(report, task.id); }}
+                            >
+                              {task.completed ? '↩ 미완료' : '✓ 완료'}
                             </Button>
+                            {/* Edit button */}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setEditingTaskId(task.id);
+                                setEditText(task.text);
+                                setEditDetail(task.detail || '');
+                                setEditCategory(task.category || '기타');
+                                setEditPriority(task.priority || 'medium');
+                              }}
+                            >
+                              ✏️ 수정
+                            </Button>
+                            {/* Delete button */}
                             {report.morning_tasks.length > 1 && (
-                              <Button variant="ghost" size="icon" className="h-6 w-6" onClick={() => {
-                                const updated = report.morning_tasks.filter(t => t.id !== task.id);
-                                onUpdateTasks(report, updated);
-                              }}>
-                                <Trash2 className="h-3 w-3 text-destructive" />
-                              </Button>
+                              deleteConfirmId === task.id ? (
+                                <div className="flex items-center gap-1">
+                                  <Button variant="destructive" size="sm" className="h-7 text-[11px] px-2" onClick={(e) => {
+                                    e.stopPropagation();
+                                    const updated = report.morning_tasks.filter(t => t.id !== task.id);
+                                    onUpdateTasks(report, updated);
+                                    setDeleteConfirmId(null);
+                                  }}>확인</Button>
+                                  <Button variant="ghost" size="sm" className="h-7 text-[11px] px-2" onClick={(e) => {
+                                    e.stopPropagation();
+                                    setDeleteConfirmId(null);
+                                  }}>취소</Button>
+                                </div>
+                              ) : (
+                                <Button
+                                  variant="ghost"
+                                  size="sm"
+                                  className="h-7 text-[11px] px-2 text-destructive/70 hover:text-destructive"
+                                  onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(task.id); }}
+                                >
+                                  🗑 삭제
+                                </Button>
+                              )
                             )}
                           </div>
                         )}
@@ -536,7 +586,7 @@ function ReportCard({
               <div className="bg-orange-50 dark:bg-orange-950/30 border-2 border-orange-300 dark:border-orange-700 rounded-xl p-5 text-center space-y-3">
                 <div className="text-2xl">🚪</div>
                 <p className="text-base font-bold text-orange-700 dark:text-orange-400">퇴근 전 체크아웃을 잊지 마세요!</p>
-                <p className="text-xs text-muted-foreground">각 업무를 클릭하여 완료/미완료를 표시한 후 체크아웃 버튼을 누르세요</p>
+                <p className="text-xs text-muted-foreground">각 업무의 <strong>완료/미완료 버튼</strong>을 눌러 상태를 표시한 후 체크아웃하세요</p>
                 <Button onClick={() => onToggleTask(report, '__checkout__')} size="lg" className="bg-orange-500 hover:bg-orange-600 text-white px-8 shadow-md">
                   <LogOut className="h-5 w-5 mr-2" /> 체크아웃
                 </Button>
