@@ -307,17 +307,6 @@ function ReportCard({
   onUpdateTasks: (report: DailyReport, tasks: MorningTask[]) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [addingTask, setAddingTask] = useState(false);
-  const [newTaskText, setNewTaskText] = useState('');
-  const [newTaskDetail, setNewTaskDetail] = useState('');
-  const [newTaskCategory, setNewTaskCategory] = useState('기타');
-  const [newTaskPriority, setNewTaskPriority] = useState<'high' | 'medium' | 'low'>('medium');
-  const [editText, setEditText] = useState('');
-  const [editDetail, setEditDetail] = useState('');
-  const [editCategory, setEditCategory] = useState('');
-  const [editPriority, setEditPriority] = useState<'high' | 'medium' | 'low'>('medium');
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const user = profiles.find(p => p.id === report.user_id);
   const isOwner = report.user_id === currentProfile?.id;
