@@ -949,7 +949,13 @@ export default function DailyWorkReport() {
                   <DialogDescription>오늘 수행할 업무를 가볍게 등록하세요.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <TaskCreateForm tasks={newTasks} setTasks={setNewTasks} />
+                  <TaskCreateForm
+                    tasks={newTasks}
+                    setTasks={setNewTasks}
+                    projectName={newProjectName}
+                    setProjectName={setNewProjectName}
+                    projectOptions={projectOptions}
+                  />
                   <div>
                     <Label className="text-sm font-medium">비고</Label>
                     <Textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="참고 사항..." rows={2} />
