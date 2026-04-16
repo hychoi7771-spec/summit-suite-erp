@@ -869,7 +869,7 @@ export default function DailyWorkReport() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">데일리 체크인</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            체크인으로 업무 시작 → 체크아웃으로 완료 여부 기록
+            오늘 본인 업무 결과 확인 전용 · 업무 등록·수정·삭제는 '업무' 탭에서 진행하세요
           </p>
         </div>
         <div className="flex items-center gap-2">
