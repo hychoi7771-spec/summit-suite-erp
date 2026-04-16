@@ -60,6 +60,20 @@ export default function Tasks() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // Realtime: keep board in sync with check-in updates and other clients
+  useEffect(() => {
+    const channel = supabase
+      .channel('tasks-page-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_logs' }, () => {
+        fetchData();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, []);
+
   const fetchData = async () => {
     const [taskRes, profRes, logRes] = await Promise.all([
       supabase.from('tasks').select('*').order('position', { ascending: true }),

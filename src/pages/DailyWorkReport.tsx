@@ -39,6 +39,8 @@ interface MorningTask {
   category: string;
   priority: 'high' | 'medium' | 'low';
   completed: boolean;
+  linked_task_id?: string | null; // 업무 탭(tasks) 동기화용
+  project_name?: string | null;
 }
 
 interface DailyReport {
@@ -105,7 +107,15 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 // --- Sub-components ---
 
-function TaskCreateForm({ tasks, setTasks }: { tasks: Omit<MorningTask, 'id' | 'completed'>[]; setTasks: (t: Omit<MorningTask, 'id' | 'completed'>[]) => void }) {
+function TaskCreateForm({
+  tasks, setTasks, projectName, setProjectName, projectOptions,
+}: {
+  tasks: Omit<MorningTask, 'id' | 'completed'>[];
+  setTasks: (t: Omit<MorningTask, 'id' | 'completed'>[]) => void;
+  projectName: string;
+  setProjectName: (v: string) => void;
+  projectOptions: string[];
+}) {
   const addTask = () => setTasks([...tasks, { text: '', detail: '', category: '기타', priority: 'medium' }]);
   const removeTask = (i: number) => setTasks(tasks.filter((_, j) => j !== i));
   const update = (i: number, patch: Partial<Omit<MorningTask, 'id' | 'completed'>>) => {
@@ -116,6 +126,31 @@ function TaskCreateForm({ tasks, setTasks }: { tasks: Omit<MorningTask, 'id' | '
 
   return (
     <div className="space-y-4">
+      {/* Project selector — applies to all tasks in this check-in */}
+      <div className="rounded-lg border bg-primary/5 border-primary/20 p-3 space-y-2">
+        <Label className="text-xs font-semibold text-primary">📁 프로젝트 (업무 탭/프로젝트 보드 연동)</Label>
+        <Select value={projectName || '__none__'} onValueChange={v => setProjectName(v === '__none__' ? '' : v)}>
+          <SelectTrigger className="h-9 text-sm">
+            <SelectValue placeholder="프로젝트 선택 (선택사항)" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">미지정 (개인 업무)</SelectItem>
+            {projectOptions.map(p => (
+              <SelectItem key={p} value={p}>{p}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          placeholder="또는 새 프로젝트명 직접 입력"
+          value={projectName}
+          onChange={e => setProjectName(e.target.value)}
+          className="h-8 text-xs"
+        />
+        <p className="text-[10px] text-muted-foreground">
+          ✓ 등록한 업무는 업무 탭과 선택한 프로젝트의 단계별 보드에 자동 표시됩니다.
+        </p>
+      </div>
+
       {tasks.map((task, i) => (
         <div key={i} className="p-4 rounded-lg border bg-card space-y-3">
           <div className="flex items-center gap-2">
@@ -668,6 +703,7 @@ export default function DailyWorkReport() {
   const { toast } = useToast();
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
+  const [projectOptions, setProjectOptions] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [viewMode, setViewMode] = useState<'timeline' | 'person' | 'table' | 'weekly' | 'monthly' | 'yearly'>('timeline');
   const [loading, setLoading] = useState(true);
@@ -675,6 +711,7 @@ export default function DailyWorkReport() {
   const [newTasks, setNewTasks] = useState<Omit<MorningTask, 'id' | 'completed'>[]>([
     { text: '', detail: '', category: '기타', priority: 'medium' },
   ]);
+  const [newProjectName, setNewProjectName] = useState('');
   const [newNotes, setNewNotes] = useState('');
   const [checkoutConfirmOpen, setCheckoutConfirmOpen] = useState(false);
   const [checkoutTargetReport, setCheckoutTargetReport] = useState<DailyReport | null>(null);
@@ -682,16 +719,36 @@ export default function DailyWorkReport() {
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
 
   const fetchData = async () => {
-    const [reportsRes, profilesRes] = await Promise.all([
+    const [reportsRes, profilesRes, tasksRes] = await Promise.all([
       supabase.from('daily_work_reports').select('*').eq('date', selectedDate).order('created_at', { ascending: true }),
       supabase.from('profiles').select('id, user_id, name, name_kr, avatar'),
+      supabase.from('tasks').select('project_name'),
     ]);
     setReports((reportsRes.data as any[]) || []);
     setProfiles(profilesRes.data || []);
+    const projects = Array.from(
+      new Set((tasksRes.data || []).map((t: any) => t.project_name).filter(Boolean))
+    ) as string[];
+    setProjectOptions(projects.sort());
     setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, [selectedDate]);
+
+  // Realtime sync: when tasks or daily_work_reports change, refresh
+  useEffect(() => {
+    const channel = supabase
+      .channel('daily-report-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_work_reports' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+        fetchData();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
 
   const myReport = reports.find(r => r.user_id === profile?.id);
 
@@ -702,6 +759,32 @@ export default function DailyWorkReport() {
       toast({ title: '업무를 하나 이상 입력해주세요', variant: 'destructive' });
       return;
     }
+
+    // Step 1: Insert into tasks table FIRST so we can capture linked task IDs
+    const priorityMap: Record<string, 'low' | 'medium' | 'high'> = { low: 'low', medium: 'medium', high: 'high' };
+    const projectName = newProjectName.trim() || null;
+    const taskInserts = validTasks.map((t, i) => ({
+      title: t.text.trim(),
+      description: t.detail.trim() || null,
+      assignee_id: profile.id,
+      priority: priorityMap[t.priority] || 'medium',
+      status: 'todo' as const,
+      tags: [t.category],
+      due_date: selectedDate,
+      project_name: projectName,
+      position: i,
+    }));
+    const { data: insertedTasks, error: tasksErr } = await supabase
+      .from('tasks')
+      .insert(taskInserts)
+      .select('id, title');
+
+    if (tasksErr) {
+      toast({ title: '업무 동기화 실패', description: tasksErr.message, variant: 'destructive' });
+      return;
+    }
+
+    // Step 2: Build morning_tasks with linked_task_id mapping (preserves order)
     const tasks: MorningTask[] = validTasks.map((t, i) => ({
       id: `task-${Date.now()}-${i}`,
       text: t.text.trim(),
@@ -709,8 +792,11 @@ export default function DailyWorkReport() {
       category: t.category,
       priority: t.priority,
       completed: false,
+      linked_task_id: insertedTasks?.[i]?.id || null,
+      project_name: projectName,
     }));
 
+    // Step 3: Insert daily_work_report
     const { error } = await supabase.from('daily_work_reports').insert({
       user_id: profile.id,
       date: selectedDate,
@@ -720,26 +806,17 @@ export default function DailyWorkReport() {
 
     if (error) {
       toast({ title: error.code === '23505' ? '이미 체크인 되었습니다' : '등록 실패', description: error.message, variant: 'destructive' });
+      // Roll back the tasks we just inserted
+      if (insertedTasks?.length) {
+        await supabase.from('tasks').delete().in('id', insertedTasks.map(t => t.id));
+      }
       return;
     }
-
-    // Auto-sync: create tasks in the tasks table
-    const priorityMap: Record<string, 'low' | 'medium' | 'high'> = { low: 'low', medium: 'medium', high: 'high' };
-    const taskInserts = validTasks.map((t, i) => ({
-      title: t.text.trim(),
-      description: t.detail.trim() || null,
-      assignee_id: profile.id,
-      priority: priorityMap[t.priority] || 'medium',
-      status: 'todo' as const,
-      tags: [t.category],
-      due_date: selectedDate,
-      position: i,
-    }));
-    await supabase.from('tasks').insert(taskInserts);
 
     toast({ title: '☀️ 체크인 완료! 업무가 자동으로 등록되었습니다.' });
     setDialogOpen(false);
     setNewTasks([{ text: '', detail: '', category: '기타', priority: 'medium' }]);
+    setNewProjectName('');
     setNewNotes('');
     // Refresh to get the actual inserted report with correct ID
     fetchData();
@@ -755,8 +832,11 @@ export default function DailyWorkReport() {
     }
 
     // Optimistic update
+    const target = report.morning_tasks.find(t => t.id === taskId);
+    if (!target) return;
+    const newCompleted = !target.completed;
     const updatedTasks = report.morning_tasks.map(t =>
-      t.id === taskId ? { ...t, completed: !t.completed } : t
+      t.id === taskId ? { ...t, completed: newCompleted } : t
     );
     setReports(prev => prev.map(r =>
       r.id === report.id ? { ...r, morning_tasks: updatedTasks } : r
@@ -765,6 +845,14 @@ export default function DailyWorkReport() {
     await supabase.from('daily_work_reports').update({
       morning_tasks: updatedTasks as any,
     }).eq('id', report.id);
+
+    // 🔄 Sync to tasks table — toggle the linked task's status
+    if (target.linked_task_id) {
+      await supabase
+        .from('tasks')
+        .update({ status: newCompleted ? 'done' : 'in-progress' })
+        .eq('id', target.linked_task_id);
+    }
   };
 
   const handleCheckoutConfirm = async () => {
@@ -784,8 +872,13 @@ export default function DailyWorkReport() {
   };
 
   const handleUpdateTasks = async (report: DailyReport, updatedTasks: MorningTask[]) => {
-    // Optimistic update
-    setReports(prev => prev.map(r =>
+    // Compute diff vs current state for tasks-table sync
+    const prev = report.morning_tasks;
+    const prevById = new Map(prev.map(t => [t.id, t]));
+    const newById = new Map(updatedTasks.map(t => [t.id, t]));
+
+    // Optimistic update of report
+    setReports(prevReports => prevReports.map(r =>
       r.id === report.id ? { ...r, morning_tasks: updatedTasks } : r
     ));
 
@@ -795,9 +888,73 @@ export default function DailyWorkReport() {
     if (error) {
       toast({ title: '업무 수정 실패', variant: 'destructive' });
       fetchData(); // Revert on error
-    } else {
-      toast({ title: '✅ 업무가 수정되었습니다' });
+      return;
     }
+
+    // 🔄 Sync to tasks table
+    const priorityMap: Record<string, 'low' | 'medium' | 'high'> = { low: 'low', medium: 'medium', high: 'high' };
+
+    // 1. Deletions: morning task removed → delete linked task
+    const deletedIds: string[] = [];
+    for (const oldT of prev) {
+      if (!newById.has(oldT.id) && oldT.linked_task_id) {
+        deletedIds.push(oldT.linked_task_id);
+      }
+    }
+    if (deletedIds.length > 0) {
+      await supabase.from('tasks').delete().in('id', deletedIds);
+    }
+
+    // 2. Updates / inserts
+    for (const newT of updatedTasks) {
+      const oldT = prevById.get(newT.id);
+      if (oldT && newT.linked_task_id) {
+        // Existing task — patch fields if changed
+        const changed =
+          oldT.text !== newT.text ||
+          oldT.detail !== newT.detail ||
+          oldT.category !== newT.category ||
+          oldT.priority !== newT.priority ||
+          oldT.completed !== newT.completed;
+        if (changed) {
+          await supabase.from('tasks').update({
+            title: newT.text,
+            description: newT.detail || null,
+            priority: priorityMap[newT.priority] || 'medium',
+            tags: [newT.category],
+            status: newT.completed ? 'done' : 'in-progress',
+          }).eq('id', newT.linked_task_id);
+        }
+      } else if (!oldT && profile) {
+        // Newly added task — create in tasks table and patch back linked_task_id
+        const { data: inserted } = await supabase.from('tasks').insert({
+          title: newT.text,
+          description: newT.detail || null,
+          assignee_id: profile.id,
+          priority: priorityMap[newT.priority] || 'medium',
+          status: newT.completed ? 'done' as const : 'todo' as const,
+          tags: [newT.category],
+          due_date: report.date,
+          project_name: newT.project_name || null,
+          position: 0,
+        }).select('id').single();
+
+        if (inserted?.id) {
+          // Patch the morning_tasks JSON with the new linked_task_id
+          const patchedTasks = updatedTasks.map(t =>
+            t.id === newT.id ? { ...t, linked_task_id: inserted.id } : t
+          );
+          await supabase.from('daily_work_reports').update({
+            morning_tasks: patchedTasks as any,
+          }).eq('id', report.id);
+          setReports(prevReports => prevReports.map(r =>
+            r.id === report.id ? { ...r, morning_tasks: patchedTasks } : r
+          ));
+        }
+      }
+    }
+
+    toast({ title: '✅ 업무가 수정되었습니다' });
   };
 
   const handleApprove = async (report: DailyReport, type: 'director' | 'ceo') => {
@@ -825,6 +982,12 @@ export default function DailyWorkReport() {
   };
 
   const handleDelete = async (reportId: string) => {
+    // Capture linked task IDs before optimistic removal
+    const target = reports.find(r => r.id === reportId);
+    const linkedTaskIds = (target?.morning_tasks || [])
+      .map(t => t.linked_task_id)
+      .filter((id): id is string => !!id);
+
     // Optimistic update
     setReports(prev => prev.filter(r => r.id !== reportId));
     toast({ title: '보고서 삭제 완료' });
@@ -833,6 +996,12 @@ export default function DailyWorkReport() {
     if (error) {
       toast({ title: '삭제 실패', variant: 'destructive' });
       fetchData(); // Revert on error
+      return;
+    }
+
+    // 🔄 Cascade delete linked tasks from tasks table
+    if (linkedTaskIds.length > 0) {
+      await supabase.from('tasks').delete().in('id', linkedTaskIds);
     }
   };
 
@@ -872,7 +1041,13 @@ export default function DailyWorkReport() {
                   <DialogDescription>오늘 수행할 업무를 가볍게 등록하세요.</DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <TaskCreateForm tasks={newTasks} setTasks={setNewTasks} />
+                  <TaskCreateForm
+                    tasks={newTasks}
+                    setTasks={setNewTasks}
+                    projectName={newProjectName}
+                    setProjectName={setNewProjectName}
+                    projectOptions={projectOptions}
+                  />
                   <div>
                     <Label className="text-sm font-medium">비고</Label>
                     <Textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="참고 사항..." rows={2} />
