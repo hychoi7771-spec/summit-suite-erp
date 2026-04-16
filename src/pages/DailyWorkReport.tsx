@@ -398,10 +398,11 @@ function ReportCard({
         <CardContent className="pt-0 space-y-4">
           {/* Guide text for owners */}
           {isOwner && !isCheckedOut && (
-            <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5 flex items-center gap-2">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5 flex items-start gap-2">
               <span className="text-sm">💡</span>
-              <p className="text-xs text-primary font-medium">
-                각 업무의 <strong>완료/미완료</strong> 버튼을 눌러 상태를 변경하세요. 수정·삭제도 각 업무 우측에서 가능합니다.
+              <p className="text-xs text-primary font-medium leading-relaxed">
+                각 업무의 <strong>완료/미완료</strong> 버튼만 눌러 결과를 기록하세요.<br />
+                <span className="text-muted-foreground font-normal">업무 등록·수정·삭제는 <strong>'업무' 탭</strong>에서 진행합니다.</span>
               </p>
             </div>
           )}
@@ -420,43 +421,6 @@ function ReportCard({
               <div className="space-y-2 ml-1">
                 {tasks.map(task => {
                   const prio = PRIORITY_CONFIG[task.priority || 'medium'];
-                  const isEditing = editingTaskId === task.id;
-
-                  if (isEditing && isOwner && !isCheckedOut) {
-                    return (
-                      <div key={task.id} className="rounded-lg border-2 border-primary/40 p-3 space-y-2 bg-primary/5">
-                        <Input value={editText} onChange={e => setEditText(e.target.value)} placeholder="업무 제목" className="font-medium text-sm" />
-                        <div className="grid grid-cols-2 gap-2">
-                          <Select value={editCategory} onValueChange={setEditCategory}>
-                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <Select value={editPriority} onValueChange={v => setEditPriority(v as any)}>
-                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="high">🔴 긴급</SelectItem>
-                              <SelectItem value="medium">🟡 보통</SelectItem>
-                              <SelectItem value="low">🟢 낮음</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Textarea value={editDetail} onChange={e => setEditDetail(e.target.value)} placeholder="세부 내용" rows={2} className="text-sm" />
-                        <div className="flex gap-2 justify-end">
-                          <Button variant="ghost" size="sm" onClick={() => setEditingTaskId(null)}>취소</Button>
-                          <Button size="sm" onClick={() => {
-                            if (!editText.trim()) return;
-                            const updated = report.morning_tasks.map(t =>
-                              t.id === task.id ? { ...t, text: editText.trim(), detail: editDetail.trim(), category: editCategory, priority: editPriority } : t
-                            );
-                            onUpdateTasks(report, updated);
-                            setEditingTaskId(null);
-                          }}>저장</Button>
-                        </div>
-                      </div>
-                    );
-                  }
 
                   return (
                     <div
@@ -510,57 +474,7 @@ function ReportCard({
             </div>
           ))}
 
-          {/* Add task button for owner before checkout */}
-          {isOwner && !isCheckedOut && (
-            <>
-              {addingTask ? (
-                <div className="rounded-lg border-2 border-dashed border-primary/30 p-4 space-y-3 bg-primary/5">
-                  <Input value={newTaskText} onChange={e => setNewTaskText(e.target.value)} placeholder="업무 제목" className="font-medium text-sm" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Select value={newTaskCategory} onValueChange={setNewTaskCategory}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select value={newTaskPriority} onValueChange={v => setNewTaskPriority(v as any)}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="high">🔴 긴급</SelectItem>
-                        <SelectItem value="medium">🟡 보통</SelectItem>
-                        <SelectItem value="low">🟢 낮음</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Textarea value={newTaskDetail} onChange={e => setNewTaskDetail(e.target.value)} placeholder="세부 내용" rows={2} className="text-sm" />
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="ghost" size="sm" onClick={() => { setAddingTask(false); setNewTaskText(''); setNewTaskDetail(''); }}>취소</Button>
-                    <Button size="sm" onClick={() => {
-                      if (!newTaskText.trim()) return;
-                      const newTask: MorningTask = {
-                        id: `task-${Date.now()}`,
-                        text: newTaskText.trim(),
-                        detail: newTaskDetail.trim(),
-                        category: newTaskCategory,
-                        priority: newTaskPriority,
-                        completed: false,
-                      };
-                      onUpdateTasks(report, [...report.morning_tasks, newTask]);
-                      setAddingTask(false);
-                      setNewTaskText('');
-                      setNewTaskDetail('');
-                      setNewTaskCategory('기타');
-                      setNewTaskPriority('medium');
-                    }}>추가</Button>
-                  </div>
-                </div>
-              ) : (
-                <Button variant="outline" size="sm" className="w-full" onClick={() => setAddingTask(true)}>
-                  <Plus className="h-3 w-3 mr-1" /> 업무 추가
-                </Button>
-              )}
-            </>
-          )}
+
 
           {report.notes && (
             <div className="bg-muted/50 rounded-lg p-3">
