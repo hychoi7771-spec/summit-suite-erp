@@ -314,24 +314,39 @@ export default function Manual() {
           </Section>
 
           {/* ── 일일업무보고 (NEW) ── */}
-          <Section id="daily-report" title="일일업무보고" icon={ClipboardCheck}>
+          <Section id="daily-report" title="데일리 체크인 (일일업무보고)" icon={ClipboardCheck}>
             <NewBadge />
-            <p>매일의 업무를 등록하고, 퇴근 전 완료 여부를 체크한 뒤 이사 확인과 대표이사 최종 승인까지 진행하는 <strong>4단계 일일업무보고 시스템</strong>입니다. 사이드바 메인 메뉴에서 접근합니다.</p>
+            <p>
+              데일리 체크인은 <strong>오늘 본인 업무의 결과 확인 전용</strong>입니다. 업무 자체의 등록·수정·삭제는 모두 <strong>'업무' 탭</strong>에서 진행하며,
+              체크인 시 본인에게 배정된 오늘 업무가 자동으로 가져와집니다. 체크아웃 후 이사 확인 → 대표이사 최종 승인까지 4단계 플로우를 따릅니다.
+            </p>
+
+            <InfoBox title="중요 변경사항" variant="warning">
+              이전에는 체크인 다이얼로그에서 업무를 직접 입력했지만, 이제 <strong>업무 등록은 '업무' 탭에서만</strong> 가능합니다.
+              담당자별 칸반 보드에서 업무를 추가하면 체크인 시 자동으로 표시됩니다.
+            </InfoBox>
 
             <SubSection title="전체 플로우">
               <div className="space-y-3 my-3">
                 <div className="flex items-center gap-3">
+                  <span className="flex items-center justify-center h-8 w-8 rounded-full bg-blue-100 text-blue-700 text-sm font-bold shrink-0">0</span>
+                  <div>
+                    <p className="text-sm font-semibold">📋 업무 탭에서 오늘 업무 등록 (사전)</p>
+                    <p className="text-xs text-muted-foreground">'업무' 탭의 칸반 보드에서 본인 담당 업무를 추가합니다 (마감일을 오늘로 설정 권장)</p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-3">
                   <span className="flex items-center justify-center h-8 w-8 rounded-full bg-emerald-100 text-emerald-700 text-sm font-bold shrink-0">1</span>
                   <div>
                     <p className="text-sm font-semibold">☀️ 오전 체크인</p>
-                    <p className="text-xs text-muted-foreground">출근 후 금일 할 업무를 등록합니다</p>
+                    <p className="text-xs text-muted-foreground">'☀️ 체크인' 버튼 클릭 → 오늘 본인 업무 자동 표시 → 비고만 입력 후 체크인</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="flex items-center justify-center h-8 w-8 rounded-full bg-orange-100 text-orange-700 text-sm font-bold shrink-0">2</span>
                   <div>
                     <p className="text-sm font-semibold">🚪 퇴근 전 체크아웃</p>
-                    <p className="text-xs text-muted-foreground">각 업무의 완료 여부를 체크한 뒤 체크아웃합니다</p>
+                    <p className="text-xs text-muted-foreground">각 업무에 ✓ 완료 / ↩ 미완료 버튼만 눌러 결과 표시 후 체크아웃</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3">
@@ -351,16 +366,16 @@ export default function Manual() {
               </div>
             </SubSection>
 
-            <SubSection title="1단계: 체크인 (업무 등록)">
+            <SubSection title="1단계: 체크인 (결과 확인용)">
               <Steps items={[
-                '일일업무보고 페이지에서 초록색 "☀️ 체크인" 버튼을 클릭합니다.',
-                '체크인 다이얼로그에서 오늘 할 업무를 입력합니다.',
-                '각 업무에 카테고리(기획/디자인/R&D/마케팅/기타)와 우선순위(높음/보통/낮음)를 지정합니다.',
-                '"+" 버튼으로 업무를 추가하고, 필요 시 비고란에 메모를 작성합니다.',
-                '"체크인" 버튼을 클릭하면 오늘의 보고서가 생성되고, 등록한 업무가 업무 보드에도 자동 등록됩니다.',
+                '먼저 사이드바의 "업무" 탭에서 오늘 처리할 본인 담당 업무를 등록해두세요 (마감일을 오늘로).',
+                '데일리 체크인 페이지에서 초록색 "☀️ 체크인" 버튼을 클릭합니다.',
+                '다이얼로그에 오늘 본인에게 배정된 미완료 업무 목록이 자동으로 표시됩니다.',
+                '필요 시 비고란에 컨디션·특이사항을 메모합니다.',
+                '"체크인 시작" 버튼을 클릭하면 해당 시점의 업무 스냅샷이 보고서에 기록됩니다.',
               ]} />
               <InfoBox title="참고">
-                하루에 1회만 체크인 가능합니다. 이미 체크인한 경우 체크인 버튼 대신 체크아웃 버튼이 표시됩니다.
+                체크인 다이얼로그에서는 더 이상 업무를 직접 입력하지 않습니다. 등록된 업무가 없으면 안내 메시지가 표시되며, 업무 탭에서 추가 후 다시 체크인하세요.
               </InfoBox>
             </SubSection>
 

@@ -307,17 +307,6 @@ function ReportCard({
   onUpdateTasks: (report: DailyReport, tasks: MorningTask[]) => void;
 }) {
   const [expanded, setExpanded] = useState(true);
-  const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
-  const [addingTask, setAddingTask] = useState(false);
-  const [newTaskText, setNewTaskText] = useState('');
-  const [newTaskDetail, setNewTaskDetail] = useState('');
-  const [newTaskCategory, setNewTaskCategory] = useState('기타');
-  const [newTaskPriority, setNewTaskPriority] = useState<'high' | 'medium' | 'low'>('medium');
-  const [editText, setEditText] = useState('');
-  const [editDetail, setEditDetail] = useState('');
-  const [editCategory, setEditCategory] = useState('');
-  const [editPriority, setEditPriority] = useState<'high' | 'medium' | 'low'>('medium');
-  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
 
   const user = profiles.find(p => p.id === report.user_id);
   const isOwner = report.user_id === currentProfile?.id;
@@ -398,10 +387,11 @@ function ReportCard({
         <CardContent className="pt-0 space-y-4">
           {/* Guide text for owners */}
           {isOwner && !isCheckedOut && (
-            <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5 flex items-center gap-2">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg px-4 py-2.5 flex items-start gap-2">
               <span className="text-sm">💡</span>
-              <p className="text-xs text-primary font-medium">
-                각 업무의 <strong>완료/미완료</strong> 버튼을 눌러 상태를 변경하세요. 수정·삭제도 각 업무 우측에서 가능합니다.
+              <p className="text-xs text-primary font-medium leading-relaxed">
+                각 업무의 <strong>완료/미완료</strong> 버튼만 눌러 결과를 기록하세요.<br />
+                <span className="text-muted-foreground font-normal">업무 등록·수정·삭제는 <strong>'업무' 탭</strong>에서 진행합니다.</span>
               </p>
             </div>
           )}
@@ -420,43 +410,6 @@ function ReportCard({
               <div className="space-y-2 ml-1">
                 {tasks.map(task => {
                   const prio = PRIORITY_CONFIG[task.priority || 'medium'];
-                  const isEditing = editingTaskId === task.id;
-
-                  if (isEditing && isOwner && !isCheckedOut) {
-                    return (
-                      <div key={task.id} className="rounded-lg border-2 border-primary/40 p-3 space-y-2 bg-primary/5">
-                        <Input value={editText} onChange={e => setEditText(e.target.value)} placeholder="업무 제목" className="font-medium text-sm" />
-                        <div className="grid grid-cols-2 gap-2">
-                          <Select value={editCategory} onValueChange={setEditCategory}>
-                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                            </SelectContent>
-                          </Select>
-                          <Select value={editPriority} onValueChange={v => setEditPriority(v as any)}>
-                            <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="high">🔴 긴급</SelectItem>
-                              <SelectItem value="medium">🟡 보통</SelectItem>
-                              <SelectItem value="low">🟢 낮음</SelectItem>
-                            </SelectContent>
-                          </Select>
-                        </div>
-                        <Textarea value={editDetail} onChange={e => setEditDetail(e.target.value)} placeholder="세부 내용" rows={2} className="text-sm" />
-                        <div className="flex gap-2 justify-end">
-                          <Button variant="ghost" size="sm" onClick={() => setEditingTaskId(null)}>취소</Button>
-                          <Button size="sm" onClick={() => {
-                            if (!editText.trim()) return;
-                            const updated = report.morning_tasks.map(t =>
-                              t.id === task.id ? { ...t, text: editText.trim(), detail: editDetail.trim(), category: editCategory, priority: editPriority } : t
-                            );
-                            onUpdateTasks(report, updated);
-                            setEditingTaskId(null);
-                          }}>저장</Button>
-                        </div>
-                      </div>
-                    );
-                  }
 
                   return (
                     <div
@@ -488,64 +441,19 @@ function ReportCard({
                             </p>
                           )}
                         </div>
-                        {/* Action buttons - always visible for owner */}
+                        {/* Toggle complete/incomplete — only action allowed */}
                         {isOwner && !isCheckedOut && (
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {/* Toggle complete/incomplete button - prominent */}
-                            <Button
-                              variant={task.completed ? "outline" : "default"}
-                              size="sm"
-                              className={`h-7 text-[11px] px-2.5 font-semibold ${task.completed
-                                ? 'border-muted-foreground/30 text-muted-foreground hover:bg-muted'
-                                : 'bg-success hover:bg-success/90 text-white shadow-sm'
-                              }`}
-                              onClick={(e) => { e.stopPropagation(); onToggleTask(report, task.id); }}
-                            >
-                              {task.completed ? '↩ 미완료' : '✓ 완료'}
-                            </Button>
-                            {/* Edit button */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingTaskId(task.id);
-                                setEditText(task.text);
-                                setEditDetail(task.detail || '');
-                                setEditCategory(task.category || '기타');
-                                setEditPriority(task.priority || 'medium');
-                              }}
-                            >
-                              ✏️ 수정
-                            </Button>
-                            {/* Delete button */}
-                            {report.morning_tasks.length > 1 && (
-                              deleteConfirmId === task.id ? (
-                                <div className="flex items-center gap-1">
-                                  <Button variant="destructive" size="sm" className="h-7 text-[11px] px-2" onClick={(e) => {
-                                    e.stopPropagation();
-                                    const updated = report.morning_tasks.filter(t => t.id !== task.id);
-                                    onUpdateTasks(report, updated);
-                                    setDeleteConfirmId(null);
-                                  }}>확인</Button>
-                                  <Button variant="ghost" size="sm" className="h-7 text-[11px] px-2" onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteConfirmId(null);
-                                  }}>취소</Button>
-                                </div>
-                              ) : (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 text-[11px] px-2 text-destructive/70 hover:text-destructive"
-                                  onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(task.id); }}
-                                >
-                                  🗑 삭제
-                                </Button>
-                              )
-                            )}
-                          </div>
+                          <Button
+                            variant={task.completed ? "outline" : "default"}
+                            size="sm"
+                            className={`h-7 text-[11px] px-2.5 font-semibold shrink-0 ${task.completed
+                              ? 'border-muted-foreground/30 text-muted-foreground hover:bg-muted'
+                              : 'bg-success hover:bg-success/90 text-white shadow-sm'
+                            }`}
+                            onClick={(e) => { e.stopPropagation(); onToggleTask(report, task.id); }}
+                          >
+                            {task.completed ? '↩ 미완료' : '✓ 완료'}
+                          </Button>
                         )}
                       </div>
                     </div>
@@ -555,57 +463,7 @@ function ReportCard({
             </div>
           ))}
 
-          {/* Add task button for owner before checkout */}
-          {isOwner && !isCheckedOut && (
-            <>
-              {addingTask ? (
-                <div className="rounded-lg border-2 border-dashed border-primary/30 p-4 space-y-3 bg-primary/5">
-                  <Input value={newTaskText} onChange={e => setNewTaskText(e.target.value)} placeholder="업무 제목" className="font-medium text-sm" />
-                  <div className="grid grid-cols-2 gap-2">
-                    <Select value={newTaskCategory} onValueChange={setNewTaskCategory}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {CATEGORIES.map(c => <SelectItem key={c.value} value={c.value}>{c.label}</SelectItem>)}
-                      </SelectContent>
-                    </Select>
-                    <Select value={newTaskPriority} onValueChange={v => setNewTaskPriority(v as any)}>
-                      <SelectTrigger className="h-8 text-xs"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="high">🔴 긴급</SelectItem>
-                        <SelectItem value="medium">🟡 보통</SelectItem>
-                        <SelectItem value="low">🟢 낮음</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <Textarea value={newTaskDetail} onChange={e => setNewTaskDetail(e.target.value)} placeholder="세부 내용" rows={2} className="text-sm" />
-                  <div className="flex gap-2 justify-end">
-                    <Button variant="ghost" size="sm" onClick={() => { setAddingTask(false); setNewTaskText(''); setNewTaskDetail(''); }}>취소</Button>
-                    <Button size="sm" onClick={() => {
-                      if (!newTaskText.trim()) return;
-                      const newTask: MorningTask = {
-                        id: `task-${Date.now()}`,
-                        text: newTaskText.trim(),
-                        detail: newTaskDetail.trim(),
-                        category: newTaskCategory,
-                        priority: newTaskPriority,
-                        completed: false,
-                      };
-                      onUpdateTasks(report, [...report.morning_tasks, newTask]);
-                      setAddingTask(false);
-                      setNewTaskText('');
-                      setNewTaskDetail('');
-                      setNewTaskCategory('기타');
-                      setNewTaskPriority('medium');
-                    }}>추가</Button>
-                  </div>
-                </div>
-              ) : (
-                <Button variant="outline" size="sm" className="w-full" onClick={() => setAddingTask(true)}>
-                  <Plus className="h-3 w-3 mr-1" /> 업무 추가
-                </Button>
-              )}
-            </>
-          )}
+
 
           {report.notes && (
             <div className="bg-muted/50 rounded-lg p-3">
@@ -708,10 +566,7 @@ export default function DailyWorkReport() {
   const [viewMode, setViewMode] = useState<'timeline' | 'person' | 'table' | 'weekly' | 'monthly' | 'yearly'>('timeline');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newTasks, setNewTasks] = useState<Omit<MorningTask, 'id' | 'completed'>[]>([
-    { text: '', detail: '', category: '기타', priority: 'medium' },
-  ]);
-  const [newProjectName, setNewProjectName] = useState('');
+  const [todayTasks, setTodayTasks] = useState<any[]>([]);
   const [newNotes, setNewNotes] = useState('');
   const [checkoutConfirmOpen, setCheckoutConfirmOpen] = useState(false);
   const [checkoutTargetReport, setCheckoutTargetReport] = useState<DailyReport | null>(null);
@@ -752,51 +607,39 @@ export default function DailyWorkReport() {
 
   const myReport = reports.find(r => r.user_id === profile?.id);
 
+  // Fetch today's tasks for the current user (used in check-in dialog preview)
+  const fetchTodayTasks = async () => {
+    if (!profile) return;
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const { data } = await supabase
+      .from('tasks')
+      .select('id, title, description, priority, tags, project_name, status, due_date')
+      .eq('assignee_id', profile.id)
+      .or(`due_date.eq.${today},due_date.is.null`)
+      .neq('status', 'done')
+      .order('priority', { ascending: false });
+    setTodayTasks(data || []);
+  };
+
   const handleCreateReport = async () => {
     if (!profile) return;
-    const validTasks = newTasks.filter(t => t.text.trim());
-    if (validTasks.length === 0) {
-      toast({ title: '업무를 하나 이상 입력해주세요', variant: 'destructive' });
-      return;
-    }
 
-    // Step 1: Insert into tasks table FIRST so we can capture linked task IDs
-    const priorityMap: Record<string, 'low' | 'medium' | 'high'> = { low: 'low', medium: 'medium', high: 'high' };
-    const projectName = newProjectName.trim() || null;
-    const taskInserts = validTasks.map((t, i) => ({
-      title: t.text.trim(),
-      description: t.detail.trim() || null,
-      assignee_id: profile.id,
-      priority: priorityMap[t.priority] || 'medium',
-      status: 'todo' as const,
-      tags: [t.category],
-      due_date: selectedDate,
-      project_name: projectName,
-      position: i,
-    }));
-    const { data: insertedTasks, error: tasksErr } = await supabase
-      .from('tasks')
-      .insert(taskInserts)
-      .select('id, title');
+    // Snapshot today's tasks into morning_tasks (linked back to tasks table)
+    const priorityMap: Record<string, 'high' | 'medium' | 'low'> = {
+      high: 'high', medium: 'medium', low: 'low',
+    };
 
-    if (tasksErr) {
-      toast({ title: '업무 동기화 실패', description: tasksErr.message, variant: 'destructive' });
-      return;
-    }
-
-    // Step 2: Build morning_tasks with linked_task_id mapping (preserves order)
-    const tasks: MorningTask[] = validTasks.map((t, i) => ({
+    const tasks: MorningTask[] = todayTasks.map((t, i) => ({
       id: `task-${Date.now()}-${i}`,
-      text: t.text.trim(),
-      detail: t.detail.trim(),
-      category: t.category,
-      priority: t.priority,
-      completed: false,
-      linked_task_id: insertedTasks?.[i]?.id || null,
-      project_name: projectName,
+      text: t.title,
+      detail: t.description || '',
+      category: (t.tags && t.tags[0]) || '기타',
+      priority: priorityMap[t.priority] || 'medium',
+      completed: t.status === 'done',
+      linked_task_id: t.id,
+      project_name: t.project_name || null,
     }));
 
-    // Step 3: Insert daily_work_report
     const { error } = await supabase.from('daily_work_reports').insert({
       user_id: profile.id,
       date: selectedDate,
@@ -805,20 +648,22 @@ export default function DailyWorkReport() {
     });
 
     if (error) {
-      toast({ title: error.code === '23505' ? '이미 체크인 되었습니다' : '등록 실패', description: error.message, variant: 'destructive' });
-      // Roll back the tasks we just inserted
-      if (insertedTasks?.length) {
-        await supabase.from('tasks').delete().in('id', insertedTasks.map(t => t.id));
-      }
+      toast({
+        title: error.code === '23505' ? '이미 체크인 되었습니다' : '체크인 실패',
+        description: error.message,
+        variant: 'destructive',
+      });
       return;
     }
 
-    toast({ title: '☀️ 체크인 완료! 업무가 자동으로 등록되었습니다.' });
+    toast({
+      title: '☀️ 체크인 완료!',
+      description: tasks.length === 0
+        ? '오늘 등록된 업무가 없습니다. 업무 탭에서 업무를 추가하세요.'
+        : `오늘의 업무 ${tasks.length}건을 가져왔습니다.`,
+    });
     setDialogOpen(false);
-    setNewTasks([{ text: '', detail: '', category: '기타', priority: 'medium' }]);
-    setNewProjectName('');
     setNewNotes('');
-    // Refresh to get the actual inserted report with correct ID
     fetchData();
   };
 
@@ -1024,12 +869,18 @@ export default function DailyWorkReport() {
         <div>
           <h1 className="text-2xl font-bold text-foreground">데일리 체크인</h1>
           <p className="text-sm text-muted-foreground mt-1">
-            체크인으로 업무 시작 → 체크아웃으로 완료 여부 기록
+            오늘 본인 업무 결과 확인 전용 · 업무 등록·수정·삭제는 '업무' 탭에서 진행하세요
           </p>
         </div>
         <div className="flex items-center gap-2">
           {isToday && !myReport && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Dialog
+              open={dialogOpen}
+              onOpenChange={(open) => {
+                setDialogOpen(open);
+                if (open) fetchTodayTasks();
+              }}
+            >
               <DialogTrigger asChild>
                 <Button size="lg" className="gap-2 px-6 shadow-lg animate-pulse hover:animate-none bg-emerald-600 hover:bg-emerald-700 text-white">
                   <LogIn className="h-5 w-5" /> ☀️ 체크인
@@ -1038,22 +889,55 @@ export default function DailyWorkReport() {
               <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>☀️ 오늘의 체크인</DialogTitle>
-                  <DialogDescription>오늘 수행할 업무를 가볍게 등록하세요.</DialogDescription>
+                  <DialogDescription>
+                    오늘 수행할 본인 업무 목록입니다. 퇴근 전 체크아웃 시 이 목록의 완료 여부를 기록합니다.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <TaskCreateForm
-                    tasks={newTasks}
-                    setTasks={setNewTasks}
-                    projectName={newProjectName}
-                    setProjectName={setNewProjectName}
-                    projectOptions={projectOptions}
-                  />
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-primary">
+                    📌 <strong>업무 등록은 '업무' 탭에서</strong> 진행하세요. 체크인은 오늘 본인에게 배정된 업무를 자동으로 가져옵니다.
+                  </div>
+
+                  {todayTasks.length === 0 ? (
+                    <div className="rounded-lg border-2 border-dashed border-muted-foreground/20 p-6 text-center">
+                      <p className="text-sm text-muted-foreground mb-2">📭 오늘 할당된 업무가 없습니다</p>
+                      <p className="text-xs text-muted-foreground">
+                        '업무' 탭에서 오늘 마감일의 업무를 먼저 등록해주세요.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-72 overflow-y-auto">
+                      <p className="text-xs font-semibold text-muted-foreground">
+                        오늘의 업무 ({todayTasks.length}건)
+                      </p>
+                      {todayTasks.map(t => (
+                        <div key={t.id} className="rounded-lg border p-3 bg-card">
+                          <div className="flex items-start gap-2">
+                            <CircleDot className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium">{t.title}</p>
+                              {t.project_name && (
+                                <p className="text-[10px] text-primary mt-0.5">📁 {t.project_name}</p>
+                              )}
+                              {t.description && (
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t.description}</p>
+                              )}
+                            </div>
+                            {t.priority === 'high' && (
+                              <Badge variant="outline" className="text-[9px] bg-destructive/10 text-destructive border-destructive/20">긴급</Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div>
-                    <Label className="text-sm font-medium">비고</Label>
-                    <Textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="참고 사항..." rows={2} />
+                    <Label className="text-sm font-medium">비고 (선택)</Label>
+                    <Textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="오늘 컨디션, 특이사항 등..." rows={2} />
                   </div>
                   <Button onClick={handleCreateReport} className="w-full" size="lg">
-                    <LogIn className="h-4 w-4 mr-1" /> 체크인
+                    <LogIn className="h-4 w-4 mr-1" /> 체크인 시작
                   </Button>
                 </div>
               </DialogContent>
