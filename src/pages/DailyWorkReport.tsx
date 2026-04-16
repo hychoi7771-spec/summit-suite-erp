@@ -1016,7 +1016,13 @@ export default function DailyWorkReport() {
         </div>
         <div className="flex items-center gap-2">
           {isToday && !myReport && (
-            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <Dialog
+              open={dialogOpen}
+              onOpenChange={(open) => {
+                setDialogOpen(open);
+                if (open) fetchTodayTasks();
+              }}
+            >
               <DialogTrigger asChild>
                 <Button size="lg" className="gap-2 px-6 shadow-lg animate-pulse hover:animate-none bg-emerald-600 hover:bg-emerald-700 text-white">
                   <LogIn className="h-5 w-5" /> ☀️ 체크인
@@ -1025,22 +1031,55 @@ export default function DailyWorkReport() {
               <DialogContent className="max-w-xl max-h-[85vh] overflow-y-auto">
                 <DialogHeader>
                   <DialogTitle>☀️ 오늘의 체크인</DialogTitle>
-                  <DialogDescription>오늘 수행할 업무를 가볍게 등록하세요.</DialogDescription>
+                  <DialogDescription>
+                    오늘 수행할 본인 업무 목록입니다. 퇴근 전 체크아웃 시 이 목록의 완료 여부를 기록합니다.
+                  </DialogDescription>
                 </DialogHeader>
                 <div className="space-y-4">
-                  <TaskCreateForm
-                    tasks={newTasks}
-                    setTasks={setNewTasks}
-                    projectName={newProjectName}
-                    setProjectName={setNewProjectName}
-                    projectOptions={projectOptions}
-                  />
+                  <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-xs text-primary">
+                    📌 <strong>업무 등록은 '업무' 탭에서</strong> 진행하세요. 체크인은 오늘 본인에게 배정된 업무를 자동으로 가져옵니다.
+                  </div>
+
+                  {todayTasks.length === 0 ? (
+                    <div className="rounded-lg border-2 border-dashed border-muted-foreground/20 p-6 text-center">
+                      <p className="text-sm text-muted-foreground mb-2">📭 오늘 할당된 업무가 없습니다</p>
+                      <p className="text-xs text-muted-foreground">
+                        '업무' 탭에서 오늘 마감일의 업무를 먼저 등록해주세요.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 max-h-72 overflow-y-auto">
+                      <p className="text-xs font-semibold text-muted-foreground">
+                        오늘의 업무 ({todayTasks.length}건)
+                      </p>
+                      {todayTasks.map(t => (
+                        <div key={t.id} className="rounded-lg border p-3 bg-card">
+                          <div className="flex items-start gap-2">
+                            <CircleDot className="h-4 w-4 text-muted-foreground mt-0.5 shrink-0" />
+                            <div className="flex-1 min-w-0">
+                              <p className="text-sm font-medium">{t.title}</p>
+                              {t.project_name && (
+                                <p className="text-[10px] text-primary mt-0.5">📁 {t.project_name}</p>
+                              )}
+                              {t.description && (
+                                <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{t.description}</p>
+                              )}
+                            </div>
+                            {t.priority === 'high' && (
+                              <Badge variant="outline" className="text-[9px] bg-destructive/10 text-destructive border-destructive/20">긴급</Badge>
+                            )}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
                   <div>
-                    <Label className="text-sm font-medium">비고</Label>
-                    <Textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="참고 사항..." rows={2} />
+                    <Label className="text-sm font-medium">비고 (선택)</Label>
+                    <Textarea value={newNotes} onChange={e => setNewNotes(e.target.value)} placeholder="오늘 컨디션, 특이사항 등..." rows={2} />
                   </div>
                   <Button onClick={handleCreateReport} className="w-full" size="lg">
-                    <LogIn className="h-4 w-4 mr-1" /> 체크인
+                    <LogIn className="h-4 w-4 mr-1" /> 체크인 시작
                   </Button>
                 </div>
               </DialogContent>
