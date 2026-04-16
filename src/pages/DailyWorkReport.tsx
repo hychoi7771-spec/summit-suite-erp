@@ -39,6 +39,8 @@ interface MorningTask {
   category: string;
   priority: 'high' | 'medium' | 'low';
   completed: boolean;
+  linked_task_id?: string | null; // 업무 탭(tasks) 동기화용
+  project_name?: string | null;
 }
 
 interface DailyReport {
