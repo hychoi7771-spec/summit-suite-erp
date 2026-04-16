@@ -488,64 +488,19 @@ function ReportCard({
                             </p>
                           )}
                         </div>
-                        {/* Action buttons - always visible for owner */}
+                        {/* Toggle complete/incomplete — only action allowed */}
                         {isOwner && !isCheckedOut && (
-                          <div className="flex items-center gap-1.5 shrink-0">
-                            {/* Toggle complete/incomplete button - prominent */}
-                            <Button
-                              variant={task.completed ? "outline" : "default"}
-                              size="sm"
-                              className={`h-7 text-[11px] px-2.5 font-semibold ${task.completed
-                                ? 'border-muted-foreground/30 text-muted-foreground hover:bg-muted'
-                                : 'bg-success hover:bg-success/90 text-white shadow-sm'
-                              }`}
-                              onClick={(e) => { e.stopPropagation(); onToggleTask(report, task.id); }}
-                            >
-                              {task.completed ? '↩ 미완료' : '✓ 완료'}
-                            </Button>
-                            {/* Edit button */}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 text-[11px] px-2 text-muted-foreground hover:text-foreground"
-                              onClick={(e) => {
-                                e.stopPropagation();
-                                setEditingTaskId(task.id);
-                                setEditText(task.text);
-                                setEditDetail(task.detail || '');
-                                setEditCategory(task.category || '기타');
-                                setEditPriority(task.priority || 'medium');
-                              }}
-                            >
-                              ✏️ 수정
-                            </Button>
-                            {/* Delete button */}
-                            {report.morning_tasks.length > 1 && (
-                              deleteConfirmId === task.id ? (
-                                <div className="flex items-center gap-1">
-                                  <Button variant="destructive" size="sm" className="h-7 text-[11px] px-2" onClick={(e) => {
-                                    e.stopPropagation();
-                                    const updated = report.morning_tasks.filter(t => t.id !== task.id);
-                                    onUpdateTasks(report, updated);
-                                    setDeleteConfirmId(null);
-                                  }}>확인</Button>
-                                  <Button variant="ghost" size="sm" className="h-7 text-[11px] px-2" onClick={(e) => {
-                                    e.stopPropagation();
-                                    setDeleteConfirmId(null);
-                                  }}>취소</Button>
-                                </div>
-                              ) : (
-                                <Button
-                                  variant="ghost"
-                                  size="sm"
-                                  className="h-7 text-[11px] px-2 text-destructive/70 hover:text-destructive"
-                                  onClick={(e) => { e.stopPropagation(); setDeleteConfirmId(task.id); }}
-                                >
-                                  🗑 삭제
-                                </Button>
-                              )
-                            )}
-                          </div>
+                          <Button
+                            variant={task.completed ? "outline" : "default"}
+                            size="sm"
+                            className={`h-7 text-[11px] px-2.5 font-semibold shrink-0 ${task.completed
+                              ? 'border-muted-foreground/30 text-muted-foreground hover:bg-muted'
+                              : 'bg-success hover:bg-success/90 text-white shadow-sm'
+                            }`}
+                            onClick={(e) => { e.stopPropagation(); onToggleTask(report, task.id); }}
+                          >
+                            {task.completed ? '↩ 미완료' : '✓ 완료'}
+                          </Button>
                         )}
                       </div>
                     </div>
