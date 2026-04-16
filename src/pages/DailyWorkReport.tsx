@@ -741,6 +741,7 @@ export default function DailyWorkReport() {
     setDialogOpen(false);
     setNewTasks([{ text: '', detail: '', category: '기타', priority: 'medium' }]);
     setNewNotes('');
+    // Refresh to get the actual inserted report with correct ID
     fetchData();
   };
 
