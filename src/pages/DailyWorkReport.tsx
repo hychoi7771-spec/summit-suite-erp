@@ -753,13 +753,17 @@ export default function DailyWorkReport() {
       return;
     }
 
+    // Optimistic update
     const updatedTasks = report.morning_tasks.map(t =>
       t.id === taskId ? { ...t, completed: !t.completed } : t
     );
+    setReports(prev => prev.map(r =>
+      r.id === report.id ? { ...r, morning_tasks: updatedTasks } : r
+    ));
+
     await supabase.from('daily_work_reports').update({
       morning_tasks: updatedTasks as any,
     }).eq('id', report.id);
-    fetchData();
   };
 
   const handleCheckoutConfirm = async () => {
