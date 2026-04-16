@@ -107,7 +107,15 @@ const CATEGORY_COLORS: Record<string, string> = {
 
 // --- Sub-components ---
 
-function TaskCreateForm({ tasks, setTasks }: { tasks: Omit<MorningTask, 'id' | 'completed'>[]; setTasks: (t: Omit<MorningTask, 'id' | 'completed'>[]) => void }) {
+function TaskCreateForm({
+  tasks, setTasks, projectName, setProjectName, projectOptions,
+}: {
+  tasks: Omit<MorningTask, 'id' | 'completed'>[];
+  setTasks: (t: Omit<MorningTask, 'id' | 'completed'>[]) => void;
+  projectName: string;
+  setProjectName: (v: string) => void;
+  projectOptions: string[];
+}) {
   const addTask = () => setTasks([...tasks, { text: '', detail: '', category: '기타', priority: 'medium' }]);
   const removeTask = (i: number) => setTasks(tasks.filter((_, j) => j !== i));
   const update = (i: number, patch: Partial<Omit<MorningTask, 'id' | 'completed'>>) => {
@@ -118,6 +126,31 @@ function TaskCreateForm({ tasks, setTasks }: { tasks: Omit<MorningTask, 'id' | '
 
   return (
     <div className="space-y-4">
+      {/* Project selector — applies to all tasks in this check-in */}
+      <div className="rounded-lg border bg-primary/5 border-primary/20 p-3 space-y-2">
+        <Label className="text-xs font-semibold text-primary">📁 프로젝트 (업무 탭/프로젝트 보드 연동)</Label>
+        <Select value={projectName || '__none__'} onValueChange={v => setProjectName(v === '__none__' ? '' : v)}>
+          <SelectTrigger className="h-9 text-sm">
+            <SelectValue placeholder="프로젝트 선택 (선택사항)" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__none__">미지정 (개인 업무)</SelectItem>
+            {projectOptions.map(p => (
+              <SelectItem key={p} value={p}>{p}</SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Input
+          placeholder="또는 새 프로젝트명 직접 입력"
+          value={projectName}
+          onChange={e => setProjectName(e.target.value)}
+          className="h-8 text-xs"
+        />
+        <p className="text-[10px] text-muted-foreground">
+          ✓ 등록한 업무는 업무 탭과 선택한 프로젝트의 단계별 보드에 자동 표시됩니다.
+        </p>
+      </div>
+
       {tasks.map((task, i) => (
         <div key={i} className="p-4 rounded-lg border bg-card space-y-3">
           <div className="flex items-center gap-2">
