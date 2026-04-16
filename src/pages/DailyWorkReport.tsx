@@ -708,10 +708,7 @@ export default function DailyWorkReport() {
   const [viewMode, setViewMode] = useState<'timeline' | 'person' | 'table' | 'weekly' | 'monthly' | 'yearly'>('timeline');
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newTasks, setNewTasks] = useState<Omit<MorningTask, 'id' | 'completed'>[]>([
-    { text: '', detail: '', category: '기타', priority: 'medium' },
-  ]);
-  const [newProjectName, setNewProjectName] = useState('');
+  const [todayTasks, setTodayTasks] = useState<any[]>([]);
   const [newNotes, setNewNotes] = useState('');
   const [checkoutConfirmOpen, setCheckoutConfirmOpen] = useState(false);
   const [checkoutTargetReport, setCheckoutTargetReport] = useState<DailyReport | null>(null);
