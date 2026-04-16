@@ -768,52 +768,71 @@ export default function DailyWorkReport() {
 
   const handleCheckoutConfirm = async () => {
     if (!checkoutTargetReport) return;
+    // Optimistic update
+    setReports(prev => prev.map(r =>
+      r.id === checkoutTargetReport.id ? { ...r, completion_checked: true, checked_at: new Date().toISOString() } : r
+    ));
+    setCheckoutConfirmOpen(false);
+    setCheckoutTargetReport(null);
+    toast({ title: '🚪 체크아웃 완료! 수고하셨습니다.' });
+
     await supabase.from('daily_work_reports').update({
       completion_checked: true,
       checked_at: new Date().toISOString(),
     }).eq('id', checkoutTargetReport.id);
-    toast({ title: '🚪 체크아웃 완료! 수고하셨습니다.' });
-    setCheckoutConfirmOpen(false);
-    setCheckoutTargetReport(null);
-    fetchData();
   };
 
   const handleUpdateTasks = async (report: DailyReport, updatedTasks: MorningTask[]) => {
+    // Optimistic update
+    setReports(prev => prev.map(r =>
+      r.id === report.id ? { ...r, morning_tasks: updatedTasks } : r
+    ));
+
     const { error } = await supabase.from('daily_work_reports').update({
       morning_tasks: updatedTasks as any,
     }).eq('id', report.id);
     if (error) {
       toast({ title: '업무 수정 실패', variant: 'destructive' });
+      fetchData(); // Revert on error
     } else {
       toast({ title: '✅ 업무가 수정되었습니다' });
-      fetchData();
     }
   };
 
   const handleApprove = async (report: DailyReport, type: 'director' | 'ceo') => {
     if (!profile) return;
+    const now = new Date().toISOString();
+
+    // Optimistic update
     if (type === 'director') {
-      await supabase.from('daily_work_reports').update({
-        director_approved: true,
-        director_approved_at: new Date().toISOString(),
-        director_approved_by: profile.id,
-      }).eq('id', report.id);
+      setReports(prev => prev.map(r =>
+        r.id === report.id ? { ...r, director_approved: true, director_approved_at: now, director_approved_by: profile.id } : r
+      ));
       toast({ title: '✅ 이사 확인 완료' });
-    } else {
       await supabase.from('daily_work_reports').update({
-        ceo_approved: true,
-        ceo_approved_at: new Date().toISOString(),
-        ceo_approved_by: profile.id,
+        director_approved: true, director_approved_at: now, director_approved_by: profile.id,
       }).eq('id', report.id);
+    } else {
+      setReports(prev => prev.map(r =>
+        r.id === report.id ? { ...r, ceo_approved: true, ceo_approved_at: now, ceo_approved_by: profile.id } : r
+      ));
       toast({ title: '🔖 대표 직인 승인 완료' });
+      await supabase.from('daily_work_reports').update({
+        ceo_approved: true, ceo_approved_at: now, ceo_approved_by: profile.id,
+      }).eq('id', report.id);
     }
-    fetchData();
   };
 
-
-    const handleDelete = async (reportId: string) => {
+  const handleDelete = async (reportId: string) => {
+    // Optimistic update
+    setReports(prev => prev.filter(r => r.id !== reportId));
     toast({ title: '보고서 삭제 완료' });
-    fetchData();
+
+    const { error } = await supabase.from('daily_work_reports').delete().eq('id', reportId);
+    if (error) {
+      toast({ title: '삭제 실패', variant: 'destructive' });
+      fetchData(); // Revert on error
+    }
   };
 
   const changeDate = (days: number) => {
