@@ -982,6 +982,12 @@ export default function DailyWorkReport() {
   };
 
   const handleDelete = async (reportId: string) => {
+    // Capture linked task IDs before optimistic removal
+    const target = reports.find(r => r.id === reportId);
+    const linkedTaskIds = (target?.morning_tasks || [])
+      .map(t => t.linked_task_id)
+      .filter((id): id is string => !!id);
+
     // Optimistic update
     setReports(prev => prev.filter(r => r.id !== reportId));
     toast({ title: '보고서 삭제 완료' });
@@ -990,6 +996,12 @@ export default function DailyWorkReport() {
     if (error) {
       toast({ title: '삭제 실패', variant: 'destructive' });
       fetchData(); // Revert on error
+      return;
+    }
+
+    // 🔄 Cascade delete linked tasks from tasks table
+    if (linkedTaskIds.length > 0) {
+      await supabase.from('tasks').delete().in('id', linkedTaskIds);
     }
   };
 
