@@ -703,6 +703,7 @@ export default function DailyWorkReport() {
   const { toast } = useToast();
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
+  const [projectOptions, setProjectOptions] = useState<string[]>([]);
   const [selectedDate, setSelectedDate] = useState(format(new Date(), 'yyyy-MM-dd'));
   const [viewMode, setViewMode] = useState<'timeline' | 'person' | 'table' | 'weekly' | 'monthly' | 'yearly'>('timeline');
   const [loading, setLoading] = useState(true);
@@ -710,6 +711,7 @@ export default function DailyWorkReport() {
   const [newTasks, setNewTasks] = useState<Omit<MorningTask, 'id' | 'completed'>[]>([
     { text: '', detail: '', category: '기타', priority: 'medium' },
   ]);
+  const [newProjectName, setNewProjectName] = useState('');
   const [newNotes, setNewNotes] = useState('');
   const [checkoutConfirmOpen, setCheckoutConfirmOpen] = useState(false);
   const [checkoutTargetReport, setCheckoutTargetReport] = useState<DailyReport | null>(null);
@@ -717,16 +719,36 @@ export default function DailyWorkReport() {
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
 
   const fetchData = async () => {
-    const [reportsRes, profilesRes] = await Promise.all([
+    const [reportsRes, profilesRes, tasksRes] = await Promise.all([
       supabase.from('daily_work_reports').select('*').eq('date', selectedDate).order('created_at', { ascending: true }),
       supabase.from('profiles').select('id, user_id, name, name_kr, avatar'),
+      supabase.from('tasks').select('project_name'),
     ]);
     setReports((reportsRes.data as any[]) || []);
     setProfiles(profilesRes.data || []);
+    const projects = Array.from(
+      new Set((tasksRes.data || []).map((t: any) => t.project_name).filter(Boolean))
+    ) as string[];
+    setProjectOptions(projects.sort());
     setLoading(false);
   };
 
   useEffect(() => { fetchData(); }, [selectedDate]);
+
+  // Realtime sync: when tasks or daily_work_reports change, refresh
+  useEffect(() => {
+    const channel = supabase
+      .channel('daily-report-sync')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_work_reports' }, () => {
+        fetchData();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
+        fetchData();
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedDate]);
 
   const myReport = reports.find(r => r.user_id === profile?.id);
 
@@ -737,6 +759,32 @@ export default function DailyWorkReport() {
       toast({ title: '업무를 하나 이상 입력해주세요', variant: 'destructive' });
       return;
     }
+
+    // Step 1: Insert into tasks table FIRST so we can capture linked task IDs
+    const priorityMap: Record<string, 'low' | 'medium' | 'high'> = { low: 'low', medium: 'medium', high: 'high' };
+    const projectName = newProjectName.trim() || null;
+    const taskInserts = validTasks.map((t, i) => ({
+      title: t.text.trim(),
+      description: t.detail.trim() || null,
+      assignee_id: profile.id,
+      priority: priorityMap[t.priority] || 'medium',
+      status: 'todo' as const,
+      tags: [t.category],
+      due_date: selectedDate,
+      project_name: projectName,
+      position: i,
+    }));
+    const { data: insertedTasks, error: tasksErr } = await supabase
+      .from('tasks')
+      .insert(taskInserts)
+      .select('id, title');
+
+    if (tasksErr) {
+      toast({ title: '업무 동기화 실패', description: tasksErr.message, variant: 'destructive' });
+      return;
+    }
+
+    // Step 2: Build morning_tasks with linked_task_id mapping (preserves order)
     const tasks: MorningTask[] = validTasks.map((t, i) => ({
       id: `task-${Date.now()}-${i}`,
       text: t.text.trim(),
@@ -744,8 +792,11 @@ export default function DailyWorkReport() {
       category: t.category,
       priority: t.priority,
       completed: false,
+      linked_task_id: insertedTasks?.[i]?.id || null,
+      project_name: projectName,
     }));
 
+    // Step 3: Insert daily_work_report
     const { error } = await supabase.from('daily_work_reports').insert({
       user_id: profile.id,
       date: selectedDate,
@@ -755,26 +806,17 @@ export default function DailyWorkReport() {
 
     if (error) {
       toast({ title: error.code === '23505' ? '이미 체크인 되었습니다' : '등록 실패', description: error.message, variant: 'destructive' });
+      // Roll back the tasks we just inserted
+      if (insertedTasks?.length) {
+        await supabase.from('tasks').delete().in('id', insertedTasks.map(t => t.id));
+      }
       return;
     }
-
-    // Auto-sync: create tasks in the tasks table
-    const priorityMap: Record<string, 'low' | 'medium' | 'high'> = { low: 'low', medium: 'medium', high: 'high' };
-    const taskInserts = validTasks.map((t, i) => ({
-      title: t.text.trim(),
-      description: t.detail.trim() || null,
-      assignee_id: profile.id,
-      priority: priorityMap[t.priority] || 'medium',
-      status: 'todo' as const,
-      tags: [t.category],
-      due_date: selectedDate,
-      position: i,
-    }));
-    await supabase.from('tasks').insert(taskInserts);
 
     toast({ title: '☀️ 체크인 완료! 업무가 자동으로 등록되었습니다.' });
     setDialogOpen(false);
     setNewTasks([{ text: '', detail: '', category: '기타', priority: 'medium' }]);
+    setNewProjectName('');
     setNewNotes('');
     // Refresh to get the actual inserted report with correct ID
     fetchData();
