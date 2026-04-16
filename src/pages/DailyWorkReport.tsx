@@ -749,51 +749,39 @@ export default function DailyWorkReport() {
 
   const myReport = reports.find(r => r.user_id === profile?.id);
 
+  // Fetch today's tasks for the current user (used in check-in dialog preview)
+  const fetchTodayTasks = async () => {
+    if (!profile) return;
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const { data } = await supabase
+      .from('tasks')
+      .select('id, title, description, priority, tags, project_name, status, due_date')
+      .eq('assignee_id', profile.id)
+      .or(`due_date.eq.${today},due_date.is.null`)
+      .neq('status', 'done')
+      .order('priority', { ascending: false });
+    setTodayTasks(data || []);
+  };
+
   const handleCreateReport = async () => {
     if (!profile) return;
-    const validTasks = newTasks.filter(t => t.text.trim());
-    if (validTasks.length === 0) {
-      toast({ title: '업무를 하나 이상 입력해주세요', variant: 'destructive' });
-      return;
-    }
 
-    // Step 1: Insert into tasks table FIRST so we can capture linked task IDs
-    const priorityMap: Record<string, 'low' | 'medium' | 'high'> = { low: 'low', medium: 'medium', high: 'high' };
-    const projectName = newProjectName.trim() || null;
-    const taskInserts = validTasks.map((t, i) => ({
-      title: t.text.trim(),
-      description: t.detail.trim() || null,
-      assignee_id: profile.id,
-      priority: priorityMap[t.priority] || 'medium',
-      status: 'todo' as const,
-      tags: [t.category],
-      due_date: selectedDate,
-      project_name: projectName,
-      position: i,
-    }));
-    const { data: insertedTasks, error: tasksErr } = await supabase
-      .from('tasks')
-      .insert(taskInserts)
-      .select('id, title');
+    // Snapshot today's tasks into morning_tasks (linked back to tasks table)
+    const priorityMap: Record<string, 'high' | 'medium' | 'low'> = {
+      high: 'high', medium: 'medium', low: 'low',
+    };
 
-    if (tasksErr) {
-      toast({ title: '업무 동기화 실패', description: tasksErr.message, variant: 'destructive' });
-      return;
-    }
-
-    // Step 2: Build morning_tasks with linked_task_id mapping (preserves order)
-    const tasks: MorningTask[] = validTasks.map((t, i) => ({
+    const tasks: MorningTask[] = todayTasks.map((t, i) => ({
       id: `task-${Date.now()}-${i}`,
-      text: t.text.trim(),
-      detail: t.detail.trim(),
-      category: t.category,
-      priority: t.priority,
-      completed: false,
-      linked_task_id: insertedTasks?.[i]?.id || null,
-      project_name: projectName,
+      text: t.title,
+      detail: t.description || '',
+      category: (t.tags && t.tags[0]) || '기타',
+      priority: priorityMap[t.priority] || 'medium',
+      completed: t.status === 'done',
+      linked_task_id: t.id,
+      project_name: t.project_name || null,
     }));
 
-    // Step 3: Insert daily_work_report
     const { error } = await supabase.from('daily_work_reports').insert({
       user_id: profile.id,
       date: selectedDate,
@@ -802,20 +790,22 @@ export default function DailyWorkReport() {
     });
 
     if (error) {
-      toast({ title: error.code === '23505' ? '이미 체크인 되었습니다' : '등록 실패', description: error.message, variant: 'destructive' });
-      // Roll back the tasks we just inserted
-      if (insertedTasks?.length) {
-        await supabase.from('tasks').delete().in('id', insertedTasks.map(t => t.id));
-      }
+      toast({
+        title: error.code === '23505' ? '이미 체크인 되었습니다' : '체크인 실패',
+        description: error.message,
+        variant: 'destructive',
+      });
       return;
     }
 
-    toast({ title: '☀️ 체크인 완료! 업무가 자동으로 등록되었습니다.' });
+    toast({
+      title: '☀️ 체크인 완료!',
+      description: tasks.length === 0
+        ? '오늘 등록된 업무가 없습니다. 업무 탭에서 업무를 추가하세요.'
+        : `오늘의 업무 ${tasks.length}건을 가져왔습니다.`,
+    });
     setDialogOpen(false);
-    setNewTasks([{ text: '', detail: '', category: '기타', priority: 'medium' }]);
-    setNewProjectName('');
     setNewNotes('');
-    // Refresh to get the actual inserted report with correct ID
     fetchData();
   };
 
