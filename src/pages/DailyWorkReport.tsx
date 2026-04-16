@@ -832,8 +832,11 @@ export default function DailyWorkReport() {
     }
 
     // Optimistic update
+    const target = report.morning_tasks.find(t => t.id === taskId);
+    if (!target) return;
+    const newCompleted = !target.completed;
     const updatedTasks = report.morning_tasks.map(t =>
-      t.id === taskId ? { ...t, completed: !t.completed } : t
+      t.id === taskId ? { ...t, completed: newCompleted } : t
     );
     setReports(prev => prev.map(r =>
       r.id === report.id ? { ...r, morning_tasks: updatedTasks } : r
@@ -842,6 +845,14 @@ export default function DailyWorkReport() {
     await supabase.from('daily_work_reports').update({
       morning_tasks: updatedTasks as any,
     }).eq('id', report.id);
+
+    // 🔄 Sync to tasks table — toggle the linked task's status
+    if (target.linked_task_id) {
+      await supabase
+        .from('tasks')
+        .update({ status: newCompleted ? 'done' : 'in-progress' })
+        .eq('id', target.linked_task_id);
+    }
   };
 
   const handleCheckoutConfirm = async () => {
@@ -861,8 +872,13 @@ export default function DailyWorkReport() {
   };
 
   const handleUpdateTasks = async (report: DailyReport, updatedTasks: MorningTask[]) => {
-    // Optimistic update
-    setReports(prev => prev.map(r =>
+    // Compute diff vs current state for tasks-table sync
+    const prev = report.morning_tasks;
+    const prevById = new Map(prev.map(t => [t.id, t]));
+    const newById = new Map(updatedTasks.map(t => [t.id, t]));
+
+    // Optimistic update of report
+    setReports(prevReports => prevReports.map(r =>
       r.id === report.id ? { ...r, morning_tasks: updatedTasks } : r
     ));
 
@@ -872,9 +888,73 @@ export default function DailyWorkReport() {
     if (error) {
       toast({ title: '업무 수정 실패', variant: 'destructive' });
       fetchData(); // Revert on error
-    } else {
-      toast({ title: '✅ 업무가 수정되었습니다' });
+      return;
     }
+
+    // 🔄 Sync to tasks table
+    const priorityMap: Record<string, 'low' | 'medium' | 'high'> = { low: 'low', medium: 'medium', high: 'high' };
+
+    // 1. Deletions: morning task removed → delete linked task
+    const deletedIds: string[] = [];
+    for (const oldT of prev) {
+      if (!newById.has(oldT.id) && oldT.linked_task_id) {
+        deletedIds.push(oldT.linked_task_id);
+      }
+    }
+    if (deletedIds.length > 0) {
+      await supabase.from('tasks').delete().in('id', deletedIds);
+    }
+
+    // 2. Updates / inserts
+    for (const newT of updatedTasks) {
+      const oldT = prevById.get(newT.id);
+      if (oldT && newT.linked_task_id) {
+        // Existing task — patch fields if changed
+        const changed =
+          oldT.text !== newT.text ||
+          oldT.detail !== newT.detail ||
+          oldT.category !== newT.category ||
+          oldT.priority !== newT.priority ||
+          oldT.completed !== newT.completed;
+        if (changed) {
+          await supabase.from('tasks').update({
+            title: newT.text,
+            description: newT.detail || null,
+            priority: priorityMap[newT.priority] || 'medium',
+            tags: [newT.category],
+            status: newT.completed ? 'done' : 'in-progress',
+          }).eq('id', newT.linked_task_id);
+        }
+      } else if (!oldT && profile) {
+        // Newly added task — create in tasks table and patch back linked_task_id
+        const { data: inserted } = await supabase.from('tasks').insert({
+          title: newT.text,
+          description: newT.detail || null,
+          assignee_id: profile.id,
+          priority: priorityMap[newT.priority] || 'medium',
+          status: newT.completed ? 'done' as const : 'todo' as const,
+          tags: [newT.category],
+          due_date: report.date,
+          project_name: newT.project_name || null,
+          position: 0,
+        }).select('id').single();
+
+        if (inserted?.id) {
+          // Patch the morning_tasks JSON with the new linked_task_id
+          const patchedTasks = updatedTasks.map(t =>
+            t.id === newT.id ? { ...t, linked_task_id: inserted.id } : t
+          );
+          await supabase.from('daily_work_reports').update({
+            morning_tasks: patchedTasks as any,
+          }).eq('id', report.id);
+          setReports(prevReports => prevReports.map(r =>
+            r.id === report.id ? { ...r, morning_tasks: patchedTasks } : r
+          ));
+        }
+      }
+    }
+
+    toast({ title: '✅ 업무가 수정되었습니다' });
   };
 
   const handleApprove = async (report: DailyReport, type: 'director' | 'ceo') => {
