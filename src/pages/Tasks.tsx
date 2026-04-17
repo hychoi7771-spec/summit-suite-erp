@@ -277,17 +277,26 @@ export default function Tasks() {
               <DialogHeader><DialogTitle>새 업무 등록</DialogTitle></DialogHeader>
               <div className="space-y-4 mt-2">
                 <div className="space-y-2">
-                  <Label>프로젝트</Label>
-                  <Select value={taskForm.project_name} onValueChange={v => setTaskForm(f => ({ ...f, project_name: v === '__none__' ? '' : v }))}>
-                    <SelectTrigger><SelectValue placeholder="프로젝트 선택 (선택사항)" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="__none__">미지정</SelectItem>
-                      {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].map(p => (
-                        <SelectItem key={p} value={p}>{p}</SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <Input placeholder="또는 새 프로젝트명 입력" value={taskForm.project_name} onChange={e => setTaskForm(f => ({ ...f, project_name: e.target.value }))} />
+                  <Label>프로젝트 (선택)</Label>
+                  {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].length > 0 && (
+                    <Select
+                      value={taskForm.project_name || '__none__'}
+                      onValueChange={v => setTaskForm(f => ({ ...f, project_name: v === '__none__' ? '' : v }))}
+                    >
+                      <SelectTrigger><SelectValue placeholder="기존 프로젝트에서 선택" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">미지정</SelectItem>
+                        {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].map(p => (
+                          <SelectItem key={p} value={p}>{p}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  )}
+                  <Input
+                    placeholder="또는 새 프로젝트명 직접 입력"
+                    value={taskForm.project_name}
+                    onChange={e => setTaskForm(f => ({ ...f, project_name: e.target.value }))}
+                  />
                 </div>
                 <div className="space-y-2"><Label>업무 제목</Label><Input placeholder="업무 제목" value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} /></div>
                 <div className="space-y-2"><Label>설명</Label><Textarea placeholder="업무 설명" value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} /></div>
