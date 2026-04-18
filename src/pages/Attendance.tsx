@@ -174,15 +174,26 @@ export default function Attendance() {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Users className="h-4 w-4" />오늘 근무</CardTitle></CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{workingMembers.length}명</div>
-            <div className="flex flex-wrap gap-1 mt-2">
-              {workingMembers.slice(0, 8).map(p => (
-                <Avatar key={p.id} className="h-6 w-6">
-                  <AvatarFallback className="text-[9px] bg-success/20 text-success">{p.avatar}</AvatarFallback>
-                </Avatar>
-              ))}
-              {workingMembers.length > 8 && <span className="text-xs text-muted-foreground self-center ml-1">+{workingMembers.length - 8}</span>}
-            </div>
+            {todayIsNonWorking ? (
+              <>
+                <div className="text-2xl font-bold text-muted-foreground">휴무일</div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {todayHolidayName ? `🎌 ${todayHolidayName}` : '🛌 주말 (전원 비근무)'}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{workingMembers.length}명</div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {workingMembers.slice(0, 8).map(p => (
+                    <Avatar key={p.id} className="h-6 w-6">
+                      <AvatarFallback className="text-[9px] bg-success/20 text-success">{p.avatar}</AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {workingMembers.length > 8 && <span className="text-xs text-muted-foreground self-center ml-1">+{workingMembers.length - 8}</span>}
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
