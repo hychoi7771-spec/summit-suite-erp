@@ -6,7 +6,6 @@ import {
   Palette,
   CalendarDays,
   FolderArchive,
-  Bell,
   Settings,
   Receipt,
   BarChart3,
@@ -55,7 +54,6 @@ const mainNavItems = [
   { title: '일정', url: '/calendar', icon: CalendarDays },
   { title: '근태관리', url: '/attendance', icon: CalendarClock },
   { title: '파일', url: '/library', icon: FolderArchive },
-  { title: '알림', url: '/notices', icon: Bell },
 ];
 
 const personalNavItems = [
@@ -67,10 +65,10 @@ const personalNavItems = [
 
 const adminNavItems = [
   { title: '경비관리', url: '/expenses', icon: Receipt },
-  { title: '매출/KPI', url: '/sales', icon: BarChart3 },
   { title: '전자결재', url: '/approvals', icon: Stamp },
   { title: '공지 게시판', url: '/notices-board', icon: Megaphone },
   { title: '설문/투표', url: '/surveys', icon: Vote },
+  { title: '매출/KPI', url: '/sales', icon: BarChart3 },
   { title: '팀원관리', url: '/team', icon: UserCog },
   { title: '프로젝트 폴더', url: '/project-folders', icon: FolderOpen },
   { title: '사용 매뉴얼', url: '/manual', icon: BookOpen },
