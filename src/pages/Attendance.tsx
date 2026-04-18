@@ -57,11 +57,26 @@ export default function Attendance() {
     const [reqRes, balRes, profRes] = await Promise.all([
       supabase.from('leave_requests').select('*').order('start_date', { ascending: false }),
       supabase.from('leave_balances').select('*').eq('year', year),
-      supabase.from('profiles').select('id, name_kr, avatar'),
+      supabase.from('profiles').select('id, name_kr, avatar, hire_date'),
     ]);
     setRequests(reqRes.data || []);
     setBalances(balRes.data || []);
     setProfiles(profRes.data || []);
+  };
+
+  const recalculateAll = async () => {
+    const { error } = await supabase.rpc('run_monthly_leave_grant');
+    if (error) { toast({ title: '재계산 실패', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: '연차/월차 자동 재계산 완료' });
+    fetchData();
+  };
+
+  const updateHireDate = async (profileId: string, date: string) => {
+    const { error } = await supabase.from('profiles').update({ hire_date: date || null }).eq('id', profileId);
+    if (error) { toast({ title: '입사일 저장 실패', description: error.message, variant: 'destructive' }); return; }
+    await supabase.rpc('calculate_leave_grant', { _profile_id: profileId, _today: format(new Date(), 'yyyy-MM-dd') });
+    toast({ title: '입사일 업데이트 및 잔액 재계산 완료' });
+    fetchData();
   };
 
   useEffect(() => {
