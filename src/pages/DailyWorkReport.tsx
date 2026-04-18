@@ -887,7 +887,31 @@ export default function DailyWorkReport() {
     }
   };
 
-  const handleDelete = async (reportId: string) => {
+  const handleReject = async (report: DailyReport, type: 'director' | 'ceo', reason: string) => {
+    if (!profile) return;
+    const patch: any = type === 'director'
+      ? { director_approved: false, director_approved_at: null, director_approved_by: null, director_comment: reason }
+      : { ceo_approved: false, ceo_approved_at: null, ceo_approved_by: null, ceo_comment: reason };
+
+    setReports(prev => prev.map(r => r.id === report.id ? { ...r, ...patch } : r));
+    toast({ title: type === 'director' ? '이사 반려 처리됨' : '대표 반려 처리됨', description: reason });
+
+    const { error } = await supabase.from('daily_work_reports').update(patch).eq('id', report.id);
+    if (error) {
+      toast({ title: '반려 실패', description: error.message, variant: 'destructive' });
+      fetchData();
+      return;
+    }
+
+    // Notify report owner
+    await notifyUser(
+      report.user_id,
+      type === 'director' ? '데일리 보고서 반려 (이사)' : '데일리 보고서 반려 (대표)',
+      `${format(new Date(report.date), 'yyyy-MM-dd')} 데일리 보고서가 반려되었습니다. 사유: ${reason}`,
+      'daily_report',
+      report.id
+    );
+  };
     // Capture linked task IDs before optimistic removal
     const target = reports.find(r => r.id === reportId);
     const linkedTaskIds = (target?.morning_tasks || [])
