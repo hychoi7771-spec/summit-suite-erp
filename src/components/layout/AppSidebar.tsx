@@ -6,7 +6,6 @@ import {
   Palette,
   CalendarDays,
   FolderArchive,
-  Bell,
   Settings,
   Receipt,
   BarChart3,
