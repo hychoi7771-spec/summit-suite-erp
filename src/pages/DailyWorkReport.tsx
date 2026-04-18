@@ -1120,6 +1120,7 @@ export default function DailyWorkReport() {
               onToggleTask={handleToggleTask}
               onDelete={handleDelete}
               onApprove={handleApprove}
+              onReject={handleReject}
               onUpdateTasks={handleUpdateTasks}
             />
           ))}
