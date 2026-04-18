@@ -1,5 +1,8 @@
 // 한국 국경일/공휴일 (양력 고정 + 주요 대체공휴일 수동 매핑)
 // 음력 기반 공휴일은 연도별로 직접 매핑합니다.
+// 사내 휴무일은 DB(company_holidays)에서 로드해 런타임에 병합합니다.
+
+import { supabase } from '@/integrations/supabase/client';
 
 const FIXED_HOLIDAYS: { month: number; day: number; name: string }[] = [
   { month: 1, day: 1, name: '신정' },
@@ -42,10 +45,7 @@ const LUNAR_HOLIDAYS: Record<number, { date: string; name: string }[]> = {
     { date: '2026-02-16', name: '설날 연휴' },
     { date: '2026-02-17', name: '설날' },
     { date: '2026-02-18', name: '설날 연휴' },
-    { date: '2026-05-22', name: '해외 워크샵' },
-    { date: '2026-05-23', name: '해외 워크샵' },
-    { date: '2026-05-24', name: '해외 워크샵 / 부처님오신날' },
-    { date: '2026-05-25', name: '대체공휴일' },
+    { date: '2026-05-25', name: '어린이날 대체공휴일' },
     { date: '2026-09-24', name: '추석 연휴' },
     { date: '2026-09-25', name: '추석' },
     { date: '2026-09-26', name: '추석 연휴' },
@@ -54,19 +54,44 @@ const LUNAR_HOLIDAYS: Record<number, { date: string; name: string }[]> = {
 
 const pad = (n: number) => String(n).padStart(2, '0');
 
+/** 사내 휴무일 캐시 (Map<YYYY-MM-DD, name>) */
+let companyHolidayCache: Map<string, string> = new Map();
+let cacheLoadedAt = 0;
+const CACHE_TTL = 5 * 60 * 1000; // 5분
+
+export async function loadCompanyHolidays(force = false): Promise<void> {
+  if (!force && Date.now() - cacheLoadedAt < CACHE_TTL && companyHolidayCache.size > 0) return;
+  const { data, error } = await supabase
+    .from('company_holidays')
+    .select('date, name');
+  if (error) {
+    console.error('사내 휴무일 로드 실패:', error.message);
+    return;
+  }
+  const map = new Map<string, string>();
+  (data || []).forEach((h: any) => {
+    const existing = map.get(h.date);
+    map.set(h.date, existing ? `${existing} / ${h.name}` : h.name);
+  });
+  companyHolidayCache = map;
+  cacheLoadedAt = Date.now();
+}
+
 export function getHolidayName(date: Date): string | null {
   const y = date.getFullYear();
   const m = date.getMonth() + 1;
   const d = date.getDate();
   const key = `${y}-${pad(m)}-${pad(d)}`;
 
+  // 사내 휴무일 우선
+  const company = companyHolidayCache.get(key);
+
   const fixed = FIXED_HOLIDAYS.find(h => h.month === m && h.day === d);
-  if (fixed) return fixed.name;
-
   const lunar = (LUNAR_HOLIDAYS[y] || []).find(h => h.date === key);
-  if (lunar) return lunar.name;
 
-  return null;
+  const names = [company, fixed?.name, lunar?.name].filter(Boolean);
+  if (names.length === 0) return null;
+  return names.join(' / ');
 }
 
 export function isHoliday(date: Date): boolean {

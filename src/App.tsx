@@ -30,6 +30,7 @@ import Auth from "./pages/Auth";
 import DailyWorkReport from "./pages/DailyWorkReport";
 import Attendance from "./pages/Attendance";
 import AccountSettings from "./pages/AccountSettings";
+import CompanyHolidays from "./pages/CompanyHolidays";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -97,6 +98,7 @@ function AppRoutes() {
                 <Route path="/daily-report" element={<DailyWorkReport />} />
                 <Route path="/attendance" element={<Attendance />} />
                 <Route path="/account" element={<AccountSettings />} />
+                <Route path="/company-holidays" element={<CompanyHolidays />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppLayout>

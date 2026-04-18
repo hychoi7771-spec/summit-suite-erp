@@ -213,6 +213,39 @@ export type Database = {
           },
         ]
       }
+      company_holidays: {
+        Row: {
+          color: string | null
+          created_at: string
+          created_by: string
+          date: string
+          description: string | null
+          id: string
+          name: string
+          updated_at: string
+        }
+        Insert: {
+          color?: string | null
+          created_at?: string
+          created_by: string
+          date: string
+          description?: string | null
+          id?: string
+          name: string
+          updated_at?: string
+        }
+        Update: {
+          color?: string | null
+          created_at?: string
+          created_by?: string
+          date?: string
+          description?: string | null
+          id?: string
+          name?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       cost_analysis: {
         Row: {
           category: string
