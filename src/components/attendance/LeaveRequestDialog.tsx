@@ -151,9 +151,10 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
       return;
     }
 
-    // 3) 관리자에게 알림
-    await notifyAdmins(
-      '새 휴가 신청',
+    // 3) 1순위 결재자에게 알림 (이사 우선)
+    await notifyUsers(
+      [orderedApproverProfileIds[0]],
+      '새 휴가 결재 요청',
       `${profile.name_kr}님이 ${typeLabel} ${days}일을 신청했습니다.`,
       'approval',
       approval.id,
