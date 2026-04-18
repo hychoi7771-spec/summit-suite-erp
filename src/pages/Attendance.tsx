@@ -176,9 +176,11 @@ export default function Attendance() {
           <CardContent>
             {todayIsNonWorking ? (
               <>
-                <div className="text-2xl font-bold text-muted-foreground">휴무일</div>
+                <div className="text-2xl font-bold text-muted-foreground">
+                  {todayHolidayName || (today.getDay() === 0 ? '일요일' : '토요일')}
+                </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {todayHolidayName ? `🎌 ${todayHolidayName}` : '🛌 주말 (전원 비근무)'}
+                  {todayHolidayName ? '🎌 공휴일' : '🛌 주말'}
                 </p>
               </>
             ) : (
