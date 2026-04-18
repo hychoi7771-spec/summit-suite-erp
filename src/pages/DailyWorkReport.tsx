@@ -30,6 +30,7 @@ import { EmojiReactionBar } from '@/components/daily/EmojiReactionBar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import stampImg from '@/assets/stamp.png';
+import { notifyUser } from '@/lib/notifications';
 
 // --- Types ---
 interface MorningTask {
