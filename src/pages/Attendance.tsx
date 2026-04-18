@@ -80,7 +80,7 @@ export default function Attendance() {
   const recalculateAll = async () => {
     const { error } = await supabase.rpc('run_monthly_leave_grant');
     if (error) { toast({ title: '재계산 실패', description: error.message, variant: 'destructive' }); return; }
-    toast({ title: '연차/월차 자동 재계산 완료' });
+    toast({ title: '휴가 적립 자동 재계산 완료' });
     fetchData();
   };
 
@@ -88,7 +88,7 @@ export default function Attendance() {
     const { error } = await supabase.from('profiles').update({ hire_date: date || null }).eq('id', profileId);
     if (error) { toast({ title: '입사일 저장 실패', description: error.message, variant: 'destructive' }); return; }
     await supabase.rpc('calculate_leave_grant', { _profile_id: profileId, _today: format(new Date(), 'yyyy-MM-dd') });
-    toast({ title: '입사일 업데이트 및 잔액 재계산 완료' });
+    toast({ title: '입사일 업데이트 및 휴가 재계산 완료' });
     fetchData();
   };
 
@@ -137,7 +137,7 @@ export default function Attendance() {
         .insert({ user_id: userId, year, total_days: total, used_days: 0 });
       if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
     }
-    toast({ title: '연차 부여일수 업데이트' });
+    toast({ title: '연차 적립일수가 업데이트되었습니다' });
     fetchData();
   };
 
@@ -157,7 +157,7 @@ export default function Attendance() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">근태관리</h1>
-          <p className="text-sm text-muted-foreground">휴가 신청, 승인 현황 및 연차 잔여일수를 관리합니다.</p>
+          <p className="text-sm text-muted-foreground">휴가 신청 · 승인 현황 · 남은 휴가를 한눈에 관리하세요.</p>
         </div>
         <Button onClick={() => setShowRequest(true)} className="gap-2">
           <Plus className="h-4 w-4" /> 휴가 신청
@@ -213,7 +213,7 @@ export default function Attendance() {
       <Tabs defaultValue="calendar">
         <TabsList>
           <TabsTrigger value="calendar">월별 캘린더</TabsTrigger>
-          <TabsTrigger value="balances">연차 잔여</TabsTrigger>
+          <TabsTrigger value="balances">My 연차</TabsTrigger>
           <TabsTrigger value="my">내 신청 내역</TabsTrigger>
           <TabsTrigger value="all">전체 신청</TabsTrigger>
         </TabsList>
@@ -273,7 +273,7 @@ export default function Attendance() {
         <TabsContent value="balances" className="space-y-4 mt-4">
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-base">{year}년 연차 현황</CardTitle>
+              <CardTitle className="text-base">{year}년 휴가 대시보드</CardTitle>
               <div className="flex items-center gap-2">
                 {isAdmin && (
                   <Button size="sm" variant="outline" onClick={recalculateAll}>자동 재계산</Button>
@@ -287,13 +287,13 @@ export default function Attendance() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>직원</TableHead>
+                    <TableHead>멤버</TableHead>
                     <TableHead className="text-center">입사일</TableHead>
-                    <TableHead className="text-right">연차 발생</TableHead>
-                    <TableHead className="text-right">월차 발생</TableHead>
+                    <TableHead className="text-right">연차 적립</TableHead>
+                    <TableHead className="text-right">월차 적립</TableHead>
                     <TableHead className="text-right">사용</TableHead>
-                    <TableHead className="text-right">잔여</TableHead>
-                    <TableHead className="text-center">다음 발생일</TableHead>
+                    <TableHead className="text-right">남은 휴가</TableHead>
+                    <TableHead className="text-center">다음 적립일</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -351,7 +351,7 @@ export default function Attendance() {
               </Table>
               {isAdmin && (
                 <p className="text-xs text-muted-foreground mt-3">
-                  💡 입사일/연차 부여 칸을 클릭해 수정 가능. '자동 재계산' 버튼으로 입사일 기준 월차(1년 미만)/연차(1년 이상)를 일괄 갱신합니다.
+                  💡 입사일/연차 적립 칸을 클릭해 수정. '자동 재계산'으로 입사일 기준 월차(1년 미만)/연차(1년 이상)를 일괄 갱신합니다.
                 </p>
               )}
             </CardContent>
@@ -359,7 +359,7 @@ export default function Attendance() {
 
           {/* 사용 일자 상세표 (이미지 형식) */}
           <Card>
-            <CardHeader><CardTitle className="text-base">{year}년 연/월차 사용 일자</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">{year}년 휴가 사용 내역</CardTitle></CardHeader>
             <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
