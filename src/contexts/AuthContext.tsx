@@ -163,8 +163,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
+  const isAdmin = ADMIN_ROLES.has(userRole ?? '');
+  const isManager = MANAGER_ROLES.has(userRole ?? '');
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, userRole, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, profile, userRole, isAdmin, isManager, signOut }}>
       {children}
     </AuthContext.Provider>
   );
