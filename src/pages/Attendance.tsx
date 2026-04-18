@@ -176,9 +176,11 @@ export default function Attendance() {
           <CardContent>
             {todayIsNonWorking ? (
               <>
-                <div className="text-2xl font-bold text-muted-foreground">휴무일</div>
+                <div className="text-2xl font-bold text-muted-foreground">
+                  {todayHolidayName || (today.getDay() === 0 ? '일요일' : '토요일')}
+                </div>
                 <p className="text-xs text-muted-foreground mt-2">
-                  {todayHolidayName ? `🎌 ${todayHolidayName}` : '🛌 주말 (전원 비근무)'}
+                  {todayHolidayName ? '🎌 공휴일' : '🛌 주말'}
                 </p>
               </>
             ) : (
@@ -288,21 +290,17 @@ export default function Attendance() {
                           </span>
                         )}
                       </div>
-                      {nonWorking ? (
-                        <div className="text-[9px] text-muted-foreground italic">휴무</div>
-                      ) : (
-                        <div className="space-y-0.5">
-                          {leaves.slice(0, 3).map(l => {
-                            const p = getProfile(l.user_id);
-                            return (
-                              <div key={l.id} className={`text-[10px] px-1 py-0.5 rounded border truncate ${LEAVE_TYPE_COLOR[l.leave_type]}`}>
-                                {p?.name_kr} · {LEAVE_TYPE_LABEL[l.leave_type]}
-                              </div>
-                            );
-                          })}
-                          {leaves.length > 3 && <div className="text-[10px] text-muted-foreground">+{leaves.length - 3}</div>}
-                        </div>
-                      )}
+                      <div className="space-y-0.5">
+                        {leaves.slice(0, 3).map(l => {
+                          const p = getProfile(l.user_id);
+                          return (
+                            <div key={l.id} className={`text-[10px] px-1 py-0.5 rounded border truncate ${LEAVE_TYPE_COLOR[l.leave_type]}`}>
+                              {p?.name_kr} · {LEAVE_TYPE_LABEL[l.leave_type]}
+                            </div>
+                          );
+                        })}
+                        {leaves.length > 3 && <div className="text-[10px] text-muted-foreground">+{leaves.length - 3}</div>}
+                      </div>
                     </div>
                   );
                 })}
