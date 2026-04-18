@@ -818,17 +818,26 @@ export default function Tasks() {
           <DialogHeader><DialogTitle>업무 수정</DialogTitle></DialogHeader>
           <div className="space-y-4 mt-2">
             <div className="space-y-2">
-              <Label>프로젝트</Label>
-              <Select value={editForm.project_name || '__none__'} onValueChange={v => setEditForm(f => ({ ...f, project_name: v === '__none__' ? '' : v }))}>
-                <SelectTrigger><SelectValue placeholder="프로젝트 선택" /></SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="__none__">미지정</SelectItem>
-                  {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].map(p => (
-                    <SelectItem key={p} value={p}>{p}</SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              <Input placeholder="또는 새 프로젝트명 입력" value={editForm.project_name} onChange={e => setEditForm(f => ({ ...f, project_name: e.target.value }))} />
+              <Label>프로젝트 (선택)</Label>
+              {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].length > 0 && (
+                <Select
+                  value={editForm.project_name || '__none__'}
+                  onValueChange={v => setEditForm(f => ({ ...f, project_name: v === '__none__' ? '' : v }))}
+                >
+                  <SelectTrigger><SelectValue placeholder="기존 프로젝트에서 선택" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="__none__">미지정</SelectItem>
+                    {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].map(p => (
+                      <SelectItem key={p as string} value={p as string}>{p as string}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )}
+              <Input
+                placeholder="또는 새 프로젝트명 직접 입력"
+                value={editForm.project_name}
+                onChange={e => setEditForm(f => ({ ...f, project_name: e.target.value }))}
+              />
             </div>
             <div className="space-y-2"><Label>업무 제목</Label><Input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} /></div>
             <div className="space-y-2"><Label>설명</Label><Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} /></div>
