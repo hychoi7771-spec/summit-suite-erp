@@ -65,7 +65,41 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
     const days = computeDays();
     const typeLabel = LEAVE_TYPES.find(t => t.value === form.leave_type)?.label || '휴가';
 
-    // 1) 전자결재 등록 (leave 타입)
+    // 0) 결재선 구성: 이사(general_director) → 대표(ceo)
+    const { data: approverRoles } = await supabase
+      .from('user_roles')
+      .select('user_id, role')
+      .in('role', ['general_director', 'ceo']);
+
+    const approverUserIds = (approverRoles ?? []).map(r => r.user_id);
+    const { data: approverProfiles } = approverUserIds.length
+      ? await supabase.from('profiles').select('id, user_id').in('user_id', approverUserIds)
+      : { data: [] as { id: string; user_id: string }[] };
+
+    const userIdToProfileId = new Map((approverProfiles ?? []).map(p => [p.user_id, p.id]));
+    const orderedApproverProfileIds: string[] = [];
+    // 1순위: 이사
+    (approverRoles ?? [])
+      .filter(r => r.role === 'general_director')
+      .forEach(r => {
+        const pid = userIdToProfileId.get(r.user_id);
+        if (pid && !orderedApproverProfileIds.includes(pid)) orderedApproverProfileIds.push(pid);
+      });
+    // 2순위: 대표
+    (approverRoles ?? [])
+      .filter(r => r.role === 'ceo')
+      .forEach(r => {
+        const pid = userIdToProfileId.get(r.user_id);
+        if (pid && !orderedApproverProfileIds.includes(pid)) orderedApproverProfileIds.push(pid);
+      });
+
+    if (orderedApproverProfileIds.length === 0) {
+      toast({ title: '결재자 없음', description: '이사/대표 계정이 등록되어 있지 않습니다.', variant: 'destructive' });
+      setSubmitting(false);
+      return;
+    }
+
+    // 1) 전자결재 등록 (leave 타입) + current_approver_id 지정
     const { data: approval, error: appErr } = await supabase
       .from('approvals')
       .insert({
@@ -74,12 +108,27 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
         title: `[${typeLabel}] ${form.start_date}${form.start_date !== form.end_date ? ` ~ ${form.end_date}` : ''} (${days}일)`,
         content: form.reason || '',
         status: 'pending',
+        current_approver_id: orderedApproverProfileIds[0],
       })
       .select()
       .single();
 
     if (appErr || !approval) {
       toast({ title: '결재 신청 실패', description: appErr?.message, variant: 'destructive' });
+      setSubmitting(false);
+      return;
+    }
+
+    // 1-1) 결재 단계(approval_steps) 생성
+    const steps = orderedApproverProfileIds.map((approverId, idx) => ({
+      approval_id: approval.id,
+      approver_id: approverId,
+      step_order: idx + 1,
+      status: 'pending' as const,
+    }));
+    const { error: stepsErr } = await supabase.from('approval_steps').insert(steps);
+    if (stepsErr) {
+      toast({ title: '결재선 생성 실패', description: stepsErr.message, variant: 'destructive' });
       setSubmitting(false);
       return;
     }
