@@ -69,7 +69,7 @@ const personalNavItems = [
 
 const adminNavItems = [
   { title: '매출/KPI', url: '/sales', icon: BarChart3 },
-  { title: '팀원관리', url: '/team', icon: UserCog },
+  { title: '팀원관리', url: '/team', icon: UserCog, managerOnly: true },
   { title: '프로젝트 폴더', url: '/project-folders', icon: FolderOpen },
   { title: '사용 매뉴얼', url: '/manual', icon: BookOpen },
 ];
