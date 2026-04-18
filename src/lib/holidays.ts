@@ -4,6 +4,7 @@
 const FIXED_HOLIDAYS: { month: number; day: number; name: string }[] = [
   { month: 1, day: 1, name: '신정' },
   { month: 3, day: 1, name: '삼일절' },
+  { month: 5, day: 1, name: '근로자의 날' },
   { month: 5, day: 5, name: '어린이날' },
   { month: 6, day: 6, name: '현충일' },
   { month: 8, day: 15, name: '광복절' },
