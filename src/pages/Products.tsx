@@ -36,7 +36,7 @@ export default function Products() {
   const [form, setForm] = useState({ name: '', category: '', stage: 'Planning', description: '', assignee_id: '', deadline: '' });
   const [costProduct, setCostProduct] = useState<any>(null);
 
-  const isAdmin = userRole === 'ceo' || userRole === 'general_director';
+  const isAdmin = userRole === 'ceo' || userRole === 'general_director' || userRole === 'deputy_gm';
 
   useEffect(() => { fetchData(); }, []);
 
