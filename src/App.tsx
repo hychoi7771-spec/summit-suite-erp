@@ -27,7 +27,6 @@ import Mentions from "./pages/Mentions";
 import Drafts from "./pages/Drafts";
 import ProjectFolders from "./pages/ProjectFolders";
 import Auth from "./pages/Auth";
-import LaunchDashboard from "./pages/LaunchDashboard";
 import DailyWorkReport from "./pages/DailyWorkReport";
 import Attendance from "./pages/Attendance";
 import NotFound from "./pages/NotFound";
@@ -94,7 +93,6 @@ function AppRoutes() {
                 <Route path="/mentions" element={<Mentions />} />
                 <Route path="/drafts" element={<Drafts />} />
                 <Route path="/project-folders" element={<ProjectFolders />} />
-                <Route path="/launch" element={<LaunchDashboard />} />
                 <Route path="/daily-report" element={<DailyWorkReport />} />
                 <Route path="/attendance" element={<Attendance />} />
                 <Route path="*" element={<NotFound />} />
