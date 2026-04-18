@@ -105,13 +105,17 @@ export default function Attendance() {
 
   const getProfile = (id: string) => profiles.find(p => p.id === id);
 
-  // 오늘 휴무자
+  // 오늘 휴무자 (주말/공휴일이면 전원 비근무)
   const today = new Date();
+  const todayIsNonWorking = isNonWorkingDay(today);
+  const todayHolidayName = getHolidayName(today);
   const todayLeaves = requests.filter(r =>
     r.status === 'approved' &&
     isWithinInterval(today, { start: parseISO(r.start_date), end: parseISO(r.end_date) }),
   );
-  const workingMembers = profiles.filter(p => !todayLeaves.some(l => l.user_id === p.id));
+  const workingMembers = todayIsNonWorking
+    ? []
+    : profiles.filter(p => !todayLeaves.some(l => l.user_id === p.id));
 
   // 캘린더 - 휴가자 매핑
   const calendarStart = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 });
