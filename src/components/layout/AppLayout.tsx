@@ -34,6 +34,8 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   useEffect(() => {
     fetchNotifications();
+    // 사내 휴무일 캐시 로드(근태/캘린더에서 즉시 사용)
+    import('@/lib/holidays').then(m => m.loadCompanyHolidays(true));
 
     const channel = supabase
       .channel('notifications-realtime')
@@ -99,11 +101,18 @@ export function AppLayout({ children }: AppLayoutProps) {
             <div className="flex items-center gap-3">
               <Popover>
                 <PopoverTrigger asChild>
-                  <button className="relative p-2 rounded-lg hover:bg-muted transition-colors">
-                    <Bell className="h-4 w-4 text-muted-foreground" />
+                  <button
+                    className={`relative p-2.5 rounded-xl transition-all ${
+                      unreadCount > 0
+                        ? 'bg-primary/10 hover:bg-primary/15 ring-2 ring-primary/30 animate-pulse'
+                        : 'hover:bg-muted'
+                    }`}
+                    aria-label={unreadCount > 0 ? `읽지 않은 알림 ${unreadCount}개` : '알림'}
+                  >
+                    <Bell className={`h-6 w-6 ${unreadCount > 0 ? 'text-primary fill-primary/20' : 'text-muted-foreground'}`} />
                     {unreadCount > 0 && (
-                      <span className="absolute top-1 right-1 h-4 w-4 rounded-full bg-destructive text-destructive-foreground text-[10px] flex items-center justify-center font-medium">
-                        {unreadCount}
+                      <span className="absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-destructive text-destructive-foreground text-[11px] font-bold flex items-center justify-center shadow-md ring-2 ring-card">
+                        {unreadCount > 99 ? '99+' : unreadCount}
                       </span>
                     )}
                   </button>
