@@ -30,6 +30,7 @@ import { EmojiReactionBar } from '@/components/daily/EmojiReactionBar';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import stampImg from '@/assets/stamp.png';
+import { notifyUser } from '@/lib/notifications';
 
 // --- Types ---
 interface MorningTask {
@@ -294,7 +295,7 @@ function CommentsSection({ reportId, profiles, currentProfile, isAdmin }: {
 
 function ReportCard({
   report, profile: currentProfile, profiles, isAdmin, userRole,
-  onToggleTask, onDelete, onApprove, onUpdateTasks,
+  onToggleTask, onDelete, onApprove, onReject, onUpdateTasks,
 }: {
   report: DailyReport;
   profile: any;
@@ -304,8 +305,11 @@ function ReportCard({
   onToggleTask: (report: DailyReport, taskId: string) => void;
   onDelete: (id: string) => void;
   onApprove: (report: DailyReport, type: 'director' | 'ceo') => void;
+  onReject: (report: DailyReport, type: 'director' | 'ceo', reason: string) => void;
   onUpdateTasks: (report: DailyReport, tasks: MorningTask[]) => void;
 }) {
+  const [rejectOpen, setRejectOpen] = useState<null | 'director' | 'ceo'>(null);
+  const [rejectReason, setRejectReason] = useState('');
   const [expanded, setExpanded] = useState(true);
 
   const user = profiles.find(p => p.id === report.user_id);
@@ -492,51 +496,108 @@ function ReportCard({
             <div className="space-y-3">
               <Separator />
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">📋 승인 현황</p>
-              
+
               {/* Director approval */}
-              <div className={`rounded-lg border-2 p-4 ${report.director_approved ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800' : 'border-dashed border-muted-foreground/30'}`}>
-                <div className="flex items-center justify-between">
+              <div className={`rounded-lg border-2 p-4 ${report.director_approved ? 'bg-purple-50 dark:bg-purple-950/20 border-purple-200 dark:border-purple-800' : report.director_comment && !report.director_approved ? 'bg-destructive/5 border-destructive/30' : 'border-dashed border-muted-foreground/30'}`}>
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{report.director_approved ? '✅' : '⏳'}</span>
+                    <span className="text-lg">{report.director_approved ? '✅' : (report.director_comment ? '❌' : '⏳')}</span>
                     <div>
-                      <p className="text-sm font-semibold">{report.director_approved ? '이사 확인 완료' : '이사 확인 대기'}</p>
+                      <p className="text-sm font-semibold">
+                        {report.director_approved ? '이사 확인 완료' : (report.director_comment ? '이사 반려' : '이사 확인 대기')}
+                      </p>
                       {report.director_approved && report.director_approved_at && (
                         <p className="text-xs text-muted-foreground">{format(new Date(report.director_approved_at), 'yyyy-MM-dd HH:mm')}</p>
                       )}
                     </div>
                   </div>
                   {isDirector && !report.director_approved && (
-                    <Button onClick={() => onApprove(report, 'director')} className="bg-purple-600 hover:bg-purple-700 text-white">
-                      ✅ 확인 승인
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="text-destructive border-destructive/40 hover:bg-destructive/10" onClick={() => { setRejectReason(''); setRejectOpen('director'); }}>
+                        반려
+                      </Button>
+                      <Button size="sm" onClick={() => onApprove(report, 'director')} className="bg-purple-600 hover:bg-purple-700 text-white">
+                        ✅ 확인 승인
+                      </Button>
+                    </div>
                   )}
                 </div>
+                {report.director_comment && !report.director_approved && (
+                  <div className="mt-2 rounded-md bg-destructive/5 border border-destructive/20 p-2">
+                    <p className="text-xs font-medium text-destructive mb-0.5">반려 사유</p>
+                    <p className="text-xs text-foreground whitespace-pre-wrap">{report.director_comment}</p>
+                  </div>
+                )}
               </div>
 
               {/* CEO approval */}
-              <div className={`rounded-lg border-2 p-4 ${report.ceo_approved ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800' : 'border-dashed border-muted-foreground/30'}`}>
-                <div className="flex items-center justify-between">
+              <div className={`rounded-lg border-2 p-4 ${report.ceo_approved ? 'bg-blue-50 dark:bg-blue-950/20 border-blue-200 dark:border-blue-800' : report.ceo_comment && !report.ceo_approved ? 'bg-destructive/5 border-destructive/30' : 'border-dashed border-muted-foreground/30'}`}>
+                <div className="flex items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
-                    <span className="text-lg">{report.ceo_approved ? '🔖' : '⏳'}</span>
+                    <span className="text-lg">{report.ceo_approved ? '🔖' : (report.ceo_comment ? '❌' : '⏳')}</span>
                     <div>
-                      <p className="text-sm font-semibold">{report.ceo_approved ? '대표 최종 승인' : '대표 승인 대기'}</p>
+                      <p className="text-sm font-semibold">
+                        {report.ceo_approved ? '대표 최종 승인' : (report.ceo_comment ? '대표 반려' : '대표 승인 대기')}
+                      </p>
                       {report.ceo_approved && report.ceo_approved_at && (
                         <p className="text-xs text-muted-foreground">{format(new Date(report.ceo_approved_at), 'yyyy-MM-dd HH:mm')}</p>
                       )}
                     </div>
                   </div>
                   {isCeo && report.director_approved && !report.ceo_approved && (
-                    <Button onClick={() => onApprove(report, 'ceo')} className="bg-blue-600 hover:bg-blue-700 text-white">
-                      🔖 직인 승인
-                    </Button>
+                    <div className="flex gap-2">
+                      <Button size="sm" variant="outline" className="text-destructive border-destructive/40 hover:bg-destructive/10" onClick={() => { setRejectReason(''); setRejectOpen('ceo'); }}>
+                        반려
+                      </Button>
+                      <Button size="sm" onClick={() => onApprove(report, 'ceo')} className="bg-blue-600 hover:bg-blue-700 text-white">
+                        🔖 직인 승인
+                      </Button>
+                    </div>
                   )}
                 </div>
+                {report.ceo_comment && !report.ceo_approved && (
+                  <div className="mt-2 rounded-md bg-destructive/5 border border-destructive/20 p-2">
+                    <p className="text-xs font-medium text-destructive mb-0.5">반려 사유</p>
+                    <p className="text-xs text-foreground whitespace-pre-wrap">{report.ceo_comment}</p>
+                  </div>
+                )}
                 {report.ceo_approved && (
                   <div className="mt-3 flex justify-end">
                     <img src={stampImg} alt="직인" className="h-16 w-16 opacity-80" />
                   </div>
                 )}
               </div>
+
+              {/* Reject Dialog */}
+              <Dialog open={rejectOpen !== null} onOpenChange={(o) => { if (!o) setRejectOpen(null); }}>
+                <DialogContent className="max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>{rejectOpen === 'director' ? '이사 반려' : '대표 반려'}</DialogTitle>
+                    <DialogDescription>반려 사유를 입력하면 작성자에게 알림이 전송됩니다.</DialogDescription>
+                  </DialogHeader>
+                  <Textarea
+                    placeholder="반려 사유를 입력하세요"
+                    value={rejectReason}
+                    onChange={(e) => setRejectReason(e.target.value)}
+                    rows={4}
+                    autoFocus
+                  />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" onClick={() => setRejectOpen(null)}>취소</Button>
+                    <Button
+                      variant="destructive"
+                      disabled={!rejectReason.trim()}
+                      onClick={() => {
+                        if (rejectOpen) onReject(report, rejectOpen, rejectReason.trim());
+                        setRejectOpen(null);
+                        setRejectReason('');
+                      }}
+                    >
+                      반려 확인
+                    </Button>
+                  </div>
+                </DialogContent>
+              </Dialog>
             </div>
           )}
 
@@ -826,6 +887,32 @@ export default function DailyWorkReport() {
     }
   };
 
+  const handleReject = async (report: DailyReport, type: 'director' | 'ceo', reason: string) => {
+    if (!profile) return;
+    const patch: any = type === 'director'
+      ? { director_approved: false, director_approved_at: null, director_approved_by: null, director_comment: reason }
+      : { ceo_approved: false, ceo_approved_at: null, ceo_approved_by: null, ceo_comment: reason };
+
+    setReports(prev => prev.map(r => r.id === report.id ? { ...r, ...patch } : r));
+    toast({ title: type === 'director' ? '이사 반려 처리됨' : '대표 반려 처리됨', description: reason });
+
+    const { error } = await supabase.from('daily_work_reports').update(patch).eq('id', report.id);
+    if (error) {
+      toast({ title: '반려 실패', description: error.message, variant: 'destructive' });
+      fetchData();
+      return;
+    }
+
+    // Notify report owner
+    await notifyUser(
+      report.user_id,
+      type === 'director' ? '데일리 보고서 반려 (이사)' : '데일리 보고서 반려 (대표)',
+      `${format(new Date(report.date), 'yyyy-MM-dd')} 데일리 보고서가 반려되었습니다. 사유: ${reason}`,
+      'daily_report',
+      report.id
+    );
+  };
+
   const handleDelete = async (reportId: string) => {
     // Capture linked task IDs before optimistic removal
     const target = reports.find(r => r.id === reportId);
@@ -1035,6 +1122,7 @@ export default function DailyWorkReport() {
               onToggleTask={handleToggleTask}
               onDelete={handleDelete}
               onApprove={handleApprove}
+              onReject={handleReject}
               onUpdateTasks={handleUpdateTasks}
             />
           ))}
