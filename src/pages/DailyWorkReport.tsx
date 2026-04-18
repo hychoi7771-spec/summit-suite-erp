@@ -912,6 +912,8 @@ export default function DailyWorkReport() {
       report.id
     );
   };
+
+  const handleDelete = async (reportId: string) => {
     // Capture linked task IDs before optimistic removal
     const target = reports.find(r => r.id === reportId);
     const linkedTaskIds = (target?.morning_tasks || [])
