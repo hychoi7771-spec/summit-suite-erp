@@ -875,6 +875,127 @@ export type Database = {
           },
         ]
       }
+      leave_balances: {
+        Row: {
+          created_at: string
+          id: string
+          notes: string | null
+          total_days: number
+          updated_at: string
+          used_days: number
+          user_id: string
+          year: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          total_days?: number
+          updated_at?: string
+          used_days?: number
+          user_id: string
+          year: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          notes?: string | null
+          total_days?: number
+          updated_at?: string
+          used_days?: number
+          user_id?: string
+          year?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_balances_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      leave_requests: {
+        Row: {
+          approval_id: string | null
+          approved_at: string | null
+          approved_by: string | null
+          calendar_event_id: string | null
+          created_at: string
+          days: number
+          end_date: string
+          id: string
+          leave_type: Database["public"]["Enums"]["leave_type"]
+          reason: string | null
+          start_date: string
+          status: Database["public"]["Enums"]["leave_status"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          approval_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          calendar_event_id?: string | null
+          created_at?: string
+          days?: number
+          end_date: string
+          id?: string
+          leave_type: Database["public"]["Enums"]["leave_type"]
+          reason?: string | null
+          start_date: string
+          status?: Database["public"]["Enums"]["leave_status"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          approval_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          calendar_event_id?: string | null
+          created_at?: string
+          days?: number
+          end_date?: string
+          id?: string
+          leave_type?: Database["public"]["Enums"]["leave_type"]
+          reason?: string | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["leave_status"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leave_requests_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_calendar_event_id_fkey"
+            columns: ["calendar_event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leave_requests_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_updates: {
         Row: {
           blockers: string | null
@@ -1606,6 +1727,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      leave_type_label: {
+        Args: { t: Database["public"]["Enums"]["leave_type"] }
+        Returns: string
+      }
     }
     Enums: {
       app_role:
@@ -1619,6 +1744,14 @@ export type Database = {
       approval_type: "document" | "expense" | "project" | "leave"
       expense_category: "샘플링" | "마케팅" | "일반" | "출장" | "장비"
       expense_status: "Pending" | "Approved" | "Reimbursed" | "Rejected"
+      leave_status: "pending" | "approved" | "rejected" | "cancelled"
+      leave_type:
+        | "annual"
+        | "half_day"
+        | "summer"
+        | "family_event"
+        | "sick"
+        | "other"
       presence_status: "working" | "away" | "offline"
       product_category: "의약외품" | "뷰티" | "건강기능식품"
       product_stage:
@@ -1770,6 +1903,15 @@ export const Constants = {
       approval_type: ["document", "expense", "project", "leave"],
       expense_category: ["샘플링", "마케팅", "일반", "출장", "장비"],
       expense_status: ["Pending", "Approved", "Reimbursed", "Rejected"],
+      leave_status: ["pending", "approved", "rejected", "cancelled"],
+      leave_type: [
+        "annual",
+        "half_day",
+        "summer",
+        "family_event",
+        "sick",
+        "other",
+      ],
       presence_status: ["working", "away", "offline"],
       product_category: ["의약외품", "뷰티", "건강기능식품"],
       product_stage: [
