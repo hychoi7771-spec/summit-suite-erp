@@ -24,6 +24,7 @@ import {
   FolderOpen,
   Rocket,
   ClipboardCheck,
+  CalendarClock,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -54,6 +55,7 @@ const mainNavItems = [
   { title: '회의록', url: '/meetings', icon: ClipboardList },
   { title: '일정', url: '/calendar', icon: CalendarDays },
   { title: '런칭 관리', url: '/launch', icon: Rocket },
+  { title: '근태관리', url: '/attendance', icon: CalendarClock },
   { title: '파일', url: '/library', icon: FolderArchive },
   { title: '알림', url: '/notices', icon: Bell },
 ];
