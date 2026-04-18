@@ -8,6 +8,10 @@ interface AuthContextType {
   loading: boolean;
   profile: any | null;
   userRole: string | null;
+  /** 결재/시스템 관리자: ceo, general_director */
+  isAdmin: boolean;
+  /** 운영 관리자(결재 제외 편집 권한): ceo, general_director, deputy_gm */
+  isManager: boolean;
   signOut: () => Promise<void>;
 }
 
@@ -17,10 +21,15 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   profile: null,
   userRole: null,
+  isAdmin: false,
+  isManager: false,
   signOut: async () => {},
 });
 
 export const useAuth = () => useContext(AuthContext);
+
+const ADMIN_ROLES = new Set(['ceo', 'general_director']);
+const MANAGER_ROLES = new Set(['ceo', 'general_director', 'deputy_gm']);
 
 const updatePresence = async (userId: string, status: 'working' | 'away' | 'offline') => {
   await supabase
