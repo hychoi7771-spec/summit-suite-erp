@@ -49,19 +49,32 @@ export default function Attendance() {
   const [requests, setRequests] = useState<any[]>([]);
   const [balances, setBalances] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
+  const [userRoles, setUserRoles] = useState<any[]>([]);
   const [showRequest, setShowRequest] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [year, setYear] = useState(new Date().getFullYear());
 
+  const ROLE_ORDER: Record<string, number> = {
+    ceo: 0, general_director: 1, deputy_gm: 2, md: 3, designer: 4, staff: 5,
+  };
+
   const fetchData = async () => {
-    const [reqRes, balRes, profRes] = await Promise.all([
+    const [reqRes, balRes, profRes, roleRes] = await Promise.all([
       supabase.from('leave_requests').select('*').order('start_date', { ascending: false }),
       supabase.from('leave_balances').select('*').eq('year', year),
-      supabase.from('profiles').select('id, name_kr, avatar, hire_date'),
+      supabase.from('profiles').select('id, user_id, name_kr, avatar, hire_date'),
+      supabase.from('user_roles').select('user_id, role'),
     ]);
+    const roles = roleRes.data || [];
+    const sorted = (profRes.data || []).slice().sort((a, b) => {
+      const ra = roles.find(r => r.user_id === a.user_id)?.role;
+      const rb = roles.find(r => r.user_id === b.user_id)?.role;
+      return (ROLE_ORDER[ra] ?? 99) - (ROLE_ORDER[rb] ?? 99);
+    });
     setRequests(reqRes.data || []);
     setBalances(balRes.data || []);
-    setProfiles(profRes.data || []);
+    setProfiles(sorted);
+    setUserRoles(roles);
   };
 
   const recalculateAll = async () => {
