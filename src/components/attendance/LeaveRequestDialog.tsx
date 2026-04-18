@@ -9,7 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { differenceInCalendarDays } from 'date-fns';
-import { notifyAdmins } from '@/lib/notifications';
+import { notifyUsers } from '@/lib/notifications';
 
 interface LeaveRequestDialogProps {
   open: boolean;
