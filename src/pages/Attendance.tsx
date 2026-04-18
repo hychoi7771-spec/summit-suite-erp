@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Fragment } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
@@ -57,11 +57,26 @@ export default function Attendance() {
     const [reqRes, balRes, profRes] = await Promise.all([
       supabase.from('leave_requests').select('*').order('start_date', { ascending: false }),
       supabase.from('leave_balances').select('*').eq('year', year),
-      supabase.from('profiles').select('id, name_kr, avatar'),
+      supabase.from('profiles').select('id, name_kr, avatar, hire_date'),
     ]);
     setRequests(reqRes.data || []);
     setBalances(balRes.data || []);
     setProfiles(profRes.data || []);
+  };
+
+  const recalculateAll = async () => {
+    const { error } = await supabase.rpc('run_monthly_leave_grant');
+    if (error) { toast({ title: '재계산 실패', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: '연차/월차 자동 재계산 완료' });
+    fetchData();
+  };
+
+  const updateHireDate = async (profileId: string, date: string) => {
+    const { error } = await supabase.from('profiles').update({ hire_date: date || null }).eq('id', profileId);
+    if (error) { toast({ title: '입사일 저장 실패', description: error.message, variant: 'destructive' }); return; }
+    await supabase.rpc('calculate_leave_grant', { _profile_id: profileId, _today: format(new Date(), 'yyyy-MM-dd') });
+    toast({ title: '입사일 업데이트 및 잔액 재계산 완료' });
+    fetchData();
   };
 
   useEffect(() => {
@@ -247,6 +262,9 @@ export default function Attendance() {
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <CardTitle className="text-base">{year}년 연차 현황</CardTitle>
               <div className="flex items-center gap-2">
+                {isAdmin && (
+                  <Button size="sm" variant="outline" onClick={recalculateAll}>자동 재계산</Button>
+                )}
                 <Button size="icon" variant="outline" onClick={() => setYear(y => y - 1)}><ChevronLeft className="h-4 w-4" /></Button>
                 <span className="text-sm font-medium w-16 text-center">{year}년</span>
                 <Button size="icon" variant="outline" onClick={() => setYear(y => y + 1)}><ChevronRight className="h-4 w-4" /></Button>
@@ -257,19 +275,22 @@ export default function Attendance() {
                 <TableHeader>
                   <TableRow>
                     <TableHead>직원</TableHead>
-                    <TableHead className="text-right">부여일수</TableHead>
-                    <TableHead className="text-right">사용일수</TableHead>
-                    <TableHead className="text-right">잔여일수</TableHead>
-                    <TableHead className="w-[120px]">진행률</TableHead>
+                    <TableHead className="text-center">입사일</TableHead>
+                    <TableHead className="text-right">연차 발생</TableHead>
+                    <TableHead className="text-right">월차 발생</TableHead>
+                    <TableHead className="text-right">사용</TableHead>
+                    <TableHead className="text-right">잔여</TableHead>
+                    <TableHead className="text-center">다음 발생일</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {profiles.map(p => {
                     const bal = balanceFor(p.id);
-                    const total = Number(bal?.total_days ?? 15);
+                    const annual = Number(bal?.total_days ?? 0);
+                    const monthly = Number(bal?.monthly_total_days ?? 0);
+                    const total = annual + monthly;
                     const used = Number(bal?.used_days ?? 0);
                     const remaining = total - used;
-                    const pct = total > 0 ? Math.min(100, (used / total) * 100) : 0;
                     return (
                       <TableRow key={p.id}>
                         <TableCell>
@@ -278,31 +299,37 @@ export default function Attendance() {
                             <span className="font-medium">{p.name_kr}</span>
                           </div>
                         </TableCell>
+                        <TableCell className="text-center text-xs">
+                          {isAdmin ? (
+                            <Input
+                              type="date"
+                              defaultValue={p.hire_date || ''}
+                              className="w-36 h-8 text-xs mx-auto"
+                              onBlur={e => {
+                                if (e.target.value !== (p.hire_date || '')) updateHireDate(p.id, e.target.value);
+                              }}
+                            />
+                          ) : (p.hire_date ? format(parseISO(p.hire_date), 'yyyy.MM.dd') : '-')}
+                        </TableCell>
                         <TableCell className="text-right">
                           {isAdmin ? (
                             <Input
-                              type="number"
-                              step="0.5"
-                              defaultValue={total}
+                              type="number" step="0.5" defaultValue={annual}
                               className="w-20 h-8 text-right ml-auto"
                               onBlur={e => {
                                 const v = parseFloat(e.target.value);
-                                if (!isNaN(v) && v !== total) updateBalance(p.id, v);
+                                if (!isNaN(v) && v !== annual) updateBalance(p.id, v);
                               }}
                             />
-                          ) : `${total}일`}
+                          ) : `${annual}일`}
                         </TableCell>
+                        <TableCell className="text-right text-muted-foreground">{monthly > 0 ? `${monthly}일` : '-'}</TableCell>
                         <TableCell className="text-right text-muted-foreground">{used}일</TableCell>
                         <TableCell className="text-right">
                           <span className={`font-semibold ${remaining < 3 ? 'text-destructive' : 'text-foreground'}`}>{remaining}일</span>
                         </TableCell>
-                        <TableCell>
-                          <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
-                            <div
-                              className={`h-full ${pct >= 80 ? 'bg-destructive' : pct >= 50 ? 'bg-warning' : 'bg-primary'}`}
-                              style={{ width: `${pct}%` }}
-                            />
-                          </div>
+                        <TableCell className="text-center text-xs text-muted-foreground">
+                          {bal?.next_grant_date ? format(parseISO(bal.next_grant_date), 'yyyy.MM.dd') : '-'}
                         </TableCell>
                       </TableRow>
                     );
@@ -311,9 +338,61 @@ export default function Attendance() {
               </Table>
               {isAdmin && (
                 <p className="text-xs text-muted-foreground mt-3">
-                  💡 부여일수 칸을 클릭해서 직접 수정할 수 있습니다. (관리자 전용)
+                  💡 입사일/연차 부여 칸을 클릭해 수정 가능. '자동 재계산' 버튼으로 입사일 기준 월차(1년 미만)/연차(1년 이상)를 일괄 갱신합니다.
                 </p>
               )}
+            </CardContent>
+          </Card>
+
+          {/* 사용 일자 상세표 (이미지 형식) */}
+          <Card>
+            <CardHeader><CardTitle className="text-base">{year}년 연/월차 사용 일자</CardTitle></CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[120px]">성명</TableHead>
+                    <TableHead className="w-[80px]">구분</TableHead>
+                    <TableHead>사용 일자</TableHead>
+                    <TableHead className="text-right w-[80px]">합계</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {profiles.map(p => {
+                    const myReqs = requests.filter(r =>
+                      r.user_id === p.id && r.status === 'approved'
+                      && new Date(r.start_date).getFullYear() === year,
+                    );
+                    const annualReqs = myReqs.filter(r => r.leave_type === 'annual' || r.leave_type === 'sick');
+                    const halfReqs = myReqs.filter(r => r.leave_type === 'half_day');
+                    const annualSum = annualReqs.reduce((s, r) => s + Number(r.days), 0);
+                    const halfSum = halfReqs.reduce((s, r) => s + Number(r.days), 0);
+                    return (
+                      <Fragment key={p.id}>
+                        <TableRow>
+                          <TableCell rowSpan={2} className="font-medium align-middle">{p.name_kr}</TableCell>
+                          <TableCell className="text-xs">연차</TableCell>
+                          <TableCell className="text-xs">
+                            {annualReqs.length > 0
+                              ? annualReqs.map(r => format(parseISO(r.start_date), 'yyyy.MM.dd')).join(', ')
+                              : <span className="text-muted-foreground">-</span>}
+                          </TableCell>
+                          <TableCell className="text-right text-xs">{annualSum > 0 ? `${annualSum}일` : '-'}</TableCell>
+                        </TableRow>
+                        <TableRow>
+                          <TableCell className="text-xs">반차</TableCell>
+                          <TableCell className="text-xs">
+                            {halfReqs.length > 0
+                              ? halfReqs.map(r => format(parseISO(r.start_date), 'yyyy.MM.dd')).join(', ')
+                              : <span className="text-muted-foreground">-</span>}
+                          </TableCell>
+                          <TableCell className="text-right text-xs">{halfSum > 0 ? `${halfSum}일` : '-'}</TableCell>
+                        </TableRow>
+                      </Fragment>
+                    );
+                  })}
+                </TableBody>
+              </Table>
             </CardContent>
           </Card>
         </TabsContent>

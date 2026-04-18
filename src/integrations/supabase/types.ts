@@ -879,6 +879,9 @@ export type Database = {
         Row: {
           created_at: string
           id: string
+          monthly_total_days: number
+          monthly_used_days: number
+          next_grant_date: string | null
           notes: string | null
           total_days: number
           updated_at: string
@@ -889,6 +892,9 @@ export type Database = {
         Insert: {
           created_at?: string
           id?: string
+          monthly_total_days?: number
+          monthly_used_days?: number
+          next_grant_date?: string | null
           notes?: string | null
           total_days?: number
           updated_at?: string
@@ -899,6 +905,9 @@ export type Database = {
         Update: {
           created_at?: string
           id?: string
+          monthly_total_days?: number
+          monthly_used_days?: number
+          next_grant_date?: string | null
           notes?: string | null
           total_days?: number
           updated_at?: string
@@ -1288,6 +1297,7 @@ export type Database = {
         Row: {
           avatar: string
           created_at: string
+          hire_date: string | null
           id: string
           name: string
           name_kr: string
@@ -1298,6 +1308,7 @@ export type Database = {
         Insert: {
           avatar?: string
           created_at?: string
+          hire_date?: string | null
           id?: string
           name: string
           name_kr: string
@@ -1308,6 +1319,7 @@ export type Database = {
         Update: {
           avatar?: string
           created_at?: string
+          hire_date?: string | null
           id?: string
           name?: string
           name_kr?: string
@@ -1720,6 +1732,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      calculate_leave_grant: {
+        Args: { _profile_id: string; _today?: string }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -1731,6 +1747,7 @@ export type Database = {
         Args: { t: Database["public"]["Enums"]["leave_type"] }
         Returns: string
       }
+      run_monthly_leave_grant: { Args: never; Returns: number }
     }
     Enums: {
       app_role:
