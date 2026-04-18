@@ -35,7 +35,7 @@ const presenceLabels: Record<string, string> = { working: '근무 중', away: '�
 const presenceColors: Record<string, string> = { working: 'bg-success', away: 'bg-warning', offline: 'bg-muted-foreground/40' };
 
 export default function TeamManagement() {
-  const { user, userRole } = useAuth();
+  const { user, userRole, isManager, loading: authLoading } = useAuth();
   const { toast } = useToast();
   const [profiles, setProfiles] = useState<any[]>([]);
   const [userRoles, setUserRoles] = useState<any[]>([]);
@@ -47,7 +47,17 @@ export default function TeamManagement() {
 
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
 
-  useEffect(() => { fetchData(); }, []);
+  useEffect(() => { if (isManager) fetchData(); }, [isManager]);
+
+  if (!authLoading && !isManager) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[60vh] text-center px-4">
+        <Users className="h-12 w-12 text-muted-foreground mb-4" />
+        <h2 className="text-xl font-semibold mb-2">접근 권한이 없습니다</h2>
+        <p className="text-sm text-muted-foreground">팀원관리는 부장 이상만 이용할 수 있습니다.</p>
+      </div>
+    );
+  }
 
   const fetchData = async () => {
     const [profRes, roleRes] = await Promise.all([

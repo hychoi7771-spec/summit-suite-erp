@@ -69,7 +69,7 @@ const personalNavItems = [
 
 const adminNavItems = [
   { title: '매출/KPI', url: '/sales', icon: BarChart3 },
-  { title: '팀원관리', url: '/team', icon: UserCog },
+  { title: '팀원관리', url: '/team', icon: UserCog, managerOnly: true },
   { title: '프로젝트 폴더', url: '/project-folders', icon: FolderOpen },
   { title: '사용 매뉴얼', url: '/manual', icon: BookOpen },
 ];
@@ -84,10 +84,13 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
-  const { userRole } = useAuth();
+  const { userRole, isManager } = useAuth();
   const [members, setMembers] = useState<any[]>([]);
+  const visibleAdminNavItems = adminNavItems.filter(
+    (item) => !('managerOnly' in item && (item as any).managerOnly) || isManager
+  );
   const [adminOpen, setAdminOpen] = useState(() => {
-    return adminNavItems.some(item => location.pathname === item.url);
+    return visibleAdminNavItems.some(item => location.pathname === item.url);
   });
   const [personalOpen, setPersonalOpen] = useState(() => {
     return personalNavItems.some(item => location.pathname === item.url);
@@ -207,7 +210,7 @@ export function AppSidebar() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <SidebarGroupContent>
-                  {renderNavItems(adminNavItems)}
+                  {renderNavItems(visibleAdminNavItems)}
                 </SidebarGroupContent>
               </CollapsibleContent>
             </Collapsible>
