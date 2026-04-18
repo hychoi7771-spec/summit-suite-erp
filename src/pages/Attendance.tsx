@@ -42,9 +42,9 @@ const STATUS_STYLE: Record<string, string> = {
 };
 
 export default function Attendance() {
-  const { profile, userRole } = useAuth();
+  const { profile, userRole, isManager } = useAuth();
   const { toast } = useToast();
-  const isAdmin = userRole === 'ceo' || userRole === 'general_director';
+  const isAdmin = isManager; // 부장급 이상이 근태 관리 가능
 
   const [requests, setRequests] = useState<any[]>([]);
   const [balances, setBalances] = useState<any[]>([]);

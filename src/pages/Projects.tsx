@@ -25,9 +25,9 @@ const statusConfig: Record<string, { label: string; icon: any; color: string }> 
 };
 
 export default function Projects() {
-  const { profile, userRole } = useAuth();
+  const { profile, userRole, isManager } = useAuth();
   const { toast } = useToast();
-  const isAdmin = userRole === 'ceo' || userRole === 'general_director';
+  const isAdmin = isManager;
   const [projects, setProjects] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);

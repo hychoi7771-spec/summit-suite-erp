@@ -15,9 +15,9 @@ import { useToast } from '@/hooks/use-toast';
 const folderColors = ['#3b82f6', '#8b5cf6', '#ec4899', '#f97316', '#22c55e', '#06b6d4', '#eab308'];
 
 export default function ProjectFolders() {
-  const { profile, userRole } = useAuth();
+  const { profile, userRole, isManager } = useAuth();
   const { toast } = useToast();
-  const isAdmin = userRole === 'ceo' || userRole === 'general_director';
+  const isAdmin = isManager;
 
   const [folders, setFolders] = useState<any[]>([]);
   const [projects, setProjects] = useState<any[]>([]);
