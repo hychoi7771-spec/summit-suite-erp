@@ -368,8 +368,8 @@ export default function Attendance() {
                     const annualSum = annualReqs.reduce((s, r) => s + Number(r.days), 0);
                     const halfSum = halfReqs.reduce((s, r) => s + Number(r.days), 0);
                     return (
-                      <>
-                        <TableRow key={`${p.id}-a`}>
+                      <Fragment key={p.id}>
+                        <TableRow>
                           <TableCell rowSpan={2} className="font-medium align-middle">{p.name_kr}</TableCell>
                           <TableCell className="text-xs">연차</TableCell>
                           <TableCell className="text-xs">
@@ -379,7 +379,7 @@ export default function Attendance() {
                           </TableCell>
                           <TableCell className="text-right text-xs">{annualSum > 0 ? `${annualSum}일` : '-'}</TableCell>
                         </TableRow>
-                        <TableRow key={`${p.id}-h`}>
+                        <TableRow>
                           <TableCell className="text-xs">반차</TableCell>
                           <TableCell className="text-xs">
                             {halfReqs.length > 0
@@ -388,7 +388,7 @@ export default function Attendance() {
                           </TableCell>
                           <TableCell className="text-right text-xs">{halfSum > 0 ? `${halfSum}일` : '-'}</TableCell>
                         </TableRow>
-                      </>
+                      </Fragment>
                     );
                   })}
                 </TableBody>
