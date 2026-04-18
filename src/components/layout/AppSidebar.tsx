@@ -210,7 +210,7 @@ export function AppSidebar() {
               </CollapsibleTrigger>
               <CollapsibleContent>
                 <SidebarGroupContent>
-                  {renderNavItems(adminNavItems)}
+                  {renderNavItems(visibleAdminNavItems)}
                 </SidebarGroupContent>
               </CollapsibleContent>
             </Collapsible>
