@@ -29,6 +29,7 @@ import ProjectFolders from "./pages/ProjectFolders";
 import Auth from "./pages/Auth";
 import LaunchDashboard from "./pages/LaunchDashboard";
 import DailyWorkReport from "./pages/DailyWorkReport";
+import Attendance from "./pages/Attendance";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -95,6 +96,7 @@ function AppRoutes() {
                 <Route path="/project-folders" element={<ProjectFolders />} />
                 <Route path="/launch" element={<LaunchDashboard />} />
                 <Route path="/daily-report" element={<DailyWorkReport />} />
+                <Route path="/attendance" element={<Attendance />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppLayout>
