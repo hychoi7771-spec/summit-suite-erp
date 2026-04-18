@@ -34,7 +34,6 @@ export default function Auth() {
             <img src={logo} alt="SHFoodHub" className="h-16 w-16 object-contain" />
           </div>
           <CardTitle className="text-xl">SHFoodHub</CardTitle>
-          <p className="text-sm text-muted-foreground">팀 계정으로 로그인하세요</p>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleLogin} className="space-y-4">
