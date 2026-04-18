@@ -68,10 +68,6 @@ const personalNavItems = [
 ];
 
 const adminNavItems = [
-  { title: '경비관리', url: '/expenses', icon: Receipt },
-  { title: '전자결재', url: '/approvals', icon: Stamp },
-  { title: '공지 게시판', url: '/notices-board', icon: Megaphone },
-  { title: '설문/투표', url: '/surveys', icon: Vote },
   { title: '매출/KPI', url: '/sales', icon: BarChart3 },
   { title: '팀원관리', url: '/team', icon: UserCog },
   { title: '프로젝트 폴더', url: '/project-folders', icon: FolderOpen },
