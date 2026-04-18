@@ -84,10 +84,13 @@ export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
-  const { userRole } = useAuth();
+  const { userRole, isManager } = useAuth();
   const [members, setMembers] = useState<any[]>([]);
+  const visibleAdminNavItems = adminNavItems.filter(
+    (item) => !('managerOnly' in item && (item as any).managerOnly) || isManager
+  );
   const [adminOpen, setAdminOpen] = useState(() => {
-    return adminNavItems.some(item => location.pathname === item.url);
+    return visibleAdminNavItems.some(item => location.pathname === item.url);
   });
   const [personalOpen, setPersonalOpen] = useState(() => {
     return personalNavItems.some(item => location.pathname === item.url);
