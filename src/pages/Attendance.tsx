@@ -251,32 +251,58 @@ export default function Attendance() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-7 gap-px bg-border rounded-md overflow-hidden">
-                {['일', '월', '화', '수', '목', '금', '토'].map(d => (
-                  <div key={d} className="bg-muted px-2 py-1.5 text-xs font-medium text-center text-muted-foreground">{d}</div>
+                {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
+                  <div
+                    key={d}
+                    className={`bg-muted px-2 py-1.5 text-xs font-medium text-center ${
+                      i === 0 ? 'text-destructive' : i === 6 ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {d}
+                  </div>
                 ))}
                 {calendarDays.map(day => {
                   const leaves = getLeavesOnDate(day);
                   const isToday = isSameDay(day, today);
                   const inMonth = isSameMonth(day, currentMonth);
+                  const dow = day.getDay();
+                  const holidayName = getHolidayName(day);
+                  const nonWorking = isWeekend(day) || !!holidayName;
+                  const dayNumColor = holidayName || dow === 0
+                    ? 'text-destructive'
+                    : dow === 6
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-muted-foreground';
                   return (
                     <div
                       key={day.toISOString()}
-                      className={`bg-background min-h-[90px] p-1.5 ${!inMonth ? 'opacity-40' : ''}`}
+                      className={`min-h-[90px] p-1.5 ${nonWorking ? 'bg-muted/40' : 'bg-background'} ${!inMonth ? 'opacity-40' : ''}`}
                     >
-                      <div className={`text-xs font-medium mb-1 ${isToday ? 'inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
-                        {format(day, 'd')}
+                      <div className="flex items-center gap-1 mb-1">
+                        <div className={`text-xs font-medium ${isToday ? 'inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground' : dayNumColor}`}>
+                          {format(day, 'd')}
+                        </div>
+                        {holidayName && (
+                          <span className="text-[9px] text-destructive font-medium truncate" title={holidayName}>
+                            {holidayName}
+                          </span>
+                        )}
                       </div>
-                      <div className="space-y-0.5">
-                        {leaves.slice(0, 3).map(l => {
-                          const p = getProfile(l.user_id);
-                          return (
-                            <div key={l.id} className={`text-[10px] px-1 py-0.5 rounded border truncate ${LEAVE_TYPE_COLOR[l.leave_type]}`}>
-                              {p?.name_kr} · {LEAVE_TYPE_LABEL[l.leave_type]}
-                            </div>
-                          );
-                        })}
-                        {leaves.length > 3 && <div className="text-[10px] text-muted-foreground">+{leaves.length - 3}</div>}
-                      </div>
+                      {nonWorking ? (
+                        <div className="text-[9px] text-muted-foreground italic">휴무</div>
+                      ) : (
+                        <div className="space-y-0.5">
+                          {leaves.slice(0, 3).map(l => {
+                            const p = getProfile(l.user_id);
+                            return (
+                              <div key={l.id} className={`text-[10px] px-1 py-0.5 rounded border truncate ${LEAVE_TYPE_COLOR[l.leave_type]}`}>
+                                {p?.name_kr} · {LEAVE_TYPE_LABEL[l.leave_type]}
+                              </div>
+                            );
+                          })}
+                          {leaves.length > 3 && <div className="text-[10px] text-muted-foreground">+{leaves.length - 3}</div>}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
