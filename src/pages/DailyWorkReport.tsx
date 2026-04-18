@@ -295,7 +295,7 @@ function CommentsSection({ reportId, profiles, currentProfile, isAdmin }: {
 
 function ReportCard({
   report, profile: currentProfile, profiles, isAdmin, userRole,
-  onToggleTask, onDelete, onApprove, onUpdateTasks,
+  onToggleTask, onDelete, onApprove, onReject, onUpdateTasks,
 }: {
   report: DailyReport;
   profile: any;
@@ -305,8 +305,11 @@ function ReportCard({
   onToggleTask: (report: DailyReport, taskId: string) => void;
   onDelete: (id: string) => void;
   onApprove: (report: DailyReport, type: 'director' | 'ceo') => void;
+  onReject: (report: DailyReport, type: 'director' | 'ceo', reason: string) => void;
   onUpdateTasks: (report: DailyReport, tasks: MorningTask[]) => void;
 }) {
+  const [rejectOpen, setRejectOpen] = useState<null | 'director' | 'ceo'>(null);
+  const [rejectReason, setRejectReason] = useState('');
   const [expanded, setExpanded] = useState(true);
 
   const user = profiles.find(p => p.id === report.user_id);
