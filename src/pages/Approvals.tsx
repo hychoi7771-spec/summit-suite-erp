@@ -186,6 +186,13 @@ export default function Approvals() {
         current_approver_id: null,
         approved_at: new Date().toISOString(),
       }).eq('id', approval.id);
+
+      // 휴가 결재 최종 승인 시 → leave_requests 자동 승인 (트리거가 캘린더/잔액 처리)
+      if (approval.type === 'leave') {
+        await supabase.from('leave_requests')
+          .update({ status: 'approved', approved_by: profile.id })
+          .eq('approval_id', approval.id);
+      }
     }
 
     // Notify requester about approval
@@ -215,6 +222,13 @@ export default function Approvals() {
       rejected_reason: reason,
       rejected_at: new Date().toISOString(),
     }).eq('id', approval.id);
+
+    // 휴가 결재 반려 시 → leave_requests도 반려 처리
+    if (approval.type === 'leave') {
+      await supabase.from('leave_requests')
+        .update({ status: 'rejected' })
+        .eq('approval_id', approval.id);
+    }
 
     // Notify requester about rejection
     await notifyUser(approval.requester_id, '결재 반려', `"${approval.title}" 결재가 반려되었습니다. 사유: ${reason}`, 'approval', approval.id);
