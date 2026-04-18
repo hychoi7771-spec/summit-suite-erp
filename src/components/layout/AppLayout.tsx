@@ -2,11 +2,13 @@ import { ReactNode, useState, useEffect } from 'react';
 import { AppSidebar } from './AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bell, Search, LogOut, Trash2 } from 'lucide-react';
+import { Bell, Search, LogOut, Trash2, Settings } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
+import { useNavigate } from 'react-router-dom';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -14,6 +16,7 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const { profile, userRole, signOut } = useAuth();
+  const navigate = useNavigate();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
 
@@ -137,20 +140,34 @@ export function AppLayout({ children }: AppLayoutProps) {
                   </div>
                 </PopoverContent>
               </Popover>
-              <div className="flex items-center gap-2">
-                <Avatar className="h-8 w-8 bg-primary">
-                  <AvatarFallback className="bg-primary text-primary-foreground text-xs font-medium">
-                    {avatar}
-                  </AvatarFallback>
-                </Avatar>
-                <div className="hidden md:block">
-                  <p className="text-sm font-medium leading-none">{displayName}</p>
-                  <p className="text-xs text-muted-foreground">{roleLabel}</p>
-                </div>
-              </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={signOut} title="로그아웃">
-                <LogOut className="h-4 w-4 text-muted-foreground" />
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center gap-2 hover:bg-muted rounded-lg px-2 py-1 transition-colors">
+                    <Avatar className="h-8 w-8 bg-primary">
+                      <AvatarFallback className="bg-primary text-primary-foreground text-xs font-medium">
+                        {avatar}
+                      </AvatarFallback>
+                    </Avatar>
+                    <div className="hidden md:block text-left">
+                      <p className="text-sm font-medium leading-none">{displayName}</p>
+                      <p className="text-xs text-muted-foreground">{roleLabel}</p>
+                    </div>
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-48">
+                  <DropdownMenuLabel className="font-normal">
+                    <p className="text-sm font-medium">{displayName}</p>
+                    <p className="text-xs text-muted-foreground">{roleLabel}</p>
+                  </DropdownMenuLabel>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={() => navigate('/account')}>
+                    <Settings className="h-4 w-4 mr-2" /> 계정 관리
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={signOut} className="text-destructive focus:text-destructive">
+                    <LogOut className="h-4 w-4 mr-2" /> 로그아웃
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
             </div>
           </header>
           <main className="flex-1 p-4 md:p-6 overflow-auto">
