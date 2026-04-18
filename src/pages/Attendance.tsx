@@ -16,6 +16,7 @@ import {
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { LeaveRequestDialog } from '@/components/attendance/LeaveRequestDialog';
+import { isNonWorkingDay, isWeekend, getHolidayName } from '@/lib/holidays';
 
 const LEAVE_TYPE_LABEL: Record<string, string> = {
   annual: '연차', half_day: '반차', summer: '여름휴가',
@@ -104,13 +105,17 @@ export default function Attendance() {
 
   const getProfile = (id: string) => profiles.find(p => p.id === id);
 
-  // 오늘 휴무자
+  // 오늘 휴무자 (주말/공휴일이면 전원 비근무)
   const today = new Date();
+  const todayIsNonWorking = isNonWorkingDay(today);
+  const todayHolidayName = getHolidayName(today);
   const todayLeaves = requests.filter(r =>
     r.status === 'approved' &&
     isWithinInterval(today, { start: parseISO(r.start_date), end: parseISO(r.end_date) }),
   );
-  const workingMembers = profiles.filter(p => !todayLeaves.some(l => l.user_id === p.id));
+  const workingMembers = todayIsNonWorking
+    ? []
+    : profiles.filter(p => !todayLeaves.some(l => l.user_id === p.id));
 
   // 캘린더 - 휴가자 매핑
   const calendarStart = startOfWeek(startOfMonth(currentMonth), { weekStartsOn: 0 });
@@ -169,15 +174,26 @@ export default function Attendance() {
         <Card>
           <CardHeader className="pb-2"><CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2"><Users className="h-4 w-4" />오늘 근무</CardTitle></CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{workingMembers.length}명</div>
-            <div className="flex flex-wrap gap-1 mt-2">
-              {workingMembers.slice(0, 8).map(p => (
-                <Avatar key={p.id} className="h-6 w-6">
-                  <AvatarFallback className="text-[9px] bg-success/20 text-success">{p.avatar}</AvatarFallback>
-                </Avatar>
-              ))}
-              {workingMembers.length > 8 && <span className="text-xs text-muted-foreground self-center ml-1">+{workingMembers.length - 8}</span>}
-            </div>
+            {todayIsNonWorking ? (
+              <>
+                <div className="text-2xl font-bold text-muted-foreground">휴무일</div>
+                <p className="text-xs text-muted-foreground mt-2">
+                  {todayHolidayName ? `🎌 ${todayHolidayName}` : '🛌 주말 (전원 비근무)'}
+                </p>
+              </>
+            ) : (
+              <>
+                <div className="text-2xl font-bold">{workingMembers.length}명</div>
+                <div className="flex flex-wrap gap-1 mt-2">
+                  {workingMembers.slice(0, 8).map(p => (
+                    <Avatar key={p.id} className="h-6 w-6">
+                      <AvatarFallback className="text-[9px] bg-success/20 text-success">{p.avatar}</AvatarFallback>
+                    </Avatar>
+                  ))}
+                  {workingMembers.length > 8 && <span className="text-xs text-muted-foreground self-center ml-1">+{workingMembers.length - 8}</span>}
+                </div>
+              </>
+            )}
           </CardContent>
         </Card>
         <Card>
@@ -235,32 +251,58 @@ export default function Attendance() {
             </CardHeader>
             <CardContent>
               <div className="grid grid-cols-7 gap-px bg-border rounded-md overflow-hidden">
-                {['일', '월', '화', '수', '목', '금', '토'].map(d => (
-                  <div key={d} className="bg-muted px-2 py-1.5 text-xs font-medium text-center text-muted-foreground">{d}</div>
+                {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
+                  <div
+                    key={d}
+                    className={`bg-muted px-2 py-1.5 text-xs font-medium text-center ${
+                      i === 0 ? 'text-destructive' : i === 6 ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'
+                    }`}
+                  >
+                    {d}
+                  </div>
                 ))}
                 {calendarDays.map(day => {
                   const leaves = getLeavesOnDate(day);
                   const isToday = isSameDay(day, today);
                   const inMonth = isSameMonth(day, currentMonth);
+                  const dow = day.getDay();
+                  const holidayName = getHolidayName(day);
+                  const nonWorking = isWeekend(day) || !!holidayName;
+                  const dayNumColor = holidayName || dow === 0
+                    ? 'text-destructive'
+                    : dow === 6
+                      ? 'text-blue-600 dark:text-blue-400'
+                      : 'text-muted-foreground';
                   return (
                     <div
                       key={day.toISOString()}
-                      className={`bg-background min-h-[90px] p-1.5 ${!inMonth ? 'opacity-40' : ''}`}
+                      className={`min-h-[90px] p-1.5 ${nonWorking ? 'bg-muted/40' : 'bg-background'} ${!inMonth ? 'opacity-40' : ''}`}
                     >
-                      <div className={`text-xs font-medium mb-1 ${isToday ? 'inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground' : 'text-muted-foreground'}`}>
-                        {format(day, 'd')}
+                      <div className="flex items-center gap-1 mb-1">
+                        <div className={`text-xs font-medium ${isToday ? 'inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground' : dayNumColor}`}>
+                          {format(day, 'd')}
+                        </div>
+                        {holidayName && (
+                          <span className="text-[9px] text-destructive font-medium truncate" title={holidayName}>
+                            {holidayName}
+                          </span>
+                        )}
                       </div>
-                      <div className="space-y-0.5">
-                        {leaves.slice(0, 3).map(l => {
-                          const p = getProfile(l.user_id);
-                          return (
-                            <div key={l.id} className={`text-[10px] px-1 py-0.5 rounded border truncate ${LEAVE_TYPE_COLOR[l.leave_type]}`}>
-                              {p?.name_kr} · {LEAVE_TYPE_LABEL[l.leave_type]}
-                            </div>
-                          );
-                        })}
-                        {leaves.length > 3 && <div className="text-[10px] text-muted-foreground">+{leaves.length - 3}</div>}
-                      </div>
+                      {nonWorking ? (
+                        <div className="text-[9px] text-muted-foreground italic">휴무</div>
+                      ) : (
+                        <div className="space-y-0.5">
+                          {leaves.slice(0, 3).map(l => {
+                            const p = getProfile(l.user_id);
+                            return (
+                              <div key={l.id} className={`text-[10px] px-1 py-0.5 rounded border truncate ${LEAVE_TYPE_COLOR[l.leave_type]}`}>
+                                {p?.name_kr} · {LEAVE_TYPE_LABEL[l.leave_type]}
+                              </div>
+                            );
+                          })}
+                          {leaves.length > 3 && <div className="text-[10px] text-muted-foreground">+{leaves.length - 3}</div>}
+                        </div>
+                      )}
                     </div>
                   );
                 })}
