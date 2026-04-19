@@ -669,6 +669,7 @@ export default function DailyWorkReport() {
   const myReport = reports.find(r => r.user_id === profile?.id);
 
   // Fetch today's tasks for the current user (used in check-in dialog preview)
+  // 본인이 담당자인 모든 미완료 업무 + 마감일이 오늘 이전이거나 오늘이거나 없는 업무
   const fetchTodayTasks = async () => {
     if (!profile) return;
     const today = format(new Date(), 'yyyy-MM-dd');
@@ -676,7 +677,7 @@ export default function DailyWorkReport() {
       .from('tasks')
       .select('id, title, description, priority, tags, project_name, status, due_date')
       .eq('assignee_id', profile.id)
-      .or(`due_date.eq.${today},due_date.is.null`)
+      .or(`due_date.lte.${today},due_date.is.null`)
       .neq('status', 'done')
       .order('priority', { ascending: false });
     setTodayTasks(data || []);
