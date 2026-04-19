@@ -642,6 +642,7 @@ export default function DailyWorkReport() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [todayTasks, setTodayTasks] = useState<any[]>([]);
+  const [todayRoutines, setTodayRoutines] = useState<any[]>([]);
   const [newNotes, setNewNotes] = useState('');
   const [checkoutConfirmOpen, setCheckoutConfirmOpen] = useState(false);
   const [checkoutTargetReport, setCheckoutTargetReport] = useState<DailyReport | null>(null);
@@ -686,14 +687,18 @@ export default function DailyWorkReport() {
   // 본인이 담당자인 모든 미완료 업무 — 기간(마감일) 상관없이 전부 표시
   const fetchTodayTasks = async () => {
     if (!profile) return;
-    const { data } = await supabase
-      .from('tasks')
-      .select('id, title, description, priority, tags, project_name, status, due_date')
-      .eq('assignee_id', profile.id)
-      .neq('status', 'done')
-      .order('priority', { ascending: false })
-      .order('due_date', { ascending: true, nullsFirst: false });
-    setTodayTasks(data || []);
+    const [tasksRes, routines] = await Promise.all([
+      supabase
+        .from('tasks')
+        .select('id, title, description, priority, tags, project_name, status, due_date')
+        .eq('assignee_id', profile.id)
+        .neq('status', 'done')
+        .order('priority', { ascending: false })
+        .order('due_date', { ascending: true, nullsFirst: false }),
+      fetchRoutinesForDate(profile.id, selectedDate),
+    ]);
+    setTodayTasks(tasksRes.data || []);
+    setTodayRoutines(routines);
   };
 
   const handleCreateReport = async () => {
@@ -731,11 +736,22 @@ export default function DailyWorkReport() {
       return;
     }
 
+    // Auto-create pending routine_completions for today's routines
+    const pendingRoutines = todayRoutines
+      .filter(({ completion }) => !completion)
+      .map(({ template }) => ({
+        template_id: template.id,
+        user_id: profile.id,
+        date: selectedDate,
+        status: 'pending',
+      }));
+    if (pendingRoutines.length > 0) {
+      await supabase.from('routine_completions').upsert(pendingRoutines, { onConflict: 'template_id,date' });
+    }
+
     toast({
       title: '☀️ 체크인 완료!',
-      description: tasks.length === 0
-        ? '오늘 등록된 업무가 없습니다. 업무 탭에서 업무를 추가하세요.'
-        : `오늘의 업무 ${tasks.length}건을 가져왔습니다.`,
+      description: `업무 ${tasks.length}건${todayRoutines.length > 0 ? ` + 루틴 ${todayRoutines.length}건` : ''}을 불러왔습니다.`,
     });
     setDialogOpen(false);
     setNewNotes('');
