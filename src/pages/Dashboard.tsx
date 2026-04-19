@@ -8,7 +8,6 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
-import { RoutineReminderBanner } from '@/components/daily/RoutineReminderBanner';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 12 },

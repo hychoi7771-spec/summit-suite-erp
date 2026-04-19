@@ -32,9 +32,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import stampImg from '@/assets/stamp.png';
 import { notifyUser } from '@/lib/notifications';
-import { RoutineChecklist } from '@/components/daily/RoutineChecklist';
-import { fetchRoutinesForDate } from '@/lib/routines';
-import { Repeat } from 'lucide-react';
 
 // --- Types ---
 interface MorningTask {
