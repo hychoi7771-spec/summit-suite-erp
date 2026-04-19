@@ -24,6 +24,7 @@ import {
   ClipboardCheck,
   CalendarClock,
   CalendarOff,
+  Repeat,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -50,6 +51,7 @@ const mainNavItems = [
   { title: '프로젝트', url: '/projects', icon: FolderKanban },
   { title: '업무', url: '/tasks', icon: ListTodo },
   { title: '데일리 체크인', url: '/daily-report', icon: ClipboardCheck, accent: true },
+  { title: '루틴 업무', url: '/routines', icon: Repeat },
   { title: '디자인 시안', url: '/design-reviews', icon: Palette },
   { title: '회의록', url: '/meetings', icon: ClipboardList },
   { title: '일정', url: '/calendar', icon: CalendarDays },
