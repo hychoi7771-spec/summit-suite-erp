@@ -629,7 +629,6 @@ export default function DailyWorkReport() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [todayTasks, setTodayTasks] = useState<any[]>([]);
-  const [todayRoutines, setTodayRoutines] = useState<any[]>([]);
   const [newNotes, setNewNotes] = useState('');
   const [checkoutConfirmOpen, setCheckoutConfirmOpen] = useState(false);
   const [checkoutTargetReport, setCheckoutTargetReport] = useState<DailyReport | null>(null);
@@ -1059,24 +1058,9 @@ export default function DailyWorkReport() {
                     </div>
                   )}
 
-                  {todayRoutines.length > 0 && (
-                    <div className="space-y-2 max-h-60 overflow-y-auto bg-primary/5 border border-primary/20 rounded-lg p-3">
-                      <p className="text-xs font-semibold text-primary inline-flex items-center gap-1">
-                        <Repeat className="h-3 w-3" /> 오늘의 루틴 ({todayRoutines.length}건) - 자동 추가됨
-                      </p>
-                      {todayRoutines.map(({ template }: any) => (
-                        <div key={template.id} className="text-xs flex items-center gap-2 px-2 py-1 bg-card rounded">
-                          <span className="font-medium">{template.title}</span>
-                          {template.estimated_minutes > 0 && (
-                            <span className="text-[10px] text-muted-foreground">{template.estimated_minutes}분</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
+                  
                   <Button onClick={handleCreateReport} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" size="lg">
-                    <LogIn className="h-4 w-4 mr-1" /> ☀️ 확인 후 체크인 (업무 {todayTasks.length} + 루틴 {todayRoutines.length})
+                    <LogIn className="h-4 w-4 mr-1" /> ☀️ 확인 후 체크인 (업무 {todayTasks.length}건)
                   </Button>
                 </div>
               </DialogContent>
