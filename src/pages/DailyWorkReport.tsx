@@ -1077,7 +1077,7 @@ export default function DailyWorkReport() {
                   )}
 
                   <Button onClick={handleCreateReport} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" size="lg">
-                    <LogIn className="h-4 w-4 mr-1" /> ☀️ 확인 후 체크인
+                    <LogIn className="h-4 w-4 mr-1" /> ☀️ 확인 후 체크인 (업무 {todayTasks.length} + 루틴 {todayRoutines.length})
                   </Button>
                 </div>
               </DialogContent>
