@@ -244,16 +244,20 @@ export default function Notices() {
                   <span>{new Date(selectedNotice.created_at).toLocaleString('ko-KR')}</span>
                 </div>
                 <div className="flex gap-1 flex-wrap">
-                  <Button variant="ghost" size="sm" onClick={() => togglePopup(selectedNotice)}>
-                    <Megaphone className="h-3.5 w-3.5 mr-1" />
-                    {selectedNotice.show_as_popup ? '팝업 해제' : '팝업 설정'}
-                  </Button>
-                  <Button variant="ghost" size="sm" onClick={() => togglePin(selectedNotice)}>
-                    <Pin className="h-3.5 w-3.5 mr-1" />{selectedNotice.is_pinned ? '고정 해제' : '고정'}
-                  </Button>
-                  <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(selectedNotice.id)}>
-                    <Trash2 className="h-3.5 w-3.5 mr-1" />삭제
-                  </Button>
+                  {canManageNotice(selectedNotice) && (
+                    <>
+                      <Button variant="ghost" size="sm" onClick={() => togglePopup(selectedNotice)}>
+                        <Megaphone className="h-3.5 w-3.5 mr-1" />
+                        {selectedNotice.show_as_popup ? '팝업 해제' : '팝업 설정'}
+                      </Button>
+                      <Button variant="ghost" size="sm" onClick={() => togglePin(selectedNotice)}>
+                        <Pin className="h-3.5 w-3.5 mr-1" />{selectedNotice.is_pinned ? '고정 해제' : '고정'}
+                      </Button>
+                      <Button variant="ghost" size="sm" className="text-destructive hover:text-destructive" onClick={() => handleDelete(selectedNotice.id)}>
+                        <Trash2 className="h-3.5 w-3.5 mr-1" />삭제
+                      </Button>
+                    </>
+                  )}
                 </div>
               </div>
             </div>
