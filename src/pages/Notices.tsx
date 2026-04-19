@@ -76,29 +76,63 @@ export default function Notices() {
   const handleSubmit = async () => {
     if (!profile || !form.title) return;
     setSubmitting(true);
-    const { error } = await supabase.from('notices').insert({
-      title: form.title,
-      content: form.content,
-      author_id: profile.id,
-      show_as_popup: form.show_as_popup,
-    } as any);
-    if (error) {
-      toast({ title: '등록 실패', description: error.message, variant: 'destructive' });
+
+    if (editingId) {
+      // 편집 모드
+      const { error } = await supabase
+        .from('notices')
+        .update({
+          title: form.title,
+          content: form.content,
+          show_as_popup: form.show_as_popup,
+        } as any)
+        .eq('id', editingId);
+      if (error) {
+        toast({ title: '수정 실패', description: error.message, variant: 'destructive' });
+      } else {
+        toast({ title: '공지 수정 완료' });
+        setDialogOpen(false);
+        setEditingId(null);
+        setForm({ title: '', content: '', show_as_popup: false });
+        fetchData();
+      }
     } else {
-      await notifyAdmins(
-        '새 공지 등록',
-        `${profile.name_kr}님이 "${form.title}" 공지를 등록했습니다.${form.show_as_popup ? ' (팝업 공지)' : ''}`,
-        'notice',
-      );
-      toast({
-        title: '공지 등록 완료',
-        description: form.show_as_popup ? '로그인한 팀원에게 팝업으로 표시됩니다.' : undefined,
-      });
-      setDialogOpen(false);
-      setForm({ title: '', content: '', show_as_popup: false });
-      fetchData();
+      // 신규 작성
+      const { error } = await supabase.from('notices').insert({
+        title: form.title,
+        content: form.content,
+        author_id: profile.id,
+        show_as_popup: form.show_as_popup,
+      } as any);
+      if (error) {
+        toast({ title: '등록 실패', description: error.message, variant: 'destructive' });
+      } else {
+        await notifyAdmins(
+          '새 공지 등록',
+          `${profile.name_kr}님이 "${form.title}" 공지를 등록했습니다.${form.show_as_popup ? ' (팝업 공지)' : ''}`,
+          'notice',
+        );
+        toast({
+          title: '공지 등록 완료',
+          description: form.show_as_popup ? '로그인한 팀원에게 팝업으로 표시됩니다.' : undefined,
+        });
+        setDialogOpen(false);
+        setForm({ title: '', content: '', show_as_popup: false });
+        fetchData();
+      }
     }
     setSubmitting(false);
+  };
+
+  const handleStartEdit = (notice: any) => {
+    setEditingId(notice.id);
+    setForm({
+      title: notice.title ?? '',
+      content: notice.content ?? '',
+      show_as_popup: !!notice.show_as_popup,
+    });
+    setSelectedNotice(null);
+    setDialogOpen(true);
   };
 
   const handleDelete = async (id: string) => {
