@@ -9,7 +9,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { differenceInCalendarDays } from 'date-fns';
-import { notifyUsers } from '@/lib/notifications';
+import { notifyUsers, notifyAdmins } from '@/lib/notifications';
+import { eachDayOfInterval, format } from 'date-fns';
 
 interface LeaveRequestDialogProps {
   open: boolean;
@@ -159,6 +160,49 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
       'approval',
       approval.id,
     );
+
+    // 4) 여름휴가 겹침 감지 → 같은 기간(승인+대기 포함, 본인 제외) 3명 이상이면 관리자 알림
+    if (form.leave_type === 'summer') {
+      const { data: overlapping } = await supabase
+        .from('leave_requests')
+        .select('user_id, start_date, end_date, status, profiles!leave_requests_user_id_fkey(name_kr)')
+        .eq('leave_type', 'summer')
+        .in('status', ['approved', 'pending'])
+        .lte('start_date', form.end_date)
+        .gte('end_date', form.start_date)
+        .neq('user_id', profile.id);
+
+      if (overlapping && overlapping.length > 0) {
+        // 신규 신청 포함하여 일자별 인원 카운트
+        const dayMap = new Map<string, Set<string>>();
+        const addRange = (uid: string, start: string, end: string) => {
+          eachDayOfInterval({ start: new Date(start), end: new Date(end) }).forEach(d => {
+            const key = format(d, 'yyyy-MM-dd');
+            if (!dayMap.has(key)) dayMap.set(key, new Set());
+            dayMap.get(key)!.add(uid);
+          });
+        };
+        addRange(profile.id, form.start_date, form.end_date);
+        overlapping.forEach((r: any) => addRange(r.user_id, r.start_date, r.end_date));
+
+        const peakDays = Array.from(dayMap.entries())
+          .filter(([, users]) => users.size >= 3)
+          .sort(([a], [b]) => a.localeCompare(b));
+
+        if (peakDays.length > 0) {
+          const firstDay = peakDays[0][0];
+          const lastDay = peakDays[peakDays.length - 1][0];
+          const maxOverlap = Math.max(...peakDays.map(([, u]) => u.size));
+          const rangeText = firstDay === lastDay ? firstDay : `${firstDay} ~ ${lastDay}`;
+          await notifyAdmins(
+            '⚠️ 여름휴가 일정 겹침 알림',
+            `${rangeText} 기간에 최대 ${maxOverlap}명이 여름휴가로 겹칩니다. (${profile.name_kr}님 신청 포함)`,
+            'leave_overlap',
+            approval.id,
+          );
+        }
+      }
+    }
 
     toast({ title: '휴가 신청 완료', description: '결재 승인 후 자동 반영됩니다.' });
     setSubmitting(false);
