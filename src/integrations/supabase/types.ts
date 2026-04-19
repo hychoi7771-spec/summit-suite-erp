@@ -1292,6 +1292,101 @@ export type Database = {
           },
         ]
       }
+      routine_completions: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          date: string
+          id: string
+          skip_reason: string | null
+          status: string
+          template_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          skip_reason?: string | null
+          status?: string
+          template_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          date?: string
+          id?: string
+          skip_reason?: string | null
+          status?: string
+          template_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routine_completions_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "routine_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      routine_templates: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          estimated_minutes: number | null
+          frequency: string
+          id: string
+          is_active: boolean
+          month_day: number | null
+          sort_order: number
+          time_of_day: string | null
+          title: string
+          updated_at: string
+          user_id: string
+          weekdays: number[] | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_minutes?: number | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          month_day?: number | null
+          sort_order?: number
+          time_of_day?: string | null
+          title: string
+          updated_at?: string
+          user_id: string
+          weekdays?: number[] | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          estimated_minutes?: number | null
+          frequency?: string
+          id?: string
+          is_active?: boolean
+          month_day?: number | null
+          sort_order?: number
+          time_of_day?: string | null
+          title?: string
+          updated_at?: string
+          user_id?: string
+          weekdays?: number[] | null
+        }
+        Relationships: []
+      }
       sales_data: {
         Row: {
           created_at: string

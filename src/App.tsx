@@ -28,6 +28,7 @@ import Drafts from "./pages/Drafts";
 import ProjectFolders from "./pages/ProjectFolders";
 import Auth from "./pages/Auth";
 import DailyWorkReport from "./pages/DailyWorkReport";
+import Routines from "./pages/Routines";
 import Attendance from "./pages/Attendance";
 import AccountSettings from "./pages/AccountSettings";
 import CompanyHolidays from "./pages/CompanyHolidays";
@@ -96,6 +97,7 @@ function AppRoutes() {
                 <Route path="/drafts" element={<Drafts />} />
                 <Route path="/project-folders" element={<ProjectFolders />} />
                 <Route path="/daily-report" element={<DailyWorkReport />} />
+                <Route path="/routines" element={<Routines />} />
                 <Route path="/attendance" element={<Attendance />} />
                 <Route path="/account" element={<AccountSettings />} />
                 <Route path="/company-holidays" element={<CompanyHolidays />} />
