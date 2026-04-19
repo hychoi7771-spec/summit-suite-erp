@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { format, subDays, eachDayOfInterval, startOfWeek, endOfWeek, startOfMonth, endOfMonth, startOfYear, endOfYear, addWeeks, subWeeks, addMonths, subMonths, addYears, subYears, isSameWeek, isSameMonth, isSameYear, getDay, getWeek } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import {
   Plus, CheckCircle2, Trash2, ChevronLeft, ChevronRight,
   Clock, CircleDot, MessageSquare, AlertTriangle, Flag, Send, ChevronDown, ChevronUp,
-  LogIn, LogOut, Users, LayoutList, Table2, CalendarDays, Calendar as CalendarIcon, BarChart3, Download,
+  LogIn, LogOut, Users, LayoutList, Table2, CalendarDays, Calendar as CalendarIcon, BarChart3, Download, ArrowRight,
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -620,6 +621,7 @@ function ReportCard({
 export default function DailyWorkReport() {
   const { profile, userRole } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [projectOptions, setProjectOptions] = useState<string[]>([]);
@@ -988,12 +990,37 @@ export default function DailyWorkReport() {
                   </div>
 
                   {todayTasks.length === 0 ? (
-                    <div className="rounded-lg border-2 border-dashed border-muted-foreground/20 p-6 text-center">
-                      <p className="text-sm text-muted-foreground mb-2">📭 오늘 할당된 업무가 없습니다</p>
-                      <p className="text-xs text-muted-foreground">
-                        '업무' 탭에서 오늘 마감일의 업무를 먼저 등록해주세요.<br />
-                        업무 없이도 체크인은 가능합니다.
-                      </p>
+                    <div className="rounded-lg border-2 border-dashed border-amber-500/30 bg-amber-500/5 p-5 text-center space-y-3">
+                      <div className="space-y-1">
+                        <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">📭 표시할 업무가 없습니다</p>
+                        <p className="text-xs text-muted-foreground leading-relaxed">
+                          다음 두 가지 조건을 모두 충족하는 업무만 자동으로 표시됩니다:
+                        </p>
+                      </div>
+                      <ul className="text-xs text-left max-w-xs mx-auto space-y-1.5 text-muted-foreground bg-card border rounded-md p-3">
+                        <li className="flex gap-2">
+                          <span className="text-primary font-bold">①</span>
+                          <span><strong className="text-foreground">담당자</strong>가 본인({profile?.name_kr})으로 지정되어 있어야 함</span>
+                        </li>
+                        <li className="flex gap-2">
+                          <span className="text-primary font-bold">②</span>
+                          <span><strong className="text-foreground">마감일</strong>이 오늘({format(new Date(), 'M월 d일')}) 또는 그 이전이거나 비어 있어야 함</span>
+                        </li>
+                        <li className="flex gap-2">
+                          <span className="text-primary font-bold">③</span>
+                          <span>상태가 <strong className="text-foreground">완료</strong>가 아니어야 함</span>
+                        </li>
+                      </ul>
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => { setDialogOpen(false); navigate('/tasks'); }}
+                        className="gap-1.5"
+                      >
+                        업무 탭으로 이동 <ArrowRight className="h-3.5 w-3.5" />
+                      </Button>
+                      <p className="text-[10px] text-muted-foreground">업무가 없어도 비고만 입력하고 체크인할 수 있습니다.</p>
                     </div>
                   ) : (
                     <div className="space-y-2 max-h-80 overflow-y-auto">
