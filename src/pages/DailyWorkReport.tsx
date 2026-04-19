@@ -719,21 +719,11 @@ export default function DailyWorkReport() {
     }
 
     // Auto-create pending routine_completions for today's routines
-    const pendingRoutines = todayRoutines
-      .filter(({ completion }) => !completion)
-      .map(({ template }) => ({
-        template_id: template.id,
-        user_id: profile.id,
-        date: selectedDate,
-        status: 'pending',
-      }));
-    if (pendingRoutines.length > 0) {
-      await supabase.from('routine_completions').upsert(pendingRoutines, { onConflict: 'template_id,date' });
-    }
+    // (루틴 기능 제거됨)
 
     toast({
       title: '☀️ 체크인 완료!',
-      description: `업무 ${tasks.length}건${todayRoutines.length > 0 ? ` + 루틴 ${todayRoutines.length}건` : ''}을 불러왔습니다.`,
+      description: `업무 ${tasks.length}건을 불러왔습니다.`,
     });
     setDialogOpen(false);
     setNewNotes('');
