@@ -32,6 +32,9 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import stampImg from '@/assets/stamp.png';
 import { notifyUser } from '@/lib/notifications';
+import { RoutineChecklist } from '@/components/daily/RoutineChecklist';
+import { fetchRoutinesForDate } from '@/lib/routines';
+import { Repeat } from 'lucide-react';
 
 // --- Types ---
 interface MorningTask {
@@ -468,6 +471,15 @@ function ReportCard({
             </div>
           ))}
 
+          {/* Routine checklist — owner can fully act, others see status */}
+          <div className="border-t pt-3">
+            <RoutineChecklist
+              userId={report.user_id}
+              date={report.date}
+              isOwner={isOwner}
+              allowFullActions={isOwner && !isCheckedOut}
+            />
+          </div>
 
 
           {report.notes && (
