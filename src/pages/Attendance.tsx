@@ -542,3 +542,222 @@ function RequestList({
     </div>
   );
 }
+
+// ─────────────────────────────────────────────────────────────────────
+// 🏖️ 여름휴가 현황 (담당자별 일정 모니터링)
+// ─────────────────────────────────────────────────────────────────────
+function SummerLeaveOverview({
+  requests, profiles, year, onYearChange,
+}: {
+  requests: any[];
+  profiles: any[];
+  year: number;
+  onYearChange: (y: number) => void;
+}) {
+  const summerByUser = useMemo(() => {
+    const map = new Map<string, any[]>();
+    requests.forEach(r => {
+      if (r.leave_type !== 'summer') return;
+      if (r.status === 'cancelled' || r.status === 'rejected') return;
+      const startYear = new Date(r.start_date).getFullYear();
+      if (startYear !== year) return;
+      const arr = map.get(r.user_id) || [];
+      arr.push(r);
+      map.set(r.user_id, arr);
+    });
+    return map;
+  }, [requests, year]);
+
+  // 6월 ~ 9월
+  const startDate = new Date(year, 5, 1);
+  const endDate = new Date(year, 8, 30);
+  const days = eachDayOfInterval({ start: startDate, end: endDate });
+
+  const allReqs = Array.from(summerByUser.values()).flat();
+  const totalApproved = allReqs.filter(r => r.status === 'approved').reduce((s, r) => s + Number(r.days || 0), 0);
+  const totalPending = allReqs.filter(r => r.status === 'pending').reduce((s, r) => s + Number(r.days || 0), 0);
+  const usersWithLeave = summerByUser.size;
+
+  // 피크일 분석
+  const concurrentMap = new Map<string, number>();
+  allReqs.forEach(r => {
+    if (r.status !== 'approved') return;
+    const range = eachDayOfInterval({ start: parseISO(r.start_date), end: parseISO(r.end_date) });
+    range.forEach(d => {
+      const key = format(d, 'yyyy-MM-dd');
+      concurrentMap.set(key, (concurrentMap.get(key) || 0) + 1);
+    });
+  });
+  const peakDay = Array.from(concurrentMap.entries()).sort((a, b) => b[1] - a[1])[0];
+
+  return (
+    <div className="space-y-4">
+      {/* 헤더 */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => onYearChange(year - 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h3 className="text-lg font-bold tabular-nums px-2">{year}년 여름휴가</h3>
+          <Button variant="outline" size="icon" onClick={() => onYearChange(year + 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap text-xs">
+          <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950/40 dark:text-orange-300">
+            사용자 {usersWithLeave}명
+          </Badge>
+          <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+            승인 {totalApproved}일
+          </Badge>
+          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+            대기 {totalPending}일
+          </Badge>
+          {peakDay && (
+            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+              피크 {format(parseISO(peakDay[0]), 'M/d')} · {peakDay[1]}명
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* 직원별 타임라인 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="h-4 w-4" /> 담당자별 여름휴가 타임라인 (6월~9월)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {profiles.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">직원 정보가 없습니다.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="min-w-[900px]">
+                {/* 월 헤더 */}
+                <div className="flex border-b border-border pb-2 mb-2">
+                  <div className="w-32 shrink-0 text-xs font-semibold text-muted-foreground">담당자</div>
+                  <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+                    {[6, 7, 8, 9].map(m => {
+                      const monthDays = days.filter(d => d.getMonth() === m - 1).length;
+                      return (
+                        <div
+                          key={m}
+                          className="text-center text-xs font-bold text-muted-foreground border-l border-border first:border-l-0"
+                          style={{ gridColumn: `span ${monthDays}` }}
+                        >
+                          {m}월
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 직원별 행 */}
+                <div className="space-y-1.5">
+                  {profiles.map(p => {
+                    const userReqs = summerByUser.get(p.id) || [];
+                    const totalDays = userReqs
+                      .filter(r => r.status === 'approved')
+                      .reduce((s, r) => s + Number(r.days || 0), 0);
+                    return (
+                      <div key={p.id} className="flex items-center group hover:bg-muted/30 rounded transition-colors py-1">
+                        <div className="w-32 shrink-0 flex items-center gap-2 pr-2">
+                          <Avatar className="h-6 w-6"><AvatarFallback className="text-[9px]">{p.avatar}</AvatarFallback></Avatar>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium truncate">{p.name_kr}</p>
+                            {totalDays > 0 && (
+                              <p className="text-[10px] text-muted-foreground">{totalDays}일</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-1 relative h-7 bg-muted/30 rounded border border-border">
+                          {/* 주말/월구분 음영 */}
+                          <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+                            {days.map((d, i) => {
+                              const isWk = isWeekend(d);
+                              const isMonthStart = d.getDate() === 1 && i !== 0;
+                              return (
+                                <div
+                                  key={i}
+                                  className={`${isWk ? 'bg-muted/50' : ''} ${isMonthStart ? 'border-l border-border' : ''}`}
+                                />
+                              );
+                            })}
+                          </div>
+                          {/* 휴가 바 */}
+                          {userReqs.map(r => {
+                            const reqStart = parseISO(r.start_date);
+                            const reqEnd = parseISO(r.end_date);
+                            const startIdx = days.findIndex(d => isSameDay(d, reqStart));
+                            const endIdx = days.findIndex(d => isSameDay(d, reqEnd));
+                            if (startIdx === -1 && endIdx === -1) return null;
+                            const s = startIdx === -1 ? 0 : startIdx;
+                            const e = endIdx === -1 ? days.length - 1 : endIdx;
+                            const span = e - s + 1;
+                            const isPending = r.status === 'pending';
+                            return (
+                              <div
+                                key={r.id}
+                                className={`absolute top-0.5 bottom-0.5 rounded text-[10px] flex items-center justify-center px-1 font-medium truncate ${
+                                  isPending
+                                    ? 'bg-warning/30 text-warning border border-warning/40'
+                                    : 'bg-orange-500/80 text-white border border-orange-600 dark:bg-orange-600/80'
+                                }`}
+                                style={{
+                                  left: `${(s / days.length) * 100}%`,
+                                  width: `${(span / days.length) * 100}%`,
+                                }}
+                                title={`${r.start_date} ~ ${r.end_date} · ${r.days}일${r.reason ? ' · ' + r.reason : ''}${isPending ? ' (대기)' : ''}`}
+                              >
+                                {span >= 3 ? `${r.days}일` : ''}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 범례 */}
+                <div className="mt-4 flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-orange-500/80 border border-orange-600" />
+                    <span>승인</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-warning/30 border border-warning/40" />
+                    <span>대기</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-muted/50 border border-border" />
+                    <span>주말</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* 신청 상세 리스트 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">신청 상세 ({allReqs.length}건)</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {allReqs.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">{year}년 여름휴가 신청 내역이 없습니다.</p>
+          ) : (
+            <RequestList
+              requests={allReqs.slice().sort((a, b) => a.start_date.localeCompare(b.start_date))}
+              profiles={profiles}
+              showOwner
+            />
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
