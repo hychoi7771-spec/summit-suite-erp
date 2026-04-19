@@ -234,6 +234,7 @@ export default function Attendance() {
           <TabsTrigger value="balances">My 연차</TabsTrigger>
           <TabsTrigger value="my">내 신청 내역</TabsTrigger>
           <TabsTrigger value="all">전체 신청</TabsTrigger>
+          <TabsTrigger value="summer">🏖️ 여름휴가 현황</TabsTrigger>
         </TabsList>
 
         {/* 월별 캘린더 */}
