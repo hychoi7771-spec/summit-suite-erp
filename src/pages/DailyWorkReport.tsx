@@ -468,17 +468,7 @@ function ReportCard({
             </div>
           ))}
 
-          {/* Routine checklist — owner can fully act, others see status */}
-          <div className="border-t pt-3">
-            <RoutineChecklist
-              userId={report.user_id}
-              date={report.date}
-              isOwner={isOwner}
-              allowFullActions={isOwner && !isCheckedOut}
-            />
-          </div>
-
-
+          
           {report.notes && (
             <div className="bg-muted/50 rounded-lg p-3">
               <p className="text-xs font-medium text-muted-foreground mb-1">📝 비고</p>
