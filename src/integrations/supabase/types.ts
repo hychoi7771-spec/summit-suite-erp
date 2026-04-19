@@ -1036,6 +1036,7 @@ export type Database = {
           created_at: string
           id: string
           is_pinned: boolean
+          show_as_popup: boolean
           title: string
           updated_at: string
         }
@@ -1045,6 +1046,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_pinned?: boolean
+          show_as_popup?: boolean
           title: string
           updated_at?: string
         }
@@ -1054,6 +1056,7 @@ export type Database = {
           created_at?: string
           id?: string
           is_pinned?: boolean
+          show_as_popup?: boolean
           title?: string
           updated_at?: string
         }

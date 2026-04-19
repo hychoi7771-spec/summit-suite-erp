@@ -1,0 +1,1 @@
+ALTER TABLE public.notices ADD COLUMN IF NOT EXISTS show_as_popup BOOLEAN NOT NULL DEFAULT false;
