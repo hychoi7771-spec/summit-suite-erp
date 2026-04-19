@@ -26,6 +26,7 @@ export default function Notices() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState({ title: '', content: '', show_as_popup: false });
   const [submitting, setSubmitting] = useState(false);
   const [selectedNotice, setSelectedNotice] = useState<any>(null);
