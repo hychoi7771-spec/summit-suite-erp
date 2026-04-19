@@ -2,12 +2,13 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pin, Megaphone, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Pin, Megaphone, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
 
 const STORAGE_KEY = 'seen_notice_popups';
+const SNOOZE_KEY = 'snoozed_notice_popups'; // { [noticeId]: snoozeUntilISO }
 
 const getSeenIds = (userId: string): string[] => {
   try {
@@ -26,6 +27,41 @@ const markSeen = (userId: string, ids: string[]) => {
   } catch {
     // ignore quota errors
   }
+};
+
+const getSnoozeMap = (userId: string): Record<string, string> => {
+  try {
+    const raw = localStorage.getItem(`${SNOOZE_KEY}:${userId}`);
+    return raw ? JSON.parse(raw) : {};
+  } catch {
+    return {};
+  }
+};
+
+const setSnooze = (userId: string, ids: string[], untilIso: string) => {
+  try {
+    const map = getSnoozeMap(userId);
+    ids.forEach(id => { map[id] = untilIso; });
+    localStorage.setItem(`${SNOOZE_KEY}:${userId}`, JSON.stringify(map));
+  } catch {
+    // ignore
+  }
+};
+
+const isSnoozed = (snoozeMap: Record<string, string>, id: string): boolean => {
+  const until = snoozeMap[id];
+  if (!until) return false;
+  return new Date(until).getTime() > Date.now();
+};
+
+const endOfTodayIso = () => {
+  const d = new Date();
+  d.setHours(23, 59, 59, 999);
+  return d.toISOString();
+};
+
+const sevenDaysFromNowIso = () => {
+  return new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
 };
 
 export function NoticePopupOnLogin() {
@@ -54,7 +90,8 @@ export function NoticePopupOnLogin() {
       if (cancelled || !notices || notices.length === 0) return;
 
       const seen = new Set(getSeenIds(user.id));
-      const unseen = notices.filter(n => !seen.has(n.id));
+      const snoozeMap = getSnoozeMap(user.id);
+      const unseen = notices.filter(n => !seen.has(n.id) && !isSnoozed(snoozeMap, n.id));
       if (unseen.length === 0) return;
 
       // 작성자 이름 매핑
@@ -90,6 +127,20 @@ export function NoticePopupOnLogin() {
   const handleClose = () => {
     if (user && popups.length > 0) {
       markSeen(user.id, popups.map(p => p.id));
+    }
+    setOpen(false);
+  };
+
+  const handleSnoozeToday = () => {
+    if (user && popups.length > 0) {
+      setSnooze(user.id, popups.map(p => p.id), endOfTodayIso());
+    }
+    setOpen(false);
+  };
+
+  const handleSnooze7Days = () => {
+    if (user && popups.length > 0) {
+      setSnooze(user.id, popups.map(p => p.id), sevenDaysFromNowIso());
     }
     setOpen(false);
   };
@@ -133,6 +184,28 @@ export function NoticePopupOnLogin() {
           <div className="flex items-center justify-between text-xs text-muted-foreground">
             <span>{authorMap.get(current.author_id) ?? '관리자'}</span>
             <span>{new Date(current.created_at).toLocaleString('ko-KR')}</span>
+          </div>
+
+          {/* 다시 보지 않기 옵션 */}
+          <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
+            <Clock className="h-3.5 w-3.5 text-muted-foreground" />
+            <span className="text-xs text-muted-foreground mr-1">다시 보지 않기:</span>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={handleSnoozeToday}
+            >
+              오늘 하루
+            </Button>
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 px-2 text-xs"
+              onClick={handleSnooze7Days}
+            >
+              7일간
+            </Button>
           </div>
         </div>
         <DialogFooter className="flex-col sm:flex-row gap-2">
