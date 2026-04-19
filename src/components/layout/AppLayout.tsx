@@ -9,6 +9,7 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
+import { NoticePopupOnLogin } from '@/components/notices/NoticePopupOnLogin';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -184,6 +185,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </main>
         </div>
       </div>
+      <NoticePopupOnLogin />
     </SidebarProvider>
   );
 }
