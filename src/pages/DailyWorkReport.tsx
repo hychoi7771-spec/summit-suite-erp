@@ -621,6 +621,7 @@ function ReportCard({
 export default function DailyWorkReport() {
   const { profile, userRole } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [reports, setReports] = useState<DailyReport[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [projectOptions, setProjectOptions] = useState<string[]>([]);
