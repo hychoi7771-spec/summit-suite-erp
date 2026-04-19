@@ -674,18 +674,14 @@ export default function DailyWorkReport() {
   // 본인이 담당자인 모든 미완료 업무 — 기간(마감일) 상관없이 전부 표시
   const fetchTodayTasks = async () => {
     if (!profile) return;
-    const [tasksRes, routines] = await Promise.all([
-      supabase
-        .from('tasks')
-        .select('id, title, description, priority, tags, project_name, status, due_date')
-        .eq('assignee_id', profile.id)
-        .neq('status', 'done')
-        .order('priority', { ascending: false })
-        .order('due_date', { ascending: true, nullsFirst: false }),
-      fetchRoutinesForDate(profile.id, selectedDate),
-    ]);
+    const tasksRes = await supabase
+      .from('tasks')
+      .select('id, title, description, priority, tags, project_name, status, due_date')
+      .eq('assignee_id', profile.id)
+      .neq('status', 'done')
+      .order('priority', { ascending: false })
+      .order('due_date', { ascending: true, nullsFirst: false });
     setTodayTasks(tasksRes.data || []);
-    setTodayRoutines(routines);
   };
 
   const handleCreateReport = async () => {
