@@ -180,7 +180,9 @@ export default function Notices() {
             <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />공지 작성</Button>
           </DialogTrigger>
           <DialogContent>
-            <DialogHeader><DialogTitle>새 공지 작성</DialogTitle></DialogHeader>
+            <DialogHeader>
+              <DialogTitle>{editingId ? '공지 수정' : '새 공지 작성'}</DialogTitle>
+            </DialogHeader>
             <div className="space-y-4 mt-2">
               <div className="space-y-2">
                 <Label>제목</Label>
@@ -208,7 +210,7 @@ export default function Notices() {
                 />
               </div>
               <Button onClick={handleSubmit} disabled={submitting || !form.title} className="w-full">
-                {submitting ? '등록 중...' : '등록'}
+                {submitting ? (editingId ? '수정 중...' : '등록 중...') : (editingId ? '수정 완료' : '등록')}
               </Button>
             </div>
           </DialogContent>
