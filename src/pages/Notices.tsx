@@ -51,12 +51,15 @@ export default function Notices() {
 
   useEffect(() => { fetchData(); }, []);
 
-  // 작성 다이얼로그 열릴 때 권한자에게는 팝업 기본 ON
+  // 작성 다이얼로그 열릴 때: 신규는 권한자 팝업 기본 ON, 편집은 기존 값 유지
   useEffect(() => {
-    if (dialogOpen) {
+    if (dialogOpen && !editingId) {
       setForm(f => ({ ...f, show_as_popup: canAutoPopup }));
     }
-  }, [dialogOpen, canAutoPopup]);
+    if (!dialogOpen) {
+      setEditingId(null);
+    }
+  }, [dialogOpen, canAutoPopup, editingId]);
 
   const fetchData = async () => {
     const [noticeRes, profRes] = await Promise.all([
