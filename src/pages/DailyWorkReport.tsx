@@ -32,9 +32,6 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Table, TableHeader, TableBody, TableHead, TableRow, TableCell } from '@/components/ui/table';
 import stampImg from '@/assets/stamp.png';
 import { notifyUser } from '@/lib/notifications';
-import { RoutineChecklist } from '@/components/daily/RoutineChecklist';
-import { fetchRoutinesForDate } from '@/lib/routines';
-import { Repeat } from 'lucide-react';
 
 // --- Types ---
 interface MorningTask {
@@ -471,17 +468,7 @@ function ReportCard({
             </div>
           ))}
 
-          {/* Routine checklist — owner can fully act, others see status */}
-          <div className="border-t pt-3">
-            <RoutineChecklist
-              userId={report.user_id}
-              date={report.date}
-              isOwner={isOwner}
-              allowFullActions={isOwner && !isCheckedOut}
-            />
-          </div>
-
-
+          
           {report.notes && (
             <div className="bg-muted/50 rounded-lg p-3">
               <p className="text-xs font-medium text-muted-foreground mb-1">📝 비고</p>
@@ -642,7 +629,6 @@ export default function DailyWorkReport() {
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [todayTasks, setTodayTasks] = useState<any[]>([]);
-  const [todayRoutines, setTodayRoutines] = useState<any[]>([]);
   const [newNotes, setNewNotes] = useState('');
   const [checkoutConfirmOpen, setCheckoutConfirmOpen] = useState(false);
   const [checkoutTargetReport, setCheckoutTargetReport] = useState<DailyReport | null>(null);
@@ -687,18 +673,14 @@ export default function DailyWorkReport() {
   // 본인이 담당자인 모든 미완료 업무 — 기간(마감일) 상관없이 전부 표시
   const fetchTodayTasks = async () => {
     if (!profile) return;
-    const [tasksRes, routines] = await Promise.all([
-      supabase
-        .from('tasks')
-        .select('id, title, description, priority, tags, project_name, status, due_date')
-        .eq('assignee_id', profile.id)
-        .neq('status', 'done')
-        .order('priority', { ascending: false })
-        .order('due_date', { ascending: true, nullsFirst: false }),
-      fetchRoutinesForDate(profile.id, selectedDate),
-    ]);
+    const tasksRes = await supabase
+      .from('tasks')
+      .select('id, title, description, priority, tags, project_name, status, due_date')
+      .eq('assignee_id', profile.id)
+      .neq('status', 'done')
+      .order('priority', { ascending: false })
+      .order('due_date', { ascending: true, nullsFirst: false });
     setTodayTasks(tasksRes.data || []);
-    setTodayRoutines(routines);
   };
 
   const handleCreateReport = async () => {
@@ -737,21 +719,11 @@ export default function DailyWorkReport() {
     }
 
     // Auto-create pending routine_completions for today's routines
-    const pendingRoutines = todayRoutines
-      .filter(({ completion }) => !completion)
-      .map(({ template }) => ({
-        template_id: template.id,
-        user_id: profile.id,
-        date: selectedDate,
-        status: 'pending',
-      }));
-    if (pendingRoutines.length > 0) {
-      await supabase.from('routine_completions').upsert(pendingRoutines, { onConflict: 'template_id,date' });
-    }
+    // (루틴 기능 제거됨)
 
     toast({
       title: '☀️ 체크인 완료!',
-      description: `업무 ${tasks.length}건${todayRoutines.length > 0 ? ` + 루틴 ${todayRoutines.length}건` : ''}을 불러왔습니다.`,
+      description: `업무 ${tasks.length}건을 불러왔습니다.`,
     });
     setDialogOpen(false);
     setNewNotes('');
@@ -1076,24 +1048,9 @@ export default function DailyWorkReport() {
                     </div>
                   )}
 
-                  {todayRoutines.length > 0 && (
-                    <div className="space-y-2 max-h-60 overflow-y-auto bg-primary/5 border border-primary/20 rounded-lg p-3">
-                      <p className="text-xs font-semibold text-primary inline-flex items-center gap-1">
-                        <Repeat className="h-3 w-3" /> 오늘의 루틴 ({todayRoutines.length}건) - 자동 추가됨
-                      </p>
-                      {todayRoutines.map(({ template }: any) => (
-                        <div key={template.id} className="text-xs flex items-center gap-2 px-2 py-1 bg-card rounded">
-                          <span className="font-medium">{template.title}</span>
-                          {template.estimated_minutes > 0 && (
-                            <span className="text-[10px] text-muted-foreground">{template.estimated_minutes}분</span>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-
+                  
                   <Button onClick={handleCreateReport} className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" size="lg">
-                    <LogIn className="h-4 w-4 mr-1" /> ☀️ 확인 후 체크인 (업무 {todayTasks.length} + 루틴 {todayRoutines.length})
+                    <LogIn className="h-4 w-4 mr-1" /> ☀️ 확인 후 체크인 (업무 {todayTasks.length}건)
                   </Button>
                 </div>
               </DialogContent>
