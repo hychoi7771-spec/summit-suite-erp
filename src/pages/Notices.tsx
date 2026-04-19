@@ -286,6 +286,9 @@ export default function Notices() {
                 <div className="flex gap-1 flex-wrap">
                   {canManageNotice(selectedNotice) && (
                     <>
+                      <Button variant="ghost" size="sm" onClick={() => handleStartEdit(selectedNotice)}>
+                        <Pencil className="h-3.5 w-3.5 mr-1" />수정
+                      </Button>
                       <Button variant="ghost" size="sm" onClick={() => togglePopup(selectedNotice)}>
                         <Megaphone className="h-3.5 w-3.5 mr-1" />
                         {selectedNotice.show_as_popup ? '팝업 해제' : '팝업 설정'}
