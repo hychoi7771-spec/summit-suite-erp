@@ -476,6 +476,16 @@ export default function Attendance() {
             </CardContent>
           </Card>
         </TabsContent>
+
+        {/* 🏖️ 여름휴가 현황 */}
+        <TabsContent value="summer" className="space-y-4 mt-4">
+          <SummerLeaveOverview
+            requests={requests}
+            profiles={profiles}
+            year={year}
+            onYearChange={setYear}
+          />
+        </TabsContent>
       </Tabs>
 
       <LeaveRequestDialog open={showRequest} onOpenChange={setShowRequest} onCreated={fetchData} />
