@@ -37,6 +37,17 @@ export default function Notices() {
     return false;
   }, [userRole, profile]);
 
+  // 모든 공지를 관리(수정/삭제/팝업/고정)할 수 있는 권한: 대표/이사 + 공경미 실장
+  const isNoticeAdmin = useMemo(() => {
+    if (userRole === 'ceo' || userRole === 'general_director') return true;
+    if (profile && POPUP_AUTHOR_PROFILE_IDS.has(profile.id)) return true;
+    return false;
+  }, [userRole, profile]);
+
+  // 특정 공지에 대한 관리 권한 (작성자 본인 또는 관리자)
+  const canManageNotice = (notice: any) =>
+    isNoticeAdmin || (profile && notice?.author_id === profile.id);
+
   useEffect(() => { fetchData(); }, []);
 
   // 작성 다이얼로그 열릴 때 권한자에게는 팝업 기본 ON
