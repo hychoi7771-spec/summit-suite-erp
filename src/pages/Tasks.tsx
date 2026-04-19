@@ -102,7 +102,7 @@ export default function Tasks() {
       title: taskForm.title,
       description: taskForm.description || null,
       priority: taskForm.priority as any,
-      assignee_id: taskForm.assignee_id || null,
+      assignee_id: taskForm.assignee_id || profile?.id || null,
       start_date: taskForm.start_date || null,
       due_date: taskForm.due_date || null,
       project_name: taskForm.project_name || null,
