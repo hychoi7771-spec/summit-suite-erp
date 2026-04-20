@@ -42,6 +42,9 @@ export default function Tasks() {
   const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
+  const [dateFrom, setDateFrom] = useState<string>('');
+  const [dateTo, setDateTo] = useState<string>('');
+  const [dateField, setDateField] = useState<'due_date' | 'start_date'>('due_date');
   const [selectedDesignTask, setSelectedDesignTask] = useState<any>(null);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [editingTask, setEditingTask] = useState<any>(null);
@@ -289,6 +292,12 @@ export default function Tasks() {
                 if (selectedAssignee === '__unassigned__') { if (t.assignee_id) return false; }
                 else if (t.assignee_id !== selectedAssignee) return false;
               }
+              if (dateFrom || dateTo) {
+                const d = t[dateField];
+                if (!d) return false;
+                if (dateFrom && d < dateFrom) return false;
+                if (dateTo && d > dateTo) return false;
+              }
               return true;
             });
             const total = filtered.length;
@@ -424,6 +433,65 @@ export default function Tasks() {
             ) : null;
           })()}
 
+          {/* Date range filter */}
+          <div className="flex flex-wrap items-center gap-2 pb-1">
+            <Calendar className="h-4 w-4 text-muted-foreground shrink-0" />
+            <Select value={dateField} onValueChange={(v) => setDateField(v as 'due_date' | 'start_date')}>
+              <SelectTrigger className="h-8 w-auto min-w-[110px] text-xs"><SelectValue /></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="due_date">마감일 기준</SelectItem>
+                <SelectItem value="start_date">시작일 기준</SelectItem>
+              </SelectContent>
+            </Select>
+            <Input
+              type="date"
+              value={dateFrom}
+              onChange={(e) => setDateFrom(e.target.value)}
+              className="h-8 w-auto text-xs"
+            />
+            <span className="text-xs text-muted-foreground">~</span>
+            <Input
+              type="date"
+              value={dateTo}
+              onChange={(e) => setDateTo(e.target.value)}
+              className="h-8 w-auto text-xs"
+            />
+            {(dateFrom || dateTo) && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 px-2 text-xs"
+                onClick={() => { setDateFrom(''); setDateTo(''); }}
+              >
+                초기화
+              </Button>
+            )}
+            <div className="ml-auto flex items-center gap-1">
+              {[
+                { label: '오늘', days: 0 },
+                { label: '7일', days: 7 },
+                { label: '30일', days: 30 },
+              ].map(({ label, days }) => (
+                <Button
+                  key={label}
+                  variant="outline"
+                  size="sm"
+                  className="h-8 px-2 text-xs"
+                  onClick={() => {
+                    const today = new Date();
+                    const end = new Date();
+                    end.setDate(today.getDate() + days);
+                    const fmt = (d: Date) => d.toISOString().slice(0, 10);
+                    setDateFrom(fmt(today));
+                    setDateTo(fmt(end));
+                  }}
+                >
+                  {label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
           <DragDropContext onDragEnd={handleDragEnd}>
             <div className="overflow-x-auto pb-4">
               <div className="flex gap-3 min-w-max">
@@ -443,6 +511,12 @@ export default function Tasks() {
                     if (selectedAssignee !== 'all') {
                       if (selectedAssignee === '__unassigned__') { if (t.assignee_id) return false; }
                       else if (t.assignee_id !== selectedAssignee) return false;
+                    }
+                    if (dateFrom || dateTo) {
+                      const d = t[dateField];
+                      if (!d) return false;
+                      if (dateFrom && d < dateFrom) return false;
+                      if (dateTo && d > dateTo) return false;
                     }
                     return true;
                   });
