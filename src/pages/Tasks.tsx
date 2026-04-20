@@ -133,7 +133,7 @@ export default function Tasks() {
       }
       toast({ title: '업무 등록 완료' });
       setTaskDialogOpen(false);
-      setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: '', start_date: '', due_date: '', project_name: '' });
+      setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
       fetchData();
     }
   };
