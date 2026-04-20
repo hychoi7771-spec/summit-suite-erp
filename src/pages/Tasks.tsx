@@ -535,6 +535,7 @@ export default function Tasks() {
                     'in-progress': { header: 'bg-blue-50 dark:bg-blue-900/20', dot: 'bg-blue-500', dropzone: 'bg-blue-50/30 dark:bg-blue-900/10' },
                     'review': { header: 'bg-amber-50 dark:bg-amber-900/20', dot: 'bg-amber-500', dropzone: 'bg-amber-50/30 dark:bg-amber-900/10' },
                     'done': { header: 'bg-emerald-50 dark:bg-emerald-900/20', dot: 'bg-emerald-500', dropzone: 'bg-emerald-50/30 dark:bg-emerald-900/10' },
+                    'scheduled': { header: 'bg-purple-50 dark:bg-purple-900/20', dot: 'bg-purple-500', dropzone: 'bg-purple-50/30 dark:bg-purple-900/10' },
                   };
                   const colors = columnColors[col.status];
                   const filteredTasks = taskList.filter(t => {
