@@ -95,7 +95,7 @@ function AppRoutes() {
                 <Route path="/mentions" element={<Mentions />} />
                 <Route path="/drafts" element={<Drafts />} />
                 <Route path="/project-folders" element={<ProjectFolders />} />
-                <Route path="/daily-report" element={<DailyWorkReport />} />
+                <Route path="/daily-report" element={<Navigate to="/tasks" replace />} />
                 <Route path="/attendance" element={<Attendance />} />
                 <Route path="/account" element={<AccountSettings />} />
                 <Route path="/company-holidays" element={<CompanyHolidays />} />
