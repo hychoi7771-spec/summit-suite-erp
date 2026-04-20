@@ -60,6 +60,20 @@ export default function Tasks() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // 본인 프로필 로드 시 폼 기본 담당자를 본인으로 설정
+  useEffect(() => {
+    if (profile?.id) {
+      setTaskForm(f => f.assignee_id ? f : { ...f, assignee_id: profile.id });
+    }
+  }, [profile?.id]);
+
+  // 다이얼로그 열릴 때 담당자가 비어있으면 본인으로 설정
+  useEffect(() => {
+    if (taskDialogOpen && profile?.id && !taskForm.assignee_id) {
+      setTaskForm(f => ({ ...f, assignee_id: profile.id }));
+    }
+  }, [taskDialogOpen, profile?.id]);
+
   // Realtime: keep board in sync with check-in updates and other clients
   useEffect(() => {
     const channel = supabase
