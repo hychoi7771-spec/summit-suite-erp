@@ -21,13 +21,14 @@ import TaskDetailDialog from '@/components/tasks/TaskDetailDialog';
 import GanttChart from '@/components/tasks/GanttChart';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
 
-type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
+type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done' | 'scheduled';
 
 const columnsConfig: { status: TaskStatus; label: string }[] = [
   { status: 'todo', label: '할 일' },
   { status: 'in-progress', label: '진행 중' },
   { status: 'review', label: '검토' },
   { status: 'done', label: '완료' },
+  { status: 'scheduled', label: '예약' },
 ];
 
 export default function Tasks() {
