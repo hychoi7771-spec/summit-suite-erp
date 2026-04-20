@@ -30,6 +30,7 @@ export default function TaskDetailDialog({ task, profiles, allTasks, open, onOpe
   const { toast } = useToast();
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
   const canComment = isAdmin;
+  const canEditComment = (commentUserId: string) => isAdmin || commentUserId === profile?.id;
   const [comments, setComments] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [linkedTasks, setLinkedTasks] = useState<any[]>([]);
@@ -315,7 +316,7 @@ export default function TaskDetailDialog({ task, profiles, allTasks, open, onOpe
                         <span className="text-[10px] text-muted-foreground">
                           {formatDistanceToNow(new Date(c.created_at), { addSuffix: true, locale: ko })}
                         </span>
-                        {isAdmin && !isEditing && (
+                        {canEditComment(c.user_id) && !isEditing && (
                           <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               size="icon"
