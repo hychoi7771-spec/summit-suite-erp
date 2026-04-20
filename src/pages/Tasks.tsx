@@ -360,6 +360,7 @@ export default function Tasks() {
                       { key: 'in-progress', label: '진행', color: 'bg-blue-500' },
                       { key: 'review', label: '검토', color: 'bg-amber-500' },
                       { key: 'done', label: '완료', color: 'bg-emerald-500' },
+                      { key: 'scheduled', label: '예약', color: 'bg-purple-500' },
                     ].map(s => (
                       <div key={s.key} className="flex items-center gap-1">
                         <span className={`h-2 w-2 rounded-full ${s.color}`} />
