@@ -124,64 +124,7 @@ export default function Tasks() {
     }
   };
 
-  const handleAddLog = async () => {
-    if (!profile || !logForm.today_work) return;
-    const { error } = await supabase.from('daily_logs').insert({
-      user_id: profile.id,
-      today_work: logForm.today_work,
-      tomorrow_plan: logForm.tomorrow_plan,
-      blockers: logForm.blockers || '특이사항 없음',
-    });
-    if (error) {
-      toast({ title: '로그 작성 실패', description: error.message, variant: 'destructive' });
-    } else {
-      await notifyAdmins('데일리 로그 작성', `${profile.name_kr}님이 데일리 로그를 작성했습니다.`, 'daily_log');
-      toast({ title: '데일리 로그 작성 완료' });
-      setLogDialogOpen(false);
-      setLogForm({ today_work: '', tomorrow_plan: '', blockers: '' });
-      fetchData();
-    }
-  };
 
-  const handleEditLog = async () => {
-    if (!editingLog || !editLogForm.today_work) return;
-    const { error } = await supabase.from('daily_logs').update({
-      today_work: editLogForm.today_work,
-      tomorrow_plan: editLogForm.tomorrow_plan,
-      blockers: editLogForm.blockers || '특이사항 없음',
-    }).eq('id', editingLog.id);
-    if (error) {
-      toast({ title: '수정 실패', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: '로그 수정 완료' });
-      setEditingLog(null);
-      fetchData();
-    }
-  };
-
-  const handleDeleteLog = async (logId: string) => {
-    if (!confirm('이 로그를 삭제하시겠습니까?')) return;
-    const { error } = await supabase.from('daily_logs').delete().eq('id', logId);
-    if (error) {
-      toast({ title: '삭제 실패', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: '로그 삭제 완료' });
-      fetchData();
-    }
-  };
-
-  const canEditLog = (log: any) => {
-    return profile && log.user_id === profile.id;
-  };
-
-  const openEditLog = (log: any) => {
-    setEditingLog(log);
-    setEditLogForm({
-      today_work: log.today_work || '',
-      tomorrow_plan: log.tomorrow_plan || '',
-      blockers: log.blockers || '',
-    });
-  };
 
   const getDaysLeft = (dueDate: string | null) => {
     if (!dueDate) return null;
