@@ -89,7 +89,7 @@ export default function GanttChart({ tasks, profiles, selectedProject, onTaskCli
     filteredTasks.forEach(t => { counts[t.status] = (counts[t.status] || 0) + 1; });
     const overdue = filteredTasks.filter(t => {
       if (!t.due_date || t.status === 'done') return false;
-      return differenceInDays(parseISO(t.due_date), new Date()) < 0;
+      return differenceInDays(startOfDay(parseISO(t.due_date)), startOfDay(new Date())) < 0;
     }).length;
     const donePercent = total > 0 ? Math.round((counts.done / total) * 100) : 0;
     return { total, counts, overdue, donePercent };
