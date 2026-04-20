@@ -27,7 +27,7 @@ import Mentions from "./pages/Mentions";
 import Drafts from "./pages/Drafts";
 import ProjectFolders from "./pages/ProjectFolders";
 import Auth from "./pages/Auth";
-import DailyWorkReport from "./pages/DailyWorkReport";
+
 import Attendance from "./pages/Attendance";
 import AccountSettings from "./pages/AccountSettings";
 import CompanyHolidays from "./pages/CompanyHolidays";
