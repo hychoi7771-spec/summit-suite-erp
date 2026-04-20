@@ -45,7 +45,7 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [logDialogOpen, setLogDialogOpen] = useState(false);
-  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: '', start_date: '', due_date: '', project_name: '' });
+  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
   const [logForm, setLogForm] = useState({ today_work: '', tomorrow_plan: '', blockers: '' });
@@ -59,6 +59,20 @@ export default function Tasks() {
   const getProfile = (id: string | null) => profiles.find(p => p.id === id);
 
   useEffect(() => { fetchData(); }, []);
+
+  // 본인 프로필 로드 시 폼 기본 담당자를 본인으로 설정
+  useEffect(() => {
+    if (profile?.id) {
+      setTaskForm(f => f.assignee_id ? f : { ...f, assignee_id: profile.id });
+    }
+  }, [profile?.id]);
+
+  // 다이얼로그 열릴 때 담당자가 비어있으면 본인으로 설정
+  useEffect(() => {
+    if (taskDialogOpen && profile?.id && !taskForm.assignee_id) {
+      setTaskForm(f => ({ ...f, assignee_id: profile.id }));
+    }
+  }, [taskDialogOpen, profile?.id]);
 
   // Realtime: keep board in sync with check-in updates and other clients
   useEffect(() => {
@@ -119,7 +133,7 @@ export default function Tasks() {
       }
       toast({ title: '업무 등록 완료' });
       setTaskDialogOpen(false);
-      setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: '', start_date: '', due_date: '', project_name: '' });
+      setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
       fetchData();
     }
   };
