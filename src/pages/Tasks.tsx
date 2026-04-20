@@ -604,7 +604,7 @@ export default function Tasks() {
                                     <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
                                       <Card
                                         className={`group transition-all cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20 rotate-1' : 'hover:shadow-md hover:-translate-y-0.5'} ${isDesign ? 'border-l-2 border-l-primary' : ''} ${isOverdue ? 'border-l-2 border-l-destructive' : ''}`}
-                                        onClick={() => isDesign ? setSelectedDesignTask(task) : setSelectedTask(task)}
+                                        onClick={() => isDesign ? setSelectedDesignTask(task) : openEditDialog(task)}
                                       >
                                         <CardContent className="p-3 space-y-2">
                                           <div className="flex items-start justify-between gap-1">
