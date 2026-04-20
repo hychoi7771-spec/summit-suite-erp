@@ -45,7 +45,7 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [logDialogOpen, setLogDialogOpen] = useState(false);
-  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: '', start_date: '', due_date: '', project_name: '' });
+  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
   const [logForm, setLogForm] = useState({ today_work: '', tomorrow_plan: '', blockers: '' });
