@@ -255,54 +255,79 @@ export default function Tasks() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>새 업무 등록</DialogTitle></DialogHeader>
-              <div className="space-y-4 mt-2">
-                <div className="space-y-2">
-                  <Label>프로젝트 (선택)</Label>
-                  {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].length > 0 && (
-                    <Select
-                      value={taskForm.project_name || '__none__'}
-                      onValueChange={v => setTaskForm(f => ({ ...f, project_name: v === '__none__' ? '' : v }))}
-                    >
-                      <SelectTrigger><SelectValue placeholder="기존 프로젝트에서 선택" /></SelectTrigger>
+              <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'now' | 'scheduled')} className="mt-2">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="now" className="gap-1.5"><Plus className="h-3.5 w-3.5" />즉시 등록</TabsTrigger>
+                  <TabsTrigger value="scheduled" className="gap-1.5"><Calendar className="h-3.5 w-3.5" />예약 등록</TabsTrigger>
+                </TabsList>
+                <div className="space-y-4 mt-4">
+                  {createMode === 'scheduled' && (
+                    <div className="rounded-md bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/50 px-3 py-2 text-xs text-purple-700 dark:text-purple-300">
+                      예약 업무는 <strong>시작일</strong>이 도래하면 자동으로 '할 일' 칸반으로 이동합니다.
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label>프로젝트 (선택)</Label>
+                    {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].length > 0 && (
+                      <Select
+                        value={taskForm.project_name || '__none__'}
+                        onValueChange={v => setTaskForm(f => ({ ...f, project_name: v === '__none__' ? '' : v }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="기존 프로젝트에서 선택" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">미지정</SelectItem>
+                          {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].map(p => (
+                            <SelectItem key={p} value={p}>{p}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Input
+                      placeholder="또는 새 프로젝트명 직접 입력"
+                      value={taskForm.project_name}
+                      onChange={e => setTaskForm(f => ({ ...f, project_name: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2"><Label>업무 제목</Label><Input placeholder="업무 제목" value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} /></div>
+                  <div className="space-y-2"><Label>설명</Label><Textarea placeholder="업무 설명" value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} /></div>
+                  <div className="space-y-2">
+                    <Label>우선순위</Label>
+                    <Select value={taskForm.priority} onValueChange={v => setTaskForm(f => ({ ...f, priority: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">미지정</SelectItem>
-                        {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].map(p => (
-                          <SelectItem key={p} value={p}>{p}</SelectItem>
-                        ))}
+                        <SelectItem value="low">낮음</SelectItem><SelectItem value="medium">보통</SelectItem>
+                        <SelectItem value="high">높음</SelectItem><SelectItem value="urgent">긴급</SelectItem>
                       </SelectContent>
                     </Select>
-                  )}
-                  <Input
-                    placeholder="또는 새 프로젝트명 직접 입력"
-                    value={taskForm.project_name}
-                    onChange={e => setTaskForm(f => ({ ...f, project_name: e.target.value }))}
-                  />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>담당자</Label>
+                    <Select value={taskForm.assignee_id} onValueChange={v => setTaskForm(f => ({ ...f, assignee_id: v }))}>
+                      <SelectTrigger><SelectValue placeholder="담당자 선택" /></SelectTrigger>
+                      <SelectContent>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.name_kr}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>시작일{createMode === 'scheduled' && <span className="text-destructive ml-0.5">*</span>}</Label>
+                      <Input
+                        type="date"
+                        value={taskForm.start_date}
+                        onChange={e => setTaskForm(f => ({ ...f, start_date: e.target.value }))}
+                        min={createMode === 'scheduled' ? new Date(Date.now() + 86400000).toISOString().slice(0, 10) : undefined}
+                      />
+                    </div>
+                    <div className="space-y-2"><Label>마감일</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
+                  </div>
+                  <Button
+                    onClick={handleAddTask}
+                    disabled={!taskForm.title || (createMode === 'scheduled' && !taskForm.start_date)}
+                    className="w-full"
+                  >
+                    {createMode === 'scheduled' ? '예약 등록' : '등록'}
+                  </Button>
                 </div>
-                <div className="space-y-2"><Label>업무 제목</Label><Input placeholder="업무 제목" value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} /></div>
-                <div className="space-y-2"><Label>설명</Label><Textarea placeholder="업무 설명" value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} /></div>
-                <div className="space-y-2">
-                  <Label>우선순위</Label>
-                  <Select value={taskForm.priority} onValueChange={v => setTaskForm(f => ({ ...f, priority: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">낮음</SelectItem><SelectItem value="medium">보통</SelectItem>
-                      <SelectItem value="high">높음</SelectItem><SelectItem value="urgent">긴급</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>담당자</Label>
-                  <Select value={taskForm.assignee_id} onValueChange={v => setTaskForm(f => ({ ...f, assignee_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="담당자 선택" /></SelectTrigger>
-                    <SelectContent>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.name_kr}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2"><Label>시작일</Label><Input type="date" value={taskForm.start_date} onChange={e => setTaskForm(f => ({ ...f, start_date: e.target.value }))} /></div>
-                  <div className="space-y-2"><Label>마감일</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
-                </div>
-                <Button onClick={handleAddTask} disabled={!taskForm.title} className="w-full">등록</Button>
-              </div>
+              </Tabs>
             </DialogContent>
           </Dialog>
         </div>
