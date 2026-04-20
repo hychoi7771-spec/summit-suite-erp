@@ -2,7 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Calendar, Palette, Paperclip, FileText } from 'lucide-react';
-import { differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 
 interface DesignRequestDetailProps {
   task: any;
@@ -12,7 +12,7 @@ interface DesignRequestDetailProps {
 }
 
 export default function DesignRequestDetail({ task, assignee, open, onOpenChange }: DesignRequestDetailProps) {
-  const daysLeft = task.due_date ? differenceInDays(parseISO(task.due_date), new Date()) : null;
+  const daysLeft = task.due_date ? differenceInDays(startOfDay(parseISO(task.due_date)), startOfDay(new Date())) : null;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
