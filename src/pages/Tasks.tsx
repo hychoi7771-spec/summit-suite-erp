@@ -292,6 +292,12 @@ export default function Tasks() {
                 if (selectedAssignee === '__unassigned__') { if (t.assignee_id) return false; }
                 else if (t.assignee_id !== selectedAssignee) return false;
               }
+              if (dateFrom || dateTo) {
+                const d = t[dateField];
+                if (!d) return false;
+                if (dateFrom && d < dateFrom) return false;
+                if (dateTo && d > dateTo) return false;
+              }
               return true;
             });
             const total = filtered.length;
