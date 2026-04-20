@@ -16,7 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
-import { differenceInDays, parseISO } from 'date-fns';
+import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 import DesignRequestDialog from '@/components/tasks/DesignRequestDialog';
 import DesignRequestDetail from '@/components/tasks/DesignRequestDetail';
 import DailyLogCalendarView from '@/components/tasks/DailyLogCalendarView';
@@ -199,7 +199,7 @@ export default function Tasks() {
 
   const getDaysLeft = (dueDate: string | null) => {
     if (!dueDate) return null;
-    return differenceInDays(parseISO(dueDate), new Date());
+    return differenceInDays(startOfDay(parseISO(dueDate)), startOfDay(new Date()));
   };
 
   const canEditTask = (task: any) => {
