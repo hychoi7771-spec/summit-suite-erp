@@ -303,8 +303,9 @@ export default function TaskDetailDialog({ task, profiles, allTasks, open, onOpe
               )}
               {comments.map(c => {
                 const author = getProfile(c.user_id);
+                const isEditing = editingId === c.id;
                 return (
-                  <div key={c.id} className="flex gap-2.5">
+                  <div key={c.id} className="flex gap-2.5 group">
                     <Avatar className="h-7 w-7 shrink-0 mt-0.5">
                       <AvatarFallback className="text-[9px] bg-primary text-primary-foreground">{author?.avatar || '?'}</AvatarFallback>
                     </Avatar>
@@ -314,62 +315,107 @@ export default function TaskDetailDialog({ task, profiles, allTasks, open, onOpe
                         <span className="text-[10px] text-muted-foreground">
                           {formatDistanceToNow(new Date(c.created_at), { addSuffix: true, locale: ko })}
                         </span>
+                        {isAdmin && !isEditing && (
+                          <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6"
+                              onClick={() => { setEditingId(c.id); setEditingText(c.content); }}
+                            >
+                              <Pencil className="h-3 w-3" />
+                            </Button>
+                            <Button
+                              size="icon"
+                              variant="ghost"
+                              className="h-6 w-6 text-destructive hover:text-destructive"
+                              onClick={() => handleDeleteComment(c.id)}
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        )}
                       </div>
-                      <p className="text-sm mt-0.5 whitespace-pre-wrap break-words">{
-                        c.content.replace(/@(\S+)/g, (match: string) => `**${match}**`)
-                      }</p>
+                      {isEditing ? (
+                        <div className="mt-1 space-y-1.5">
+                          <Textarea
+                            value={editingText}
+                            onChange={e => setEditingText(e.target.value)}
+                            rows={2}
+                            className="text-sm"
+                          />
+                          <div className="flex items-center gap-1.5">
+                            <Button size="sm" className="h-7 gap-1" onClick={() => handleEditComment(c.id)} disabled={!editingText.trim()}>
+                              <Check className="h-3 w-3" />저장
+                            </Button>
+                            <Button size="sm" variant="ghost" className="h-7" onClick={() => { setEditingId(null); setEditingText(''); }}>
+                              취소
+                            </Button>
+                          </div>
+                        </div>
+                      ) : (
+                        <p className="text-sm mt-0.5 whitespace-pre-wrap break-words">{
+                          c.content.replace(/@(\S+)/g, (match: string) => `**${match}**`)
+                        }</p>
+                      )}
                     </div>
                   </div>
                 );
               })}
             </div>
 
-            {/* Comment Input */}
-            <div className="relative">
-              <Textarea
-                ref={commentRef}
-                placeholder="댓글을 입력하세요... (@로 멘션)"
-                value={commentText}
-                onChange={e => handleCommentChange(e.target.value)}
-                onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmitComment(); }}
-                rows={2}
-                className="pr-10 text-sm"
-              />
-              <Button
-                size="icon"
-                variant="ghost"
-                className="absolute right-1.5 bottom-1.5 h-7 w-7"
-                onClick={handleSubmitComment}
-                disabled={!commentText.trim()}
-              >
-                <Send className="h-3.5 w-3.5" />
-              </Button>
+            {/* Comment Input - admin/CEO only */}
+            {canComment ? (
+              <div className="relative">
+                <Textarea
+                  ref={commentRef}
+                  placeholder="댓글을 입력하세요... (@로 멘션)"
+                  value={commentText}
+                  onChange={e => handleCommentChange(e.target.value)}
+                  onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handleSubmitComment(); }}
+                  rows={2}
+                  className="pr-10 text-sm"
+                />
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="absolute right-1.5 bottom-1.5 h-7 w-7"
+                  onClick={handleSubmitComment}
+                  disabled={!commentText.trim()}
+                >
+                  <Send className="h-3.5 w-3.5" />
+                </Button>
 
-              {/* Mention dropdown */}
-              {showMentions && (filteredMentions.length > 0 || showAllOption) && (
-                <div className="absolute bottom-full mb-1 left-0 w-full bg-popover border rounded-md shadow-md max-h-32 overflow-y-auto z-50">
-                  {showAllOption && (
-                    <button
-                      onClick={insertMentionAll}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted transition-colors font-medium text-primary"
-                    >
-                      <Avatar className="h-5 w-5"><AvatarFallback className="text-[8px] bg-primary text-primary-foreground">All</AvatarFallback></Avatar>
-                      @all (전체 팀원)
-                    </button>
-                  )}
-                  {filteredMentions.map(p => (
-                    <button
-                      key={p.id}
-                      onClick={() => insertMention(p)}
-                      className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted transition-colors"
-                    >
-                      <Avatar className="h-5 w-5"><AvatarFallback className="text-[8px]">{p.avatar}</AvatarFallback></Avatar>
-                      {p.name_kr}
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
+                {/* Mention dropdown */}
+                {showMentions && (filteredMentions.length > 0 || showAllOption) && (
+                  <div className="absolute bottom-full mb-1 left-0 w-full bg-popover border rounded-md shadow-md max-h-32 overflow-y-auto z-50">
+                    {showAllOption && (
+                      <button
+                        onClick={insertMentionAll}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted transition-colors font-medium text-primary"
+                      >
+                        <Avatar className="h-5 w-5"><AvatarFallback className="text-[8px] bg-primary text-primary-foreground">All</AvatarFallback></Avatar>
+                        @all (전체 팀원)
+                      </button>
+                    )}
+                    {filteredMentions.map(p => (
+                      <button
+                        key={p.id}
+                        onClick={() => insertMention(p)}
+                        className="flex items-center gap-2 w-full px-3 py-2 text-sm hover:bg-muted transition-colors"
+                      >
+                        <Avatar className="h-5 w-5"><AvatarFallback className="text-[8px]">{p.avatar}</AvatarFallback></Avatar>
+                        {p.name_kr}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            ) : (
+              <p className="text-xs text-muted-foreground text-center py-2 border-t border-border/50">
+                댓글은 대표 및 관리자만 작성할 수 있습니다
+              </p>
+            )}
           </TabsContent>
 
           {/* Links Tab */}
