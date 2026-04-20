@@ -21,13 +21,14 @@ import TaskDetailDialog from '@/components/tasks/TaskDetailDialog';
 import GanttChart from '@/components/tasks/GanttChart';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
 
-type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done';
+type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done' | 'scheduled';
 
 const columnsConfig: { status: TaskStatus; label: string }[] = [
   { status: 'todo', label: '할 일' },
   { status: 'in-progress', label: '진행 중' },
   { status: 'review', label: '검토' },
   { status: 'done', label: '완료' },
+  { status: 'scheduled', label: '예약' },
 ];
 
 export default function Tasks() {
@@ -39,6 +40,7 @@ export default function Tasks() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [createMode, setCreateMode] = useState<'now' | 'scheduled'>('now');
   const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
@@ -84,7 +86,23 @@ export default function Tasks() {
       supabase.from('tasks').select('*').order('position', { ascending: true }),
       supabase.from('profiles').select('id, name, name_kr, avatar'),
     ]);
-    setTaskList(taskRes.data || []);
+    let tasks = taskRes.data || [];
+
+    // Auto-promote scheduled tasks whose start_date has arrived
+    const today = new Date().toISOString().slice(0, 10);
+    const duePromote = tasks.filter((t: any) => t.status === 'scheduled' && t.start_date && t.start_date <= today);
+    if (duePromote.length > 0) {
+      const ids = duePromote.map((t: any) => t.id);
+      await supabase.from('tasks').update({ status: 'todo' as any }).in('id', ids);
+      if (profile) {
+        await supabase.from('task_history').insert(
+          duePromote.map((t: any) => ({ task_id: t.id, user_id: profile.id, field_name: 'status', old_value: 'scheduled', new_value: 'todo' }))
+        );
+      }
+      tasks = tasks.map((t: any) => ids.includes(t.id) ? { ...t, status: 'todo' } : t);
+    }
+
+    setTaskList(tasks);
     setProfiles(profRes.data || []);
     setLoading(false);
   };
@@ -101,6 +119,16 @@ export default function Tasks() {
 
   const handleAddTask = async () => {
     if (!taskForm.title) return;
+    if (createMode === 'scheduled' && !taskForm.start_date) {
+      toast({ title: '예약 등록 실패', description: '예약 업무는 시작일이 필수입니다.', variant: 'destructive' });
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    // If scheduled but start_date is today or earlier → goes straight to 'todo'
+    const finalStatus: TaskStatus =
+      createMode === 'scheduled' && taskForm.start_date && taskForm.start_date > today
+        ? 'scheduled'
+        : 'todo';
     const { error } = await supabase.from('tasks').insert({
       title: taskForm.title,
       description: taskForm.description || null,
@@ -109,20 +137,25 @@ export default function Tasks() {
       start_date: taskForm.start_date || null,
       due_date: taskForm.due_date || null,
       project_name: taskForm.project_name || null,
-      status: 'todo',
+      status: finalStatus as any,
     });
     if (error) {
       toast({ title: '업무 등록 실패', description: error.message, variant: 'destructive' });
     } else {
       // Notify admins
-      await notifyAdmins('새 업무 등록', `"${taskForm.title}" 업무가 등록되었습니다.`, 'task');
+      await notifyAdmins(
+        finalStatus === 'scheduled' ? '새 예약 업무 등록' : '새 업무 등록',
+        `"${taskForm.title}" 업무가 ${finalStatus === 'scheduled' ? `${taskForm.start_date}에 예약` : '등록'}되었습니다.`,
+        'task'
+      );
       // Notify assignee if assigned
       if (taskForm.assignee_id && taskForm.assignee_id !== profile?.id) {
         await notifyUser(taskForm.assignee_id, '업무 배정', `"${taskForm.title}" 업무가 배정되었습니다.`, 'task');
       }
-      toast({ title: '업무 등록 완료' });
+      toast({ title: finalStatus === 'scheduled' ? '예약 업무 등록 완료' : '업무 등록 완료' });
       setTaskDialogOpen(false);
       setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
+      setCreateMode('now');
       fetchData();
     }
   };
@@ -184,8 +217,9 @@ export default function Tasks() {
     }
   };
 
+  // Quick navigation order excludes 'scheduled' (it's auto-promoted to 'todo')
   const statusOrder: TaskStatus[] = ['todo', 'in-progress', 'review', 'done'];
-  const statusLabels: Record<string, string> = { todo: '할 일', 'in-progress': '진행 중', review: '검토', done: '완료' };
+  const statusLabels: Record<string, string> = { todo: '할 일', 'in-progress': '진행 중', review: '검토', done: '완료', scheduled: '예약' };
 
   const handleQuickStatusChange = async (taskId: string, currentStatus: TaskStatus, direction: 'prev' | 'next', e: React.MouseEvent) => {
     e.stopPropagation();
@@ -221,54 +255,79 @@ export default function Tasks() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>새 업무 등록</DialogTitle></DialogHeader>
-              <div className="space-y-4 mt-2">
-                <div className="space-y-2">
-                  <Label>프로젝트 (선택)</Label>
-                  {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].length > 0 && (
-                    <Select
-                      value={taskForm.project_name || '__none__'}
-                      onValueChange={v => setTaskForm(f => ({ ...f, project_name: v === '__none__' ? '' : v }))}
-                    >
-                      <SelectTrigger><SelectValue placeholder="기존 프로젝트에서 선택" /></SelectTrigger>
+              <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'now' | 'scheduled')} className="mt-2">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="now" className="gap-1.5"><Plus className="h-3.5 w-3.5" />즉시 등록</TabsTrigger>
+                  <TabsTrigger value="scheduled" className="gap-1.5"><Calendar className="h-3.5 w-3.5" />예약 등록</TabsTrigger>
+                </TabsList>
+                <div className="space-y-4 mt-4">
+                  {createMode === 'scheduled' && (
+                    <div className="rounded-md bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/50 px-3 py-2 text-xs text-purple-700 dark:text-purple-300">
+                      예약 업무는 <strong>시작일</strong>이 도래하면 자동으로 '할 일' 칸반으로 이동합니다.
+                    </div>
+                  )}
+                  <div className="space-y-2">
+                    <Label>프로젝트 (선택)</Label>
+                    {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].length > 0 && (
+                      <Select
+                        value={taskForm.project_name || '__none__'}
+                        onValueChange={v => setTaskForm(f => ({ ...f, project_name: v === '__none__' ? '' : v }))}
+                      >
+                        <SelectTrigger><SelectValue placeholder="기존 프로젝트에서 선택" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">미지정</SelectItem>
+                          {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].map(p => (
+                            <SelectItem key={p} value={p}>{p}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    )}
+                    <Input
+                      placeholder="또는 새 프로젝트명 직접 입력"
+                      value={taskForm.project_name}
+                      onChange={e => setTaskForm(f => ({ ...f, project_name: e.target.value }))}
+                    />
+                  </div>
+                  <div className="space-y-2"><Label>업무 제목</Label><Input placeholder="업무 제목" value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} /></div>
+                  <div className="space-y-2"><Label>설명</Label><Textarea placeholder="업무 설명" value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} /></div>
+                  <div className="space-y-2">
+                    <Label>우선순위</Label>
+                    <Select value={taskForm.priority} onValueChange={v => setTaskForm(f => ({ ...f, priority: v }))}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="__none__">미지정</SelectItem>
-                        {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].map(p => (
-                          <SelectItem key={p} value={p}>{p}</SelectItem>
-                        ))}
+                        <SelectItem value="low">낮음</SelectItem><SelectItem value="medium">보통</SelectItem>
+                        <SelectItem value="high">높음</SelectItem><SelectItem value="urgent">긴급</SelectItem>
                       </SelectContent>
                     </Select>
-                  )}
-                  <Input
-                    placeholder="또는 새 프로젝트명 직접 입력"
-                    value={taskForm.project_name}
-                    onChange={e => setTaskForm(f => ({ ...f, project_name: e.target.value }))}
-                  />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>담당자</Label>
+                    <Select value={taskForm.assignee_id} onValueChange={v => setTaskForm(f => ({ ...f, assignee_id: v }))}>
+                      <SelectTrigger><SelectValue placeholder="담당자 선택" /></SelectTrigger>
+                      <SelectContent>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.name_kr}</SelectItem>)}</SelectContent>
+                    </Select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>시작일{createMode === 'scheduled' && <span className="text-destructive ml-0.5">*</span>}</Label>
+                      <Input
+                        type="date"
+                        value={taskForm.start_date}
+                        onChange={e => setTaskForm(f => ({ ...f, start_date: e.target.value }))}
+                        min={createMode === 'scheduled' ? new Date(Date.now() + 86400000).toISOString().slice(0, 10) : undefined}
+                      />
+                    </div>
+                    <div className="space-y-2"><Label>마감일</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
+                  </div>
+                  <Button
+                    onClick={handleAddTask}
+                    disabled={!taskForm.title || (createMode === 'scheduled' && !taskForm.start_date)}
+                    className="w-full"
+                  >
+                    {createMode === 'scheduled' ? '예약 등록' : '등록'}
+                  </Button>
                 </div>
-                <div className="space-y-2"><Label>업무 제목</Label><Input placeholder="업무 제목" value={taskForm.title} onChange={e => setTaskForm(f => ({ ...f, title: e.target.value }))} /></div>
-                <div className="space-y-2"><Label>설명</Label><Textarea placeholder="업무 설명" value={taskForm.description} onChange={e => setTaskForm(f => ({ ...f, description: e.target.value }))} /></div>
-                <div className="space-y-2">
-                  <Label>우선순위</Label>
-                  <Select value={taskForm.priority} onValueChange={v => setTaskForm(f => ({ ...f, priority: v }))}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="low">낮음</SelectItem><SelectItem value="medium">보통</SelectItem>
-                      <SelectItem value="high">높음</SelectItem><SelectItem value="urgent">긴급</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div className="space-y-2">
-                  <Label>담당자</Label>
-                  <Select value={taskForm.assignee_id} onValueChange={v => setTaskForm(f => ({ ...f, assignee_id: v }))}>
-                    <SelectTrigger><SelectValue placeholder="담당자 선택" /></SelectTrigger>
-                    <SelectContent>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.name_kr}</SelectItem>)}</SelectContent>
-                  </Select>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div className="space-y-2"><Label>시작일</Label><Input type="date" value={taskForm.start_date} onChange={e => setTaskForm(f => ({ ...f, start_date: e.target.value }))} /></div>
-                  <div className="space-y-2"><Label>마감일</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
-                </div>
-                <Button onClick={handleAddTask} disabled={!taskForm.title} className="w-full">등록</Button>
-              </div>
+              </Tabs>
             </DialogContent>
           </Dialog>
         </div>
@@ -301,7 +360,7 @@ export default function Tasks() {
               return true;
             });
             const total = filtered.length;
-            const counts: Record<string, number> = { todo: 0, 'in-progress': 0, review: 0, done: 0 };
+            const counts: Record<string, number> = { todo: 0, 'in-progress': 0, review: 0, done: 0, scheduled: 0 };
             filtered.forEach(t => { counts[t.status] = (counts[t.status] || 0) + 1; });
             const urgentCount = filtered.filter(t => t.priority === 'urgent' || t.priority === 'high').length;
             const overdueCount = filtered.filter(t => {
@@ -326,6 +385,7 @@ export default function Tasks() {
                       { key: 'in-progress', label: '진행', color: 'bg-blue-500' },
                       { key: 'review', label: '검토', color: 'bg-amber-500' },
                       { key: 'done', label: '완료', color: 'bg-emerald-500' },
+                      { key: 'scheduled', label: '예약', color: 'bg-purple-500' },
                     ].map(s => (
                       <div key={s.key} className="flex items-center gap-1">
                         <span className={`h-2 w-2 rounded-full ${s.color}`} />
@@ -501,6 +561,7 @@ export default function Tasks() {
                     'in-progress': { header: 'bg-blue-50 dark:bg-blue-900/20', dot: 'bg-blue-500', dropzone: 'bg-blue-50/30 dark:bg-blue-900/10' },
                     'review': { header: 'bg-amber-50 dark:bg-amber-900/20', dot: 'bg-amber-500', dropzone: 'bg-amber-50/30 dark:bg-amber-900/10' },
                     'done': { header: 'bg-emerald-50 dark:bg-emerald-900/20', dot: 'bg-emerald-500', dropzone: 'bg-emerald-50/30 dark:bg-emerald-900/10' },
+                    'scheduled': { header: 'bg-purple-50 dark:bg-purple-900/20', dot: 'bg-purple-500', dropzone: 'bg-purple-50/30 dark:bg-purple-900/10' },
                   };
                   const colors = columnColors[col.status];
                   const filteredTasks = taskList.filter(t => {
