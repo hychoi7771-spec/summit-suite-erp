@@ -1,9 +1,7 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
@@ -11,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Calendar, GripVertical, FileText, Palette, Pencil, Trash2, MoreVertical, CheckCircle2, ClipboardList, AlertTriangle, ChevronDown, ChevronLeft, ChevronRight, FolderKanban, GanttChartSquare } from 'lucide-react';
+import { Plus, Calendar, FileText, Palette, Pencil, Trash2, AlertTriangle, ChevronLeft, ChevronRight, FolderKanban, GanttChartSquare } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -19,7 +17,6 @@ import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 import DesignRequestDialog from '@/components/tasks/DesignRequestDialog';
 import DesignRequestDetail from '@/components/tasks/DesignRequestDetail';
-import DailyLogCalendarView from '@/components/tasks/DailyLogCalendarView';
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog';
 import GanttChart from '@/components/tasks/GanttChart';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
@@ -38,19 +35,13 @@ export default function Tasks() {
   const { toast } = useToast();
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
   const [activeTab, setActiveTab] = useState('board');
-  const [logView, setLogView] = useState<'list' | 'calendar'>('list');
   const [taskList, setTaskList] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
-  const [dailyLogs, setDailyLogs] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
-  const [logDialogOpen, setLogDialogOpen] = useState(false);
   const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
-  const [logForm, setLogForm] = useState({ today_work: '', tomorrow_plan: '', blockers: '' });
-  const [editingLog, setEditingLog] = useState<any>(null);
-  const [editLogForm, setEditLogForm] = useState({ today_work: '', tomorrow_plan: '', blockers: '' });
   const [selectedDesignTask, setSelectedDesignTask] = useState<any>(null);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [editingTask, setEditingTask] = useState<any>(null);
@@ -81,22 +72,17 @@ export default function Tasks() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
         fetchData();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_logs' }, () => {
-        fetchData();
-      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
 
   const fetchData = async () => {
-    const [taskRes, profRes, logRes] = await Promise.all([
+    const [taskRes, profRes] = await Promise.all([
       supabase.from('tasks').select('*').order('position', { ascending: true }),
       supabase.from('profiles').select('id, name, name_kr, avatar'),
-      supabase.from('daily_logs').select('*').order('date', { ascending: false }),
     ]);
     setTaskList(taskRes.data || []);
     setProfiles(profRes.data || []);
-    setDailyLogs(logRes.data || []);
     setLoading(false);
   };
 
@@ -138,64 +124,7 @@ export default function Tasks() {
     }
   };
 
-  const handleAddLog = async () => {
-    if (!profile || !logForm.today_work) return;
-    const { error } = await supabase.from('daily_logs').insert({
-      user_id: profile.id,
-      today_work: logForm.today_work,
-      tomorrow_plan: logForm.tomorrow_plan,
-      blockers: logForm.blockers || '특이사항 없음',
-    });
-    if (error) {
-      toast({ title: '로그 작성 실패', description: error.message, variant: 'destructive' });
-    } else {
-      await notifyAdmins('데일리 로그 작성', `${profile.name_kr}님이 데일리 로그를 작성했습니다.`, 'daily_log');
-      toast({ title: '데일리 로그 작성 완료' });
-      setLogDialogOpen(false);
-      setLogForm({ today_work: '', tomorrow_plan: '', blockers: '' });
-      fetchData();
-    }
-  };
 
-  const handleEditLog = async () => {
-    if (!editingLog || !editLogForm.today_work) return;
-    const { error } = await supabase.from('daily_logs').update({
-      today_work: editLogForm.today_work,
-      tomorrow_plan: editLogForm.tomorrow_plan,
-      blockers: editLogForm.blockers || '특이사항 없음',
-    }).eq('id', editingLog.id);
-    if (error) {
-      toast({ title: '수정 실패', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: '로그 수정 완료' });
-      setEditingLog(null);
-      fetchData();
-    }
-  };
-
-  const handleDeleteLog = async (logId: string) => {
-    if (!confirm('이 로그를 삭제하시겠습니까?')) return;
-    const { error } = await supabase.from('daily_logs').delete().eq('id', logId);
-    if (error) {
-      toast({ title: '삭제 실패', description: error.message, variant: 'destructive' });
-    } else {
-      toast({ title: '로그 삭제 완료' });
-      fetchData();
-    }
-  };
-
-  const canEditLog = (log: any) => {
-    return profile && log.user_id === profile.id;
-  };
-
-  const openEditLog = (log: any) => {
-    setEditingLog(log);
-    setEditLogForm({
-      today_work: log.today_work || '',
-      tomorrow_plan: log.tomorrow_plan || '',
-      blockers: log.blockers || '',
-    });
-  };
 
   const getDaysLeft = (dueDate: string | null) => {
     if (!dueDate) return null;
@@ -278,8 +207,8 @@ export default function Tasks() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">업무 관리 & 데일리 스크럼</h1>
-          <p className="text-sm text-muted-foreground mt-1">업무 및 일일 작업 로그 관리</p>
+          <h1 className="text-2xl font-bold">업무 관리</h1>
+          <p className="text-sm text-muted-foreground mt-1">칸반 보드와 간트차트로 업무를 관리하세요</p>
         </div>
         <div className="flex items-center gap-2">
           <DesignRequestDialog profiles={profiles} onSuccess={fetchData} />
@@ -346,7 +275,6 @@ export default function Tasks() {
         <TabsList>
           <TabsTrigger value="board">칸반 보드</TabsTrigger>
           <TabsTrigger value="gantt" className="gap-1.5"><GanttChartSquare className="h-3.5 w-3.5" />간트차트</TabsTrigger>
-          <TabsTrigger value="daily">데일리 로그</TabsTrigger>
         </TabsList>
 
         <TabsContent value="board" className="mt-4 space-y-4">
@@ -647,163 +575,6 @@ export default function Tasks() {
           />
         </TabsContent>
 
-        <TabsContent value="daily" className="mt-4">
-          {dailyLogs.length === 0 ? (
-            <div className="flex items-center justify-center py-16">
-              <Dialog open={logDialogOpen} onOpenChange={setLogDialogOpen}>
-                <DialogTrigger asChild>
-                  <Card className="border-2 border-dashed border-muted-foreground/25 flex flex-col items-center justify-center w-full max-w-md min-h-[240px] cursor-pointer hover:border-primary/40 hover:bg-muted/30 transition-all group">
-                    <div className="h-14 w-14 rounded-full bg-primary/10 flex items-center justify-center mb-4 group-hover:bg-primary/20 transition-colors">
-                      <Plus className="h-7 w-7 text-primary" />
-                    </div>
-                    <p className="text-base font-medium text-foreground mb-1">오늘의 로그 작성</p>
-                    <p className="text-sm text-muted-foreground">완료한 업무, 예정된 업무, 이슈를 기록하세요</p>
-                  </Card>
-                </DialogTrigger>
-                <DialogContent className="sm:max-w-lg">
-                  <DialogHeader><DialogTitle>📝 데일리 로그 작성</DialogTitle></DialogHeader>
-                  <div className="space-y-4 mt-2">
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" />완료한 업무</Label>
-                      <Textarea placeholder="• 전자결재 기능 구현 완료&#10;• 공지게시판 UI 수정" rows={4} value={logForm.today_work} onChange={e => setLogForm(f => ({ ...f, today_work: e.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-1.5"><ClipboardList className="h-4 w-4 text-blue-500" />예정된 업무</Label>
-                      <Textarea placeholder="• 파일 첨부 기능 연동 진행 예정&#10;• 알림 시스템 구축 검토" rows={4} value={logForm.tomorrow_plan} onChange={e => setLogForm(f => ({ ...f, tomorrow_plan: e.target.value }))} />
-                    </div>
-                    <div className="space-y-2">
-                      <Label className="flex items-center gap-1.5"><AlertTriangle className="h-4 w-4 text-amber-500" />이슈 및 요청사항</Label>
-                      <Textarea placeholder="특이사항이 없으면 비워두세요" rows={3} value={logForm.blockers} onChange={e => setLogForm(f => ({ ...f, blockers: e.target.value }))} />
-                    </div>
-                    <Button onClick={handleAddLog} disabled={!logForm.today_work} className="w-full">작성 완료</Button>
-                  </div>
-                </DialogContent>
-              </Dialog>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-1 bg-muted rounded-lg p-0.5">
-                  <button
-                    onClick={() => setLogView('list')}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${logView === 'list' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                  >
-                    목록
-                  </button>
-                  <button
-                    onClick={() => setLogView('calendar')}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-md transition-colors ${logView === 'calendar' ? 'bg-background shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'}`}
-                  >
-                    캘린더
-                  </button>
-                </div>
-                <Dialog open={logDialogOpen} onOpenChange={setLogDialogOpen}>
-                  <DialogTrigger asChild>
-                    <Button className="gap-2"><Plus className="h-4 w-4" />로그 작성</Button>
-                  </DialogTrigger>
-                  <DialogContent className="sm:max-w-lg">
-                    <DialogHeader><DialogTitle>📝 데일리 로그 작성</DialogTitle></DialogHeader>
-                    <div className="space-y-4 mt-2">
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" />완료한 업무</Label>
-                        <Textarea placeholder="• 전자결재 기능 구현 완료&#10;• 공지게시판 UI 수정" rows={4} value={logForm.today_work} onChange={e => setLogForm(f => ({ ...f, today_work: e.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-1.5"><ClipboardList className="h-4 w-4 text-blue-500" />예정된 업무</Label>
-                        <Textarea placeholder="• 파일 첨부 기능 연동 진행 예정&#10;• 알림 시스템 구축 검토" rows={4} value={logForm.tomorrow_plan} onChange={e => setLogForm(f => ({ ...f, tomorrow_plan: e.target.value }))} />
-                      </div>
-                      <div className="space-y-2">
-                        <Label className="flex items-center gap-1.5"><AlertTriangle className="h-4 w-4 text-amber-500" />이슈 및 요청사항</Label>
-                        <Textarea placeholder="특이사항이 없으면 비워두세요" rows={3} value={logForm.blockers} onChange={e => setLogForm(f => ({ ...f, blockers: e.target.value }))} />
-                      </div>
-                      <Button onClick={handleAddLog} disabled={!logForm.today_work} className="w-full">작성 완료</Button>
-                    </div>
-                  </DialogContent>
-                </Dialog>
-              </div>
-
-              {logView === 'calendar' ? (
-                <DailyLogCalendarView
-                  dailyLogs={dailyLogs}
-                  profiles={profiles}
-                  profileId={profile?.id || null}
-                  canEditLog={canEditLog}
-                  onEditLog={openEditLog}
-                  onDeleteLog={handleDeleteLog}
-                />
-              ) : (
-
-              <div className="space-y-2">
-                {dailyLogs.map(log => {
-                  const user = getProfile(log.user_id);
-                  const isOwner = canEditLog(log);
-                  // Preview: first line of today_work
-                  const preview = (log.today_work || '').split('\n')[0].slice(0, 60);
-                  return (
-                    <Collapsible key={log.id}>
-                      <Card className="overflow-hidden">
-                        <CollapsibleTrigger asChild>
-                          <div className="flex items-center gap-3 px-4 py-3 cursor-pointer hover:bg-muted/30 transition-colors group">
-                            <Avatar className="h-7 w-7 shrink-0">
-                              <AvatarFallback className="bg-primary text-primary-foreground text-[10px] font-medium">{user?.avatar || '?'}</AvatarFallback>
-                            </Avatar>
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2">
-                                <span className="text-sm font-medium">{user?.name_kr || '알 수 없음'}</span>
-                                <span className="text-xs text-muted-foreground">{log.date}</span>
-                              </div>
-                              <p className="text-xs text-muted-foreground truncate mt-0.5">{preview || '내용 없음'}</p>
-                            </div>
-                            <div className="flex items-center gap-1 shrink-0">
-                              {isOwner && (
-                                <>
-                                  <button onClick={(e) => { e.stopPropagation(); openEditLog(log); }} className="p-1 rounded-md hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
-                                    <Pencil className="h-3.5 w-3.5" />
-                                  </button>
-                                  <button onClick={(e) => { e.stopPropagation(); handleDeleteLog(log.id); }} className="p-1 rounded-md hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
-                                    <Trash2 className="h-3.5 w-3.5" />
-                                  </button>
-                                </>
-                              )}
-                              <ChevronDown className="h-4 w-4 text-muted-foreground transition-transform group-data-[state=open]:rotate-180" />
-                            </div>
-                          </div>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <div className="px-4 pb-4 space-y-3 border-t border-border/50 pt-3">
-                            <div className="rounded-md bg-emerald-500/5 border border-emerald-500/10 p-3">
-                              <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1 mb-1.5">
-                                <CheckCircle2 className="h-3.5 w-3.5" />완료한 업무
-                              </p>
-                              <p className="text-sm whitespace-pre-line leading-relaxed">{log.today_work}</p>
-                            </div>
-                            {log.tomorrow_plan && (
-                              <div className="rounded-md bg-blue-500/5 border border-blue-500/10 p-3">
-                                <p className="text-xs font-semibold text-blue-600 dark:text-blue-400 flex items-center gap-1 mb-1.5">
-                                  <ClipboardList className="h-3.5 w-3.5" />예정된 업무
-                                </p>
-                                <p className="text-sm whitespace-pre-line leading-relaxed">{log.tomorrow_plan}</p>
-                              </div>
-                            )}
-                            {log.blockers && log.blockers !== '특이사항 없음' && (
-                              <div className="rounded-md bg-amber-500/5 border border-amber-500/10 p-3">
-                                <p className="text-xs font-semibold text-amber-600 dark:text-amber-400 flex items-center gap-1 mb-1.5">
-                                  <AlertTriangle className="h-3.5 w-3.5" />이슈 및 요청사항
-                                </p>
-                              <p className="text-sm whitespace-pre-line leading-relaxed">{log.blockers}</p>
-                              </div>
-                            )}
-                          </div>
-                        </CollapsibleContent>
-                      </Card>
-                    </Collapsible>
-                  );
-                })}
-              </div>
-              )}
-            </div>
-          )}
-        </TabsContent>
       </Tabs>
 
       {/* Design request detail modal */}
@@ -881,27 +652,6 @@ export default function Tasks() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit log dialog */}
-      <Dialog open={!!editingLog} onOpenChange={(open) => !open && setEditingLog(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader><DialogTitle>📝 데일리 로그 수정</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" />완료한 업무</Label>
-              <Textarea rows={4} value={editLogForm.today_work} onChange={e => setEditLogForm(f => ({ ...f, today_work: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><ClipboardList className="h-4 w-4 text-blue-500" />예정된 업무</Label>
-              <Textarea rows={4} value={editLogForm.tomorrow_plan} onChange={e => setEditLogForm(f => ({ ...f, tomorrow_plan: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><AlertTriangle className="h-4 w-4 text-amber-500" />이슈 및 요청사항</Label>
-              <Textarea rows={3} value={editLogForm.blockers} onChange={e => setEditLogForm(f => ({ ...f, blockers: e.target.value }))} />
-            </div>
-            <Button onClick={handleEditLog} disabled={!editLogForm.today_work} className="w-full">수정 완료</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
