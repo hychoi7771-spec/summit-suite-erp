@@ -21,7 +21,6 @@ import {
   AtSign,
   FileEdit,
   FolderOpen,
-  ClipboardCheck,
   CalendarClock,
   CalendarOff,
 } from 'lucide-react';
