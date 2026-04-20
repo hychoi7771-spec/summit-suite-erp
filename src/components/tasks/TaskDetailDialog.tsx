@@ -55,7 +55,7 @@ export default function TaskDetailDialog({ task, profiles, allTasks, open, onOpe
     if (!open || !task) return;
     const channel = supabase
       .channel(`task-comments-${task.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'task_comments', filter: `task_id=eq.${task.id}` }, () => fetchComments())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'task_comments', filter: `task_id=eq.${task.id}` }, () => fetchComments())
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [open, task?.id]);
@@ -63,6 +63,22 @@ export default function TaskDetailDialog({ task, profiles, allTasks, open, onOpe
   const fetchComments = async () => {
     const { data } = await supabase.from('task_comments').select('*').eq('task_id', task.id).order('created_at', { ascending: true });
     setComments(data || []);
+  };
+
+  const handleEditComment = async (id: string) => {
+    if (!editingText.trim()) return;
+    const { error } = await supabase.from('task_comments').update({ content: editingText.trim() }).eq('id', id);
+    if (error) { toast({ title: '댓글 수정 실패', variant: 'destructive' }); return; }
+    setEditingId(null);
+    setEditingText('');
+    toast({ title: '댓글 수정 완료' });
+  };
+
+  const handleDeleteComment = async (id: string) => {
+    if (!confirm('정말 이 댓글을 삭제하시겠습니까?')) return;
+    const { error } = await supabase.from('task_comments').delete().eq('id', id);
+    if (error) { toast({ title: '댓글 삭제 실패', variant: 'destructive' }); return; }
+    toast({ title: '댓글 삭제 완료' });
   };
 
   const fetchHistory = async () => {
