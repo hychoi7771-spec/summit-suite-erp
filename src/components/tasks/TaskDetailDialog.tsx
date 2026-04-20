@@ -316,7 +316,7 @@ export default function TaskDetailDialog({ task, profiles, allTasks, open, onOpe
                         <span className="text-[10px] text-muted-foreground">
                           {formatDistanceToNow(new Date(c.created_at), { addSuffix: true, locale: ko })}
                         </span>
-                        {isAdmin && !isEditing && (
+                        {canEditComment(c.user_id) && !isEditing && (
                           <div className="ml-auto flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                             <Button
                               size="icon"
