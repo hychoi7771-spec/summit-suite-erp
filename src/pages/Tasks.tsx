@@ -217,8 +217,9 @@ export default function Tasks() {
     }
   };
 
+  // Quick navigation order excludes 'scheduled' (it's auto-promoted to 'todo')
   const statusOrder: TaskStatus[] = ['todo', 'in-progress', 'review', 'done'];
-  const statusLabels: Record<string, string> = { todo: '할 일', 'in-progress': '진행 중', review: '검토', done: '완료' };
+  const statusLabels: Record<string, string> = { todo: '할 일', 'in-progress': '진행 중', review: '검토', done: '완료', scheduled: '예약' };
 
   const handleQuickStatusChange = async (taskId: string, currentStatus: TaskStatus, direction: 'prev' | 'next', e: React.MouseEvent) => {
     e.stopPropagation();
