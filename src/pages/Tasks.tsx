@@ -652,27 +652,6 @@ export default function Tasks() {
         </DialogContent>
       </Dialog>
 
-      {/* Edit log dialog */}
-      <Dialog open={!!editingLog} onOpenChange={(open) => !open && setEditingLog(null)}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader><DialogTitle>📝 데일리 로그 수정</DialogTitle></DialogHeader>
-          <div className="space-y-4 mt-2">
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4 text-emerald-500" />완료한 업무</Label>
-              <Textarea rows={4} value={editLogForm.today_work} onChange={e => setEditLogForm(f => ({ ...f, today_work: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><ClipboardList className="h-4 w-4 text-blue-500" />예정된 업무</Label>
-              <Textarea rows={4} value={editLogForm.tomorrow_plan} onChange={e => setEditLogForm(f => ({ ...f, tomorrow_plan: e.target.value }))} />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-1.5"><AlertTriangle className="h-4 w-4 text-amber-500" />이슈 및 요청사항</Label>
-              <Textarea rows={3} value={editLogForm.blockers} onChange={e => setEditLogForm(f => ({ ...f, blockers: e.target.value }))} />
-            </div>
-            <Button onClick={handleEditLog} disabled={!editLogForm.today_work} className="w-full">수정 완료</Button>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
