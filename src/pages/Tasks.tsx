@@ -167,12 +167,11 @@ export default function Tasks() {
     return differenceInDays(startOfDay(parseISO(dueDate)), startOfDay(new Date()));
   };
 
-  const canEditTask = (task: any) => {
-    return isAdmin || (profile && task.assignee_id === profile.id);
-  };
+  // 수정/삭제는 관리자(대표/총괄이사)만 가능
+  const canEditTask = (_task: any) => isAdmin;
 
-  const openEditDialog = (task: any, e: React.MouseEvent) => {
-    e.stopPropagation();
+  const openEditDialog = (task: any, e?: React.MouseEvent) => {
+    e?.stopPropagation();
     setEditingTask(task);
     setEditForm({
       title: task.title || '',
