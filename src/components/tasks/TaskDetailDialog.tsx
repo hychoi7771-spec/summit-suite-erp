@@ -30,6 +30,7 @@ export default function TaskDetailDialog({ task, profiles, allTasks, open, onOpe
   const { toast } = useToast();
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
   const canComment = isAdmin;
+  const canEditComment = (commentUserId: string) => isAdmin || commentUserId === profile?.id;
   const [comments, setComments] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [linkedTasks, setLinkedTasks] = useState<any[]>([]);
