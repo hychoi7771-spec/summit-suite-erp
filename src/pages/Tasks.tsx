@@ -119,6 +119,16 @@ export default function Tasks() {
 
   const handleAddTask = async () => {
     if (!taskForm.title) return;
+    if (createMode === 'scheduled' && !taskForm.start_date) {
+      toast({ title: '예약 등록 실패', description: '예약 업무는 시작일이 필수입니다.', variant: 'destructive' });
+      return;
+    }
+    const today = new Date().toISOString().slice(0, 10);
+    // If scheduled but start_date is today or earlier → goes straight to 'todo'
+    const finalStatus: TaskStatus =
+      createMode === 'scheduled' && taskForm.start_date && taskForm.start_date > today
+        ? 'scheduled'
+        : 'todo';
     const { error } = await supabase.from('tasks').insert({
       title: taskForm.title,
       description: taskForm.description || null,
@@ -127,20 +137,25 @@ export default function Tasks() {
       start_date: taskForm.start_date || null,
       due_date: taskForm.due_date || null,
       project_name: taskForm.project_name || null,
-      status: 'todo',
+      status: finalStatus as any,
     });
     if (error) {
       toast({ title: '업무 등록 실패', description: error.message, variant: 'destructive' });
     } else {
       // Notify admins
-      await notifyAdmins('새 업무 등록', `"${taskForm.title}" 업무가 등록되었습니다.`, 'task');
+      await notifyAdmins(
+        finalStatus === 'scheduled' ? '새 예약 업무 등록' : '새 업무 등록',
+        `"${taskForm.title}" 업무가 ${finalStatus === 'scheduled' ? `${taskForm.start_date}에 예약` : '등록'}되었습니다.`,
+        'task'
+      );
       // Notify assignee if assigned
       if (taskForm.assignee_id && taskForm.assignee_id !== profile?.id) {
         await notifyUser(taskForm.assignee_id, '업무 배정', `"${taskForm.title}" 업무가 배정되었습니다.`, 'task');
       }
-      toast({ title: '업무 등록 완료' });
+      toast({ title: finalStatus === 'scheduled' ? '예약 업무 등록 완료' : '업무 등록 완료' });
       setTaskDialogOpen(false);
       setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
+      setCreateMode('now');
       fetchData();
     }
   };
