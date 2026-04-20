@@ -26,8 +26,10 @@ interface TaskDetailDialogProps {
 }
 
 export default function TaskDetailDialog({ task, profiles, allTasks, open, onOpenChange, onUpdate }: TaskDetailDialogProps) {
-  const { profile } = useAuth();
+  const { profile, userRole } = useAuth();
   const { toast } = useToast();
+  const isAdmin = userRole === 'ceo' || userRole === 'general_director';
+  const canComment = isAdmin;
   const [comments, setComments] = useState<any[]>([]);
   const [history, setHistory] = useState<any[]>([]);
   const [linkedTasks, setLinkedTasks] = useState<any[]>([]);
@@ -36,6 +38,8 @@ export default function TaskDetailDialog({ task, profiles, allTasks, open, onOpe
   const [showMentions, setShowMentions] = useState(false);
   const [mentionFilter, setMentionFilter] = useState('');
   const [linkSearch, setLinkSearch] = useState('');
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingText, setEditingText] = useState('');
   const commentRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
