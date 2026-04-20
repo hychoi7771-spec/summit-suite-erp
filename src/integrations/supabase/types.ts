@@ -1803,7 +1803,7 @@ export type Database = {
         | "Launch"
       project_status: "active" | "on_hold" | "completed"
       task_priority: "low" | "medium" | "high" | "urgent"
-      task_status: "todo" | "in-progress" | "review" | "done"
+      task_status: "todo" | "in-progress" | "review" | "done" | "scheduled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1964,7 +1964,7 @@ export const Constants = {
       ],
       project_status: ["active", "on_hold", "completed"],
       task_priority: ["low", "medium", "high", "urgent"],
-      task_status: ["todo", "in-progress", "review", "done"],
+      task_status: ["todo", "in-progress", "review", "done", "scheduled"],
     },
   },
 } as const
