@@ -335,7 +335,7 @@ export default function Tasks() {
               return true;
             });
             const total = filtered.length;
-            const counts: Record<string, number> = { todo: 0, 'in-progress': 0, review: 0, done: 0 };
+            const counts: Record<string, number> = { todo: 0, 'in-progress': 0, review: 0, done: 0, scheduled: 0 };
             filtered.forEach(t => { counts[t.status] = (counts[t.status] || 0) + 1; });
             const urgentCount = filtered.filter(t => t.priority === 'urgent' || t.priority === 'high').length;
             const overdueCount = filtered.filter(t => {
