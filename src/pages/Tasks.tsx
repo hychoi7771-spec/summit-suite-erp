@@ -275,7 +275,6 @@ export default function Tasks() {
         <TabsList>
           <TabsTrigger value="board">칸반 보드</TabsTrigger>
           <TabsTrigger value="gantt" className="gap-1.5"><GanttChartSquare className="h-3.5 w-3.5" />간트차트</TabsTrigger>
-          <TabsTrigger value="daily">데일리 로그</TabsTrigger>
         </TabsList>
 
         <TabsContent value="board" className="mt-4 space-y-4">
