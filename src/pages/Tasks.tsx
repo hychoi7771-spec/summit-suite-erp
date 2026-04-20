@@ -72,22 +72,17 @@ export default function Tasks() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'tasks' }, () => {
         fetchData();
       })
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_logs' }, () => {
-        fetchData();
-      })
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
 
   const fetchData = async () => {
-    const [taskRes, profRes, logRes] = await Promise.all([
+    const [taskRes, profRes] = await Promise.all([
       supabase.from('tasks').select('*').order('position', { ascending: true }),
       supabase.from('profiles').select('id, name, name_kr, avatar'),
-      supabase.from('daily_logs').select('*').order('date', { ascending: false }),
     ]);
     setTaskList(taskRes.data || []);
     setProfiles(profRes.data || []);
-    setDailyLogs(logRes.data || []);
     setLoading(false);
   };
 
