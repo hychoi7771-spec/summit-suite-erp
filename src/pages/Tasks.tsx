@@ -86,7 +86,23 @@ export default function Tasks() {
       supabase.from('tasks').select('*').order('position', { ascending: true }),
       supabase.from('profiles').select('id, name, name_kr, avatar'),
     ]);
-    setTaskList(taskRes.data || []);
+    let tasks = taskRes.data || [];
+
+    // Auto-promote scheduled tasks whose start_date has arrived
+    const today = new Date().toISOString().slice(0, 10);
+    const duePromote = tasks.filter((t: any) => t.status === 'scheduled' && t.start_date && t.start_date <= today);
+    if (duePromote.length > 0) {
+      const ids = duePromote.map((t: any) => t.id);
+      await supabase.from('tasks').update({ status: 'todo' as any }).in('id', ids);
+      if (profile) {
+        await supabase.from('task_history').insert(
+          duePromote.map((t: any) => ({ task_id: t.id, user_id: profile.id, field_name: 'status', old_value: 'scheduled', new_value: 'todo' }))
+        );
+      }
+      tasks = tasks.map((t: any) => ids.includes(t.id) ? { ...t, status: 'todo' } : t);
+    }
+
+    setTaskList(tasks);
     setProfiles(profRes.data || []);
     setLoading(false);
   };
