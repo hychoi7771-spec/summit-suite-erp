@@ -49,19 +49,22 @@ export default function DesignRequestDialog({ profiles, onSuccess }: DesignReque
     setLoading(true);
 
     try {
-      // Upload attachments
+      // Upload attachments — sanitize filenames (Korean/special chars break Storage)
       const attachmentUrls: string[] = [];
       for (const file of files) {
-        const filePath = `${Date.now()}-${file.name}`;
+        const ext = file.name.includes('.') ? file.name.split('.').pop() : '';
+        const safeBase = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40) || 'file';
+        const filePath = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeBase}${ext ? '.' + ext : ''}`;
         const { error: uploadError } = await supabase.storage
           .from('design-attachments')
-          .upload(filePath, file);
-        if (!uploadError) {
-          const { data: urlData } = supabase.storage
-            .from('design-attachments')
-            .getPublicUrl(filePath);
-          attachmentUrls.push(urlData.publicUrl);
+          .upload(filePath, file, { contentType: file.type, upsert: false });
+        if (uploadError) {
+          throw new Error(`파일 업로드 실패 (${file.name}): ${uploadError.message}`);
         }
+        const { data: urlData } = supabase.storage
+          .from('design-attachments')
+          .getPublicUrl(filePath);
+        attachmentUrls.push(urlData.publicUrl);
       }
 
       // Create task
