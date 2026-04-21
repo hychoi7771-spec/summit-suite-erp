@@ -179,14 +179,14 @@ export default function DesignRequestDialog({ profiles, onSuccess }: DesignReque
             />
           </div>
 
-          {/* 필수 첨부 자료 */}
+          {/* 참고 시안 */}
           <div className="space-y-2">
-            <Label className="font-semibold">필수 첨부 자료</Label>
-            <p className="text-xs text-muted-foreground">임상 시험 결과 보고서, 의약외품 인증서 등</p>
+            <Label className="font-semibold">참고 시안</Label>
+            <p className="text-xs text-muted-foreground">참고할 디자인 이미지나 자료를 첨부해주세요</p>
             <label className="flex items-center justify-center gap-2 border-2 border-dashed border-muted-foreground/30 rounded-lg p-4 cursor-pointer hover:bg-muted/50 transition-colors">
               <Upload className="h-5 w-5 text-muted-foreground" />
-              <span className="text-sm text-muted-foreground">파일을 선택하세요</span>
-              <input type="file" multiple className="hidden" onChange={handleFileChange} />
+              <span className="text-sm text-muted-foreground">참고 시안을 선택하세요 (이미지 권장)</span>
+              <input type="file" multiple accept="image/*,.pdf,.psd,.ai,.fig,.sketch" className="hidden" onChange={handleFileChange} />
             </label>
             {files.length > 0 && (
               <div className="space-y-1 mt-2">
