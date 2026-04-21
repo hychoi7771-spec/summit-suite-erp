@@ -73,16 +73,30 @@ export default function DesignRequestDetail({ task, assignee, open, onOpenChange
       });
       if (error) throw error;
 
-      // Notify the other party (designer ↔ requester)
-      const otherPartyId = profile.id === task.assignee_id ? task.created_by : task.assignee_id;
-      if (otherPartyId && otherPartyId !== profile.id) {
+      // Notify the other party
+      if (task.assignee_id && task.assignee_id !== profile.id) {
         await notifyUser(
-          otherPartyId,
-          `[디자인 의뢰] 새 메시지`,
+          task.assignee_id,
+          `[디자인 의뢰] 새 메시지 - ${task.project_name || task.title}`,
           `${profile.name_kr}님: ${newComment.trim().slice(0, 50)}${newComment.length > 50 ? '...' : ''}`,
           'task',
           task.id,
         );
+      } else {
+        // I'm the assignee → notify the requester via earliest task_history
+        const { data: hist } = await supabase
+          .from('task_history').select('user_id').eq('task_id', task.id)
+          .order('created_at', { ascending: true }).limit(1).maybeSingle();
+        if (hist?.user_id && hist.user_id !== profile.id) {
+          // user_id in task_history is profile.id
+          await notifyUser(
+            hist.user_id,
+            `[디자인 의뢰] 디자이너 답변 - ${task.project_name || task.title}`,
+            `${profile.name_kr}님: ${newComment.trim().slice(0, 50)}${newComment.length > 50 ? '...' : ''}`,
+            'task',
+            task.id,
+          );
+        }
       }
       setNewComment('');
     } catch (e: any) {
