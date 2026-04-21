@@ -628,6 +628,18 @@ export default function Tasks() {
                                             </div>
                                           </div>
                                           {task.description && <p className="text-[11px] text-muted-foreground line-clamp-2">{task.description}</p>}
+                                          {isDesign && Array.isArray(task.attachments) && task.attachments.filter((u: string) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)(\?|$)/i.test(u)).length > 0 && (
+                                            <div className="flex gap-1 overflow-hidden">
+                                              {task.attachments.filter((u: string) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)(\?|$)/i.test(u)).slice(0, 3).map((url: string, i: number) => (
+                                                <img key={i} src={url} alt="" className="h-12 w-12 object-cover rounded border bg-muted shrink-0" loading="lazy" />
+                                              ))}
+                                              {task.attachments.filter((u: string) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)(\?|$)/i.test(u)).length > 3 && (
+                                                <div className="h-12 w-12 rounded border bg-muted flex items-center justify-center text-[10px] text-muted-foreground shrink-0">
+                                                  +{task.attachments.filter((u: string) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)(\?|$)/i.test(u)).length - 3}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
                                           <div className="flex flex-wrap gap-1">
                                             {task.project_name && selectedProject === 'all' && (
                                               <Badge variant="outline" className="text-[10px] gap-0.5 bg-muted/50"><FolderKanban className="h-2.5 w-2.5" /> {task.project_name}</Badge>
