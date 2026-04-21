@@ -614,13 +614,13 @@ export default function Tasks() {
                                               {isDesign && <Palette className="h-3.5 w-3.5 text-primary shrink-0" />}
                                               <p className="text-sm font-medium leading-snug truncate">{task.title}</p>
                                             </div>
-                                            <div className="flex items-center gap-0.5 shrink-0 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="flex items-center gap-0.5 shrink-0">
                                               {canEditTask(task) && (
                                                 <>
-                                                  <button onClick={(e) => openEditDialog(task, e)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors">
+                                                  <button onClick={(e) => openEditDialog(task, e)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="수정">
                                                     <Pencil className="h-3 w-3" />
                                                   </button>
-                                                  <button onClick={(e) => handleDeleteTask(task.id, e)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors">
+                                                  <button onClick={(e) => handleDeleteTask(task.id, e)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors" title="삭제">
                                                     <Trash2 className="h-3 w-3" />
                                                   </button>
                                                 </>
