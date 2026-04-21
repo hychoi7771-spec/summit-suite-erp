@@ -167,8 +167,8 @@ export default function Tasks() {
     return differenceInDays(startOfDay(parseISO(dueDate)), startOfDay(new Date()));
   };
 
-  // 수정/삭제는 관리자(대표/총괄이사)만 가능
-  const canEditTask = (_task: any) => isAdmin;
+  // 수정/삭제는 본인 담당 업무 또는 관리자(대표/총괄이사)만 가능
+  const canEditTask = (task: any) => isAdmin || (!!profile && task?.assignee_id === profile.id);
 
   const openEditDialog = (task: any, e?: React.MouseEvent) => {
     e?.stopPropagation();
@@ -746,17 +746,21 @@ export default function Tasks() {
       {/* Edit task dialog */}
       <Dialog open={!!editingTask} onOpenChange={(open) => !open && setEditingTask(null)}>
         <DialogContent>
+          {(() => {
+            const canEdit = canEditTask(editingTask);
+            return (
+          <>
           <DialogHeader>
-            <DialogTitle>{isAdmin ? '업무 수정' : '업무 상세'}</DialogTitle>
+            <DialogTitle>{canEdit ? '업무 수정' : '업무 상세'}</DialogTitle>
           </DialogHeader>
-          <fieldset disabled={!isAdmin} className="space-y-4 mt-2 disabled:opacity-90">
+          <fieldset disabled={!canEdit} className="space-y-4 mt-2 disabled:opacity-90">
             <div className="space-y-2">
               <Label>프로젝트 (선택)</Label>
               {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].length > 0 && (
                 <Select
                   value={editForm.project_name || '__none__'}
                   onValueChange={v => setEditForm(f => ({ ...f, project_name: v === '__none__' ? '' : v }))}
-                  disabled={!isAdmin}
+                  disabled={!canEdit}
                 >
                   <SelectTrigger><SelectValue placeholder="기존 프로젝트에서 선택" /></SelectTrigger>
                   <SelectContent>
@@ -771,14 +775,14 @@ export default function Tasks() {
                 placeholder="또는 새 프로젝트명 직접 입력"
                 value={editForm.project_name}
                 onChange={e => setEditForm(f => ({ ...f, project_name: e.target.value }))}
-                readOnly={!isAdmin}
+                readOnly={!canEdit}
               />
             </div>
-            <div className="space-y-2"><Label>업무 제목</Label><Input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} readOnly={!isAdmin} /></div>
-            <div className="space-y-2"><Label>설명</Label><Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} readOnly={!isAdmin} /></div>
+            <div className="space-y-2"><Label>업무 제목</Label><Input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} readOnly={!canEdit} /></div>
+            <div className="space-y-2"><Label>설명</Label><Textarea value={editForm.description} onChange={e => setEditForm(f => ({ ...f, description: e.target.value }))} readOnly={!canEdit} /></div>
             <div className="space-y-2">
               <Label>우선순위</Label>
-              <Select value={editForm.priority} onValueChange={v => setEditForm(f => ({ ...f, priority: v }))} disabled={!isAdmin}>
+              <Select value={editForm.priority} onValueChange={v => setEditForm(f => ({ ...f, priority: v }))} disabled={!canEdit}>
                 <SelectTrigger><SelectValue /></SelectTrigger>
                 <SelectContent>
                   <SelectItem value="low">낮음</SelectItem><SelectItem value="medium">보통</SelectItem>
@@ -788,14 +792,14 @@ export default function Tasks() {
             </div>
             <div className="space-y-2">
               <Label>담당자</Label>
-              <Select value={editForm.assignee_id} onValueChange={v => setEditForm(f => ({ ...f, assignee_id: v }))} disabled={!isAdmin}>
+              <Select value={editForm.assignee_id} onValueChange={v => setEditForm(f => ({ ...f, assignee_id: v }))} disabled={!canEdit}>
                 <SelectTrigger><SelectValue placeholder="담당자 선택" /></SelectTrigger>
                 <SelectContent>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.name_kr}</SelectItem>)}</SelectContent>
               </Select>
             </div>
             <div className="grid grid-cols-2 gap-3">
-              <div className="space-y-2"><Label>시작일</Label><Input type="date" value={editForm.start_date} onChange={e => setEditForm(f => ({ ...f, start_date: e.target.value }))} readOnly={!isAdmin} /></div>
-              <div className="space-y-2"><Label>마감일</Label><Input type="date" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))} readOnly={!isAdmin} /></div>
+              <div className="space-y-2"><Label>시작일</Label><Input type="date" value={editForm.start_date} onChange={e => setEditForm(f => ({ ...f, start_date: e.target.value }))} readOnly={!canEdit} /></div>
+              <div className="space-y-2"><Label>마감일</Label><Input type="date" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))} readOnly={!canEdit} /></div>
             </div>
           </fieldset>
           <div className="flex items-center gap-2 mt-2">
@@ -806,13 +810,16 @@ export default function Tasks() {
             >
               댓글·연결·히스토리 보기
             </Button>
-            {isAdmin && (
+            {canEdit && (
               <Button onClick={handleEditTask} disabled={!editForm.title} className="flex-1">수정 완료</Button>
             )}
           </div>
-          {!isAdmin && (
-            <p className="text-[11px] text-muted-foreground text-center mt-1">수정 및 삭제는 대표/총괄이사만 가능합니다.</p>
+          {!canEdit && (
+            <p className="text-[11px] text-muted-foreground text-center mt-1">본인 담당 업무 또는 관리자만 수정·삭제할 수 있습니다.</p>
           )}
+          </>
+            );
+          })()}
         </DialogContent>
       </Dialog>
 
