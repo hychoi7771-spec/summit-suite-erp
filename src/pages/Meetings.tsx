@@ -42,6 +42,10 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle2; c
 
 const AUDIO_EXTENSIONS = ['.mp3', '.m4a', '.wav', '.webm', '.ogg', '.mp4', '.aac'];
 const isAudioFile = (file: File) => file.type.startsWith('audio/') || AUDIO_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext));
+const getPreferredAudioMimeType = () => {
+  const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
+  return candidates.find(type => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(type)) || '';
+};
 
 export default function Meetings() {
   const { toast } = useToast();
@@ -68,6 +72,9 @@ export default function Meetings() {
   const [transcript, setTranscript] = useState('');
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const recognitionRef = useRef<any>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingStreamRef = useRef<MediaStream | null>(null);
   const transcriptRef = useRef('');
   const [manualTranscript, setManualTranscript] = useState('');
   const [uploadedFileName, setUploadedFileName] = useState('');
