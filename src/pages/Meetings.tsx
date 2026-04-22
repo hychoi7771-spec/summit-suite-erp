@@ -214,11 +214,37 @@ export default function Meetings() {
       audioChunksRef.current = [];
       recordingStreamRef.current = stream;
       mediaRecorderRef.current = recorder;
-      recognitionRef.current = recorder;
       transcriptRef.current = '';
       setTranscript('');
       setRecordingMeetingId(meetingId);
       setIsRecording(true);
+
+      const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      if (SpeechRecognition) {
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'ko-KR';
+        recognition.continuous = true;
+        recognition.interimResults = true;
+        recognition.onresult = (event: SpeechRecognitionEvent) => {
+          let interim = '';
+          for (let i = event.resultIndex; i < event.results.length; i++) {
+            const text = event.results[i][0]?.transcript || '';
+            if (event.results[i].isFinal) {
+              transcriptRef.current = `${transcriptRef.current} ${text}`.trim();
+            } else {
+              interim += text;
+            }
+          }
+          setTranscript(`${transcriptRef.current} ${interim}`.trim());
+        };
+        recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
+          console.warn('Speech recognition error:', event.error);
+        };
+        recognitionRef.current = recognition;
+        recognition.start();
+      } else {
+        recognitionRef.current = null;
+      }
 
       recorder.ondataavailable = (event) => {
         if (event.data.size > 0) audioChunksRef.current.push(event.data);
@@ -241,9 +267,10 @@ export default function Meetings() {
         const audioBlob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
         const file = new File([audioBlob], `meeting-recording-${Date.now()}.webm`, { type: audioBlob.type });
         setIsAnalyzing(true);
-        setTranscript('Genspark로 녹취 변환 중입니다...');
+        setTranscript(transcriptRef.current || '녹취 변환 중입니다...');
         try {
-          const text = await transcribeAudioFile(meetingId, file);
+          const liveText = transcriptRef.current.trim();
+          const text = liveText.length >= 10 ? liveText : await transcribeAudioFile(meetingId, file);
           setTranscript(text);
           transcriptRef.current = text;
           const data = await analyzeMeetingText(meetingId, text);
@@ -261,16 +288,21 @@ export default function Meetings() {
       };
 
       recorder.start(1000);
-      toast({ title: '🎙️ 녹음 시작', description: '중지하면 Genspark 녹취와 AI 분석이 자동 실행됩니다.' });
+      toast({ title: '🎙️ 녹음 시작', description: '중지하면 녹취와 AI 분석이 자동 실행됩니다.' });
     } catch (err: any) {
       toast({ title: '🎤 마이크 접근 불가', description: err?.message || '브라우저에서 마이크 권한을 허용해주세요.', variant: 'destructive' });
     }
   }, [toast, transcribeAudioFile, analyzeMeetingText]);
 
   const stopRecording = useCallback(() => {
+    try {
+      recognitionRef.current?.stop?.();
+    } catch (err) {
+      console.warn('Speech recognition stop failed:', err);
+    }
     if (mediaRecorderRef.current?.state === 'recording') {
       mediaRecorderRef.current.stop();
-      toast({ title: '녹음 중지', description: 'Genspark 녹취와 AI 분석을 시작합니다.' });
+      toast({ title: '녹음 중지', description: '녹취와 AI 분석을 시작합니다.' });
     }
   }, [toast]);
 
