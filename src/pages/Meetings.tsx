@@ -375,41 +375,7 @@ export default function Meetings() {
         setExpandedId(meetingId);
         setIsAnalyzing(true);
         try {
-          const members = profiles.map(p => ({ name: p.name, name_kr: p.name_kr, id: p.id }));
-          const { data, error: fnError } = await supabase.functions.invoke('analyze-meeting', {
-            body: { transcript: dialogFileContent, members },
-          });
-          if (fnError) throw fnError;
-          if (data?.error) throw new Error(data.error);
-
-          await supabase.from('meetings').update({
-            notes: data.notes,
-            goal: data.goal,
-            kpi_notes: data.kpi_notes || null,
-            achievement_comment: data.achievement_comment || null,
-          }).eq('id', meetingId);
-
-          if (data.action_items && data.action_items.length > 0) {
-            const taskInserts = data.action_items.map((item: any) => {
-              let assigneeId: string | null = null;
-              if (item.assignee_name) {
-                const matched = profiles.find(p =>
-                  p.name_kr === item.assignee_name ||
-                  p.name.toLowerCase() === item.assignee_name.toLowerCase()
-                );
-                if (matched) assigneeId = matched.id;
-              }
-              return {
-                title: item.title,
-                priority: item.priority || 'medium',
-                status: 'todo' as const,
-                meeting_id: meetingId,
-                assignee_id: assigneeId,
-                description: `AI 회의록 분석에서 도출된 액션 아이템${item.assignee_name ? ` (담당: ${item.assignee_name})` : ''}`,
-              };
-            });
-            await supabase.from('tasks').insert(taskInserts);
-          }
+          const data = await analyzeMeetingText(meetingId, dialogFileContent);
 
           toast({
             title: '✅ AI 분석 완료',
