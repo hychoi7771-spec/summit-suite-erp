@@ -201,84 +201,77 @@ export default function Meetings() {
     }
   }, [toast, analyzeMeetingText, transcribeAudioFile]);
 
-  const startRecording = useCallback((meetingId: string) => {
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    if (!SpeechRecognition) {
-      toast({ title: '지원되지 않는 브라우저', description: 'Chrome 브라우저를 사용해주세요.', variant: 'destructive' });
+  const startRecording = useCallback(async (meetingId: string) => {
+    if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === 'undefined') {
+      toast({ title: '지원되지 않는 브라우저', description: 'Chrome 또는 Edge 브라우저에서 마이크 녹음을 사용해주세요.', variant: 'destructive' });
       return;
     }
 
-    const recognition = new SpeechRecognition();
-    recognition.lang = 'ko-KR';
-    recognition.continuous = true;
-    recognition.interimResults = true;
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mimeType = getPreferredAudioMimeType();
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+      audioChunksRef.current = [];
+      recordingStreamRef.current = stream;
+      mediaRecorderRef.current = recorder;
+      recognitionRef.current = recorder;
+      transcriptRef.current = '';
+      setTranscript('');
+      setRecordingMeetingId(meetingId);
+      setIsRecording(true);
 
-    recognition.onresult = (event: SpeechRecognitionEvent) => {
-      let finalTranscript = transcriptRef.current;
-      let interimTranscript = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const result = event.results[i];
-        if (result.isFinal) {
-          finalTranscript += result[0].transcript + ' ';
-          transcriptRef.current = finalTranscript;
-        } else {
-          interimTranscript += result[0].transcript;
-        }
-      }
-      setTranscript(finalTranscript + interimTranscript);
-    };
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) audioChunksRef.current.push(event.data);
+      };
 
-    recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
-      console.error('Speech recognition error:', event.error);
-      // Ignore transient errors that occur during normal operation
-      const ignoredErrors = ['no-speech', 'aborted'];
-      const fatalErrors = ['audio-capture', 'not-allowed'];
-      
-      if (fatalErrors.includes(event.error)) {
-        // Stop recording on fatal errors (mic blocked/unavailable)
+      recorder.onstop = async () => {
+        const chunks = audioChunksRef.current;
+        audioChunksRef.current = [];
+        recordingStreamRef.current?.getTracks().forEach(track => track.stop());
+        recordingStreamRef.current = null;
+        mediaRecorderRef.current = null;
         recognitionRef.current = null;
         setIsRecording(false);
-        setRecordingMeetingId(null);
-        toast({ 
-          title: '🎤 마이크 접근 불가', 
-          description: '브라우저에서 마이크 권한을 허용해주세요. 또는 텍스트 붙여넣기 탭을 이용하세요.', 
-          variant: 'destructive' 
-        });
-        return;
-      }
-      
-      if (!ignoredErrors.includes(event.error)) {
-        console.warn('Speech recognition error:', event.error);
-      }
-    };
 
-    recognition.onend = () => {
-      if (recognitionRef.current) {
-        setTimeout(() => {
-          if (recognitionRef.current) {
-            try { recognitionRef.current.start(); } catch {}
-          }
-        }, 300);
-      }
-    };
+        if (!chunks.length) {
+          toast({ title: '녹음 데이터 없음', description: '녹음된 음성이 없습니다.', variant: 'destructive' });
+          return;
+        }
 
-    recognitionRef.current = recognition;
-    transcriptRef.current = '';
-    setTranscript('');
-    setRecordingMeetingId(meetingId);
-    setIsRecording(true);
-    recognition.start();
-    toast({ title: '🎙️ 녹음 시작', description: '회의 내용을 말씀해주세요.' });
-  }, [toast]);
+        const audioBlob = new Blob(chunks, { type: recorder.mimeType || 'audio/webm' });
+        const file = new File([audioBlob], `meeting-recording-${Date.now()}.webm`, { type: audioBlob.type });
+        setIsAnalyzing(true);
+        setTranscript('Genspark로 녹취 변환 중입니다...');
+        try {
+          const text = await transcribeAudioFile(meetingId, file);
+          setTranscript(text);
+          transcriptRef.current = text;
+          const data = await analyzeMeetingText(meetingId, text);
+          const assignedCount = data.action_items?.filter((i: any) => i.assignee_name).length || 0;
+          toast({
+            title: '✅ 녹음 분석 완료',
+            description: `회의록이 자동 생성되었습니다. 액션 아이템 ${data.action_items?.length || 0}건 추가 (${assignedCount}건 자동 배정)`,
+          });
+          fetchData();
+        } catch (err: any) {
+          toast({ title: '녹음 분석 실패', description: err.message, variant: 'destructive' });
+        } finally {
+          setIsAnalyzing(false);
+        }
+      };
+
+      recorder.start(1000);
+      toast({ title: '🎙️ 녹음 시작', description: '중지하면 Genspark 녹취와 AI 분석이 자동 실행됩니다.' });
+    } catch (err: any) {
+      toast({ title: '🎤 마이크 접근 불가', description: err?.message || '브라우저에서 마이크 권한을 허용해주세요.', variant: 'destructive' });
+    }
+  }, [toast, transcribeAudioFile, analyzeMeetingText]);
 
   const stopRecording = useCallback(() => {
-    if (recognitionRef.current) {
-      const recognition = recognitionRef.current;
-      recognitionRef.current = null;
-      recognition.stop();
+    if (mediaRecorderRef.current?.state === 'recording') {
+      mediaRecorderRef.current.stop();
+      toast({ title: '녹음 중지', description: 'Genspark 녹취와 AI 분석을 시작합니다.' });
     }
-    setIsRecording(false);
-    toast({ title: '녹음 중지', description: '녹취록을 확인하고 AI 분석을 실행하세요.' });
   }, [toast]);
 
   const analyzeTranscript = useCallback(async (meetingId: string, source: 'recording' | 'manual' = 'recording') => {
