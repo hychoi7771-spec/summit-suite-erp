@@ -40,6 +40,9 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle2; c
   delayed: { label: '❌ 지연', icon: AlertCircle, color: 'text-red-600' },
 };
 
+const AUDIO_EXTENSIONS = ['.mp3', '.m4a', '.wav', '.webm', '.ogg', '.mp4', '.aac'];
+const isAudioFile = (file: File) => file.type.startsWith('audio/') || AUDIO_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext));
+
 export default function Meetings() {
   const { toast } = useToast();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -74,6 +77,46 @@ export default function Meetings() {
   const [dialogFileName, setDialogFileName] = useState('');
   const [dialogFileContent, setDialogFileContent] = useState('');
   const [isReadingDialogFile, setIsReadingDialogFile] = useState(false);
+
+  const analyzeMeetingText = useCallback(async (meetingId: string, text: string) => {
+    const members = profiles.map(p => ({ name: p.name, name_kr: p.name_kr, id: p.id }));
+    const { data, error } = await supabase.functions.invoke('analyze-meeting', {
+      body: { transcript: text.trim(), members },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    await supabase.from('meetings').update({
+      notes: data.notes,
+      goal: data.goal,
+      kpi_notes: data.kpi_notes || null,
+      achievement_comment: data.achievement_comment || null,
+    }).eq('id', meetingId);
+
+    if (data.action_items && data.action_items.length > 0) {
+      const taskInserts = data.action_items.map((item: any) => {
+        let assigneeId: string | null = null;
+        if (item.assignee_name) {
+          const matched = profiles.find(p =>
+            p.name_kr === item.assignee_name ||
+            p.name.toLowerCase() === item.assignee_name.toLowerCase()
+          );
+          if (matched) assigneeId = matched.id;
+        }
+        return {
+          title: item.title,
+          priority: item.priority || 'medium',
+          status: 'todo' as const,
+          meeting_id: meetingId,
+          assignee_id: assigneeId,
+          description: `AI 회의록 분석에서 도출된 액션 아이템${item.assignee_name ? ` (담당: ${item.assignee_name})` : ''}`,
+        };
+      });
+      await supabase.from('tasks').insert(taskInserts);
+    }
+
+    return data;
+  }, [profiles]);
 
   const handleFileUpload = useCallback(async (meetingId: string, file: File) => {
     setIsReadingFile(true);
