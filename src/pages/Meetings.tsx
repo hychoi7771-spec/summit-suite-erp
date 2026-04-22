@@ -838,7 +838,7 @@ export default function Meetings() {
                             type="file"
                             ref={fileInputRef}
                             className="hidden"
-                            accept=".txt,.md,.csv,.docx"
+                            accept=".txt,.md,.csv,.docx,audio/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.aac"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) handleFileUpload(meeting.id, file);
@@ -866,12 +866,12 @@ export default function Meetings() {
                               <div className="flex flex-col items-center gap-2">
                                 <Upload className="h-8 w-8 text-muted-foreground" />
                                 <p className="text-sm font-medium">파일을 드래그하거나 클릭하여 업로드</p>
-                                <p className="text-xs text-muted-foreground">지원 형식: .txt, .md, .csv, .docx</p>
+                                <p className="text-xs text-muted-foreground">지원 형식: .txt, .md, .csv, .docx, .mp3, .m4a, .wav</p>
                               </div>
                             )}
                           </div>
                           <p className="text-[10px] text-muted-foreground">
-                            💡 회의 녹취록 파일을 업로드하면 자동으로 내용을 추출하고 AI 분석을 실행합니다.
+                            💡 녹음 파일은 Genspark로 녹취 변환 후 AI 분석을 실행합니다.
                           </p>
                         </TabsContent>
                       </Tabs>
