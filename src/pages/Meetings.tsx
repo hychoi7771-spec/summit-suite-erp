@@ -40,6 +40,9 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle2; c
   delayed: { label: '❌ 지연', icon: AlertCircle, color: 'text-red-600' },
 };
 
+const AUDIO_EXTENSIONS = ['.mp3', '.m4a', '.wav', '.webm', '.ogg', '.mp4', '.aac'];
+const isAudioFile = (file: File) => file.type.startsWith('audio/') || AUDIO_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext));
+
 export default function Meetings() {
   const { toast } = useToast();
   const [expandedId, setExpandedId] = useState<string | null>(null);
@@ -74,13 +77,73 @@ export default function Meetings() {
   const [dialogFileName, setDialogFileName] = useState('');
   const [dialogFileContent, setDialogFileContent] = useState('');
   const [isReadingDialogFile, setIsReadingDialogFile] = useState(false);
+  const [dialogAudioFile, setDialogAudioFile] = useState<File | null>(null);
+
+  const analyzeMeetingText = useCallback(async (meetingId: string, text: string) => {
+    const members = profiles.map(p => ({ name: p.name, name_kr: p.name_kr, id: p.id }));
+    const { data, error } = await supabase.functions.invoke('analyze-meeting', {
+      body: { transcript: text.trim(), members },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+
+    await supabase.from('meetings').update({
+      notes: data.notes,
+      goal: data.goal,
+      kpi_notes: data.kpi_notes || null,
+      achievement_comment: data.achievement_comment || null,
+    }).eq('id', meetingId);
+
+    if (data.action_items && data.action_items.length > 0) {
+      const taskInserts = data.action_items.map((item: any) => {
+        let assigneeId: string | null = null;
+        if (item.assignee_name) {
+          const matched = profiles.find(p =>
+            p.name_kr === item.assignee_name ||
+            p.name.toLowerCase() === item.assignee_name.toLowerCase()
+          );
+          if (matched) assigneeId = matched.id;
+        }
+        return {
+          title: item.title,
+          priority: item.priority || 'medium',
+          status: 'todo' as const,
+          meeting_id: meetingId,
+          assignee_id: assigneeId,
+          description: `AI 회의록 분석에서 도출된 액션 아이템${item.assignee_name ? ` (담당: ${item.assignee_name})` : ''}`,
+        };
+      });
+      await supabase.from('tasks').insert(taskInserts);
+    }
+
+    return data;
+  }, [profiles]);
+
+  const transcribeAudioFile = useCallback(async (meetingId: string, file: File) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('로그인이 필요합니다.');
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const filePath = `${userId}/${meetingId}/${Date.now()}-${safeName}`;
+    const { error: uploadError } = await supabase.storage.from('meeting-audio').upload(filePath, file, { upsert: false });
+    if (uploadError) throw uploadError;
+    const { data: publicUrlData } = supabase.storage.from('meeting-audio').getPublicUrl(filePath);
+    const { data, error } = await supabase.functions.invoke('genspark-transcribe-meeting', {
+      body: { audioUrl: publicUrlData.publicUrl, fileName: file.name },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data.transcript || '';
+  }, []);
 
   const handleFileUpload = useCallback(async (meetingId: string, file: File) => {
     setIsReadingFile(true);
     setUploadedFileName(file.name);
     try {
       let text = '';
-      if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
+      if (isAudioFile(file)) {
+        text = await transcribeAudioFile(meetingId, file);
+      } else if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
         text = await file.text();
       } else if (file.name.endsWith('.docx')) {
         // Extract text from docx (ZIP containing XML)
@@ -107,45 +170,9 @@ export default function Meetings() {
       toast({ title: `📄 "${file.name}" 파일 로드 완료`, description: `${text.trim().length}자 추출됨. AI 분석을 자동 실행합니다.` });
       setIsReadingFile(false);
 
-      // Auto-trigger AI analysis
-      // We need to call analyzeTranscript but with the file text directly
       setIsAnalyzing(true);
       try {
-        const members = profiles.map(p => ({ name: p.name, name_kr: p.name_kr, id: p.id }));
-        const { data, error } = await supabase.functions.invoke('analyze-meeting', {
-          body: { transcript: text.trim(), members },
-        });
-        if (error) throw error;
-        if (data?.error) throw new Error(data.error);
-
-        await supabase.from('meetings').update({
-          notes: data.notes,
-          goal: data.goal,
-          kpi_notes: data.kpi_notes || null,
-          achievement_comment: data.achievement_comment || null,
-        }).eq('id', meetingId);
-
-        if (data.action_items && data.action_items.length > 0) {
-          const taskInserts = data.action_items.map((item: any) => {
-            let assigneeId: string | null = null;
-            if (item.assignee_name) {
-              const matched = profiles.find(p =>
-                p.name_kr === item.assignee_name ||
-                p.name.toLowerCase() === item.assignee_name.toLowerCase()
-              );
-              if (matched) assigneeId = matched.id;
-            }
-            return {
-              title: item.title,
-              priority: item.priority || 'medium',
-              status: 'todo' as const,
-              meeting_id: meetingId,
-              assignee_id: assigneeId,
-              description: `AI 회의록 분석에서 도출된 액션 아이템${item.assignee_name ? ` (담당: ${item.assignee_name})` : ''}`,
-            };
-          });
-          await supabase.from('tasks').insert(taskInserts);
-        }
+        const data = await analyzeMeetingText(meetingId, text.trim());
 
         const assignedCount = data.action_items?.filter((i: any) => i.assignee_name).length || 0;
         toast({
@@ -165,7 +192,7 @@ export default function Meetings() {
       toast({ title: '파일 읽기 실패', description: err.message, variant: 'destructive' });
       setIsReadingFile(false);
     }
-  }, [toast, profiles]);
+  }, [toast, analyzeMeetingText, transcribeAudioFile]);
 
   const startRecording = useCallback((meetingId: string) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -258,47 +285,7 @@ export default function Meetings() {
 
     setIsAnalyzing(true);
     try {
-      // Send member list so AI can match assignees
-      const members = profiles.map(p => ({ name: p.name, name_kr: p.name_kr, id: p.id }));
-
-      const { data, error } = await supabase.functions.invoke('analyze-meeting', {
-        body: { transcript: text, members },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      // Update meeting fields with AI analysis
-      await supabase.from('meetings').update({
-        notes: data.notes,
-        goal: data.goal,
-        kpi_notes: data.kpi_notes || null,
-        achievement_comment: data.achievement_comment || null,
-      }).eq('id', meetingId);
-
-      // Create action items as tasks with auto-assigned members
-      if (data.action_items && data.action_items.length > 0) {
-        const taskInserts = data.action_items.map((item: any) => {
-          // Match assignee by Korean name
-          let assigneeId: string | null = null;
-          if (item.assignee_name) {
-            const matched = profiles.find(p =>
-              p.name_kr === item.assignee_name ||
-              p.name.toLowerCase() === item.assignee_name.toLowerCase()
-            );
-            if (matched) assigneeId = matched.id;
-          }
-          return {
-            title: item.title,
-            priority: item.priority || 'medium',
-            status: 'todo' as const,
-            meeting_id: meetingId,
-            assignee_id: assigneeId,
-            description: `AI 회의록 분석에서 도출된 액션 아이템${item.assignee_name ? ` (담당: ${item.assignee_name})` : ''}`,
-          };
-        });
-        await supabase.from('tasks').insert(taskInserts);
-      }
+      const data = await analyzeMeetingText(meetingId, text);
 
       const assignedCount = data.action_items?.filter((i: any) => i.assignee_name).length || 0;
       toast({
@@ -316,7 +303,7 @@ export default function Meetings() {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [transcript, manualTranscript, toast, profiles]);
+  }, [transcript, manualTranscript, toast, analyzeMeetingText]);
 
   useEffect(() => { fetchData(); }, []);
 
@@ -341,7 +328,12 @@ export default function Meetings() {
     setDialogFileName(file.name);
     try {
       let text = '';
-      if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
+      if (isAudioFile(file)) {
+        setDialogAudioFile(file);
+        setDialogFileContent('');
+        toast({ title: `🎧 "${file.name}" 녹음 파일 선택 완료`, description: '등록 시 Genspark가 자동으로 녹취 후 AI 분석합니다.' });
+        return;
+      } else if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
         text = await file.text();
       } else if (file.name.endsWith('.docx')) {
         const arrayBuffer = await file.arrayBuffer();
@@ -354,6 +346,7 @@ export default function Meetings() {
       } else {
         text = await file.text();
       }
+      setDialogAudioFile(null);
       setDialogFileContent(text);
       toast({ title: `📄 "${file.name}" 파일 로드 완료`, description: `${text.length}자 추출됨` });
     } catch (err: any) {
@@ -388,46 +381,15 @@ export default function Meetings() {
       setMeetingForm({ title: '', date: '', category: '', notes: '', attendee_ids: [], goal: '', achievement_status: 'in_progress', achievement_comment: '', kpi_notes: '', roadmap_aligned: false, schedule_adjustment_needed: false, meeting_link: '' });
 
       // If a file was attached, auto-trigger AI analysis
-      if (dialogFileContent && inserted) {
+      if ((dialogFileContent || dialogAudioFile) && inserted) {
         const meetingId = inserted.id;
         setExpandedId(meetingId);
         setIsAnalyzing(true);
         try {
-          const members = profiles.map(p => ({ name: p.name, name_kr: p.name_kr, id: p.id }));
-          const { data, error: fnError } = await supabase.functions.invoke('analyze-meeting', {
-            body: { transcript: dialogFileContent, members },
-          });
-          if (fnError) throw fnError;
-          if (data?.error) throw new Error(data.error);
-
-          await supabase.from('meetings').update({
-            notes: data.notes,
-            goal: data.goal,
-            kpi_notes: data.kpi_notes || null,
-            achievement_comment: data.achievement_comment || null,
-          }).eq('id', meetingId);
-
-          if (data.action_items && data.action_items.length > 0) {
-            const taskInserts = data.action_items.map((item: any) => {
-              let assigneeId: string | null = null;
-              if (item.assignee_name) {
-                const matched = profiles.find(p =>
-                  p.name_kr === item.assignee_name ||
-                  p.name.toLowerCase() === item.assignee_name.toLowerCase()
-                );
-                if (matched) assigneeId = matched.id;
-              }
-              return {
-                title: item.title,
-                priority: item.priority || 'medium',
-                status: 'todo' as const,
-                meeting_id: meetingId,
-                assignee_id: assigneeId,
-                description: `AI 회의록 분석에서 도출된 액션 아이템${item.assignee_name ? ` (담당: ${item.assignee_name})` : ''}`,
-              };
-            });
-            await supabase.from('tasks').insert(taskInserts);
-          }
+          const sourceText = dialogAudioFile
+            ? await transcribeAudioFile(meetingId, dialogAudioFile)
+            : dialogFileContent;
+          const data = await analyzeMeetingText(meetingId, sourceText);
 
           toast({
             title: '✅ AI 분석 완료',
@@ -442,6 +404,7 @@ export default function Meetings() {
 
       setDialogFileName('');
       setDialogFileContent('');
+      setDialogAudioFile(null);
       fetchData();
     }
   };
@@ -574,7 +537,7 @@ export default function Meetings() {
                   type="file"
                   ref={dialogFileInputRef}
                   className="hidden"
-                  accept=".txt,.md,.csv,.docx"
+                  accept=".txt,.md,.csv,.docx,audio/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.aac"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleDialogFileRead(file);
@@ -601,17 +564,17 @@ export default function Meetings() {
                     <div className="flex items-center justify-center gap-2">
                       <FileText className="h-5 w-5 text-primary" />
                       <p className="text-sm font-medium">{dialogFileName}</p>
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setDialogFileName(''); setDialogFileContent(''); }}>제거</Button>
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setDialogFileName(''); setDialogFileContent(''); setDialogAudioFile(null); }}>제거</Button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-1">
                       <Upload className="h-5 w-5 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">파일을 드래그하거나 클릭 (.txt, .md, .csv, .docx)</p>
+                      <p className="text-xs text-muted-foreground">파일을 드래그하거나 클릭 (.txt, .md, .csv, .docx, 오디오)</p>
                     </div>
                   )}
                 </div>
-                {dialogFileContent && (
-                  <p className="text-[10px] text-muted-foreground">💡 등록 시 AI가 자동으로 회의록을 분석합니다.</p>
+                {(dialogFileContent || dialogAudioFile) && (
+                  <p className="text-[10px] text-muted-foreground">💡 등록 시 Genspark 녹취와 AI 회의록 분석을 자동 실행합니다.</p>
                 )}
               </div>
               <div className="space-y-2"><Label>📊 핵심 지표 (KPI)</Label><Input placeholder="DAU 5% 상승, 이탈률 2% 감소 등" value={meetingForm.kpi_notes} onChange={e => setMeetingForm(f => ({ ...f, kpi_notes: e.target.value }))} /></div>
@@ -875,7 +838,7 @@ export default function Meetings() {
                             type="file"
                             ref={fileInputRef}
                             className="hidden"
-                            accept=".txt,.md,.csv,.docx"
+                            accept=".txt,.md,.csv,.docx,audio/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.aac"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) handleFileUpload(meeting.id, file);
@@ -903,12 +866,12 @@ export default function Meetings() {
                               <div className="flex flex-col items-center gap-2">
                                 <Upload className="h-8 w-8 text-muted-foreground" />
                                 <p className="text-sm font-medium">파일을 드래그하거나 클릭하여 업로드</p>
-                                <p className="text-xs text-muted-foreground">지원 형식: .txt, .md, .csv, .docx</p>
+                                <p className="text-xs text-muted-foreground">지원 형식: .txt, .md, .csv, .docx, .mp3, .m4a, .wav</p>
                               </div>
                             )}
                           </div>
                           <p className="text-[10px] text-muted-foreground">
-                            💡 회의 녹취록 파일을 업로드하면 자동으로 내용을 추출하고 AI 분석을 실행합니다.
+                            💡 녹음 파일은 Genspark로 녹취 변환 후 AI 분석을 실행합니다.
                           </p>
                         </TabsContent>
                       </Tabs>
