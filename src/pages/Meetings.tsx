@@ -381,12 +381,15 @@ export default function Meetings() {
       setMeetingForm({ title: '', date: '', category: '', notes: '', attendee_ids: [], goal: '', achievement_status: 'in_progress', achievement_comment: '', kpi_notes: '', roadmap_aligned: false, schedule_adjustment_needed: false, meeting_link: '' });
 
       // If a file was attached, auto-trigger AI analysis
-      if (dialogFileContent && inserted) {
+      if ((dialogFileContent || dialogAudioFile) && inserted) {
         const meetingId = inserted.id;
         setExpandedId(meetingId);
         setIsAnalyzing(true);
         try {
-          const data = await analyzeMeetingText(meetingId, dialogFileContent);
+          const sourceText = dialogAudioFile
+            ? await transcribeAudioFile(meetingId, dialogAudioFile)
+            : dialogFileContent;
+          const data = await analyzeMeetingText(meetingId, sourceText);
 
           toast({
             title: '✅ AI 분석 완료',
@@ -401,6 +404,7 @@ export default function Meetings() {
 
       setDialogFileName('');
       setDialogFileContent('');
+      setDialogAudioFile(null);
       fetchData();
     }
   };
