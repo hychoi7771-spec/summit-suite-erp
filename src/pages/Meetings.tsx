@@ -280,47 +280,7 @@ export default function Meetings() {
 
     setIsAnalyzing(true);
     try {
-      // Send member list so AI can match assignees
-      const members = profiles.map(p => ({ name: p.name, name_kr: p.name_kr, id: p.id }));
-
-      const { data, error } = await supabase.functions.invoke('analyze-meeting', {
-        body: { transcript: text, members },
-      });
-
-      if (error) throw error;
-      if (data?.error) throw new Error(data.error);
-
-      // Update meeting fields with AI analysis
-      await supabase.from('meetings').update({
-        notes: data.notes,
-        goal: data.goal,
-        kpi_notes: data.kpi_notes || null,
-        achievement_comment: data.achievement_comment || null,
-      }).eq('id', meetingId);
-
-      // Create action items as tasks with auto-assigned members
-      if (data.action_items && data.action_items.length > 0) {
-        const taskInserts = data.action_items.map((item: any) => {
-          // Match assignee by Korean name
-          let assigneeId: string | null = null;
-          if (item.assignee_name) {
-            const matched = profiles.find(p =>
-              p.name_kr === item.assignee_name ||
-              p.name.toLowerCase() === item.assignee_name.toLowerCase()
-            );
-            if (matched) assigneeId = matched.id;
-          }
-          return {
-            title: item.title,
-            priority: item.priority || 'medium',
-            status: 'todo' as const,
-            meeting_id: meetingId,
-            assignee_id: assigneeId,
-            description: `AI 회의록 분석에서 도출된 액션 아이템${item.assignee_name ? ` (담당: ${item.assignee_name})` : ''}`,
-          };
-        });
-        await supabase.from('tasks').insert(taskInserts);
-      }
+      const data = await analyzeMeetingText(meetingId, text);
 
       const assignedCount = data.action_items?.filter((i: any) => i.assignee_name).length || 0;
       toast({
@@ -338,7 +298,7 @@ export default function Meetings() {
     } finally {
       setIsAnalyzing(false);
     }
-  }, [transcript, manualTranscript, toast, profiles]);
+  }, [transcript, manualTranscript, toast, analyzeMeetingText]);
 
   useEffect(() => { fetchData(); }, []);
 
