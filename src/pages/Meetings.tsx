@@ -151,8 +151,8 @@ export default function Meetings() {
     const { error: uploadError } = await supabase.storage.from('meeting-audio').upload(filePath, file, { upsert: false });
     if (uploadError) throw uploadError;
     const { data: publicUrlData } = supabase.storage.from('meeting-audio').getPublicUrl(filePath);
-    const { data, error } = await supabase.functions.invoke('genspark-transcribe-meeting', {
-      body: { audioUrl: publicUrlData.publicUrl, fileName: file.name },
+    const { data, error } = await supabase.functions.invoke('gemini-transcribe-meeting', {
+      body: { audioUrl: publicUrlData.publicUrl, fileName: file.name, mimeType: file.type },
     });
     if (error) throw new Error(await getFunctionErrorMessage(error));
     if (data?.error) throw new Error(data.error);
@@ -379,7 +379,7 @@ export default function Meetings() {
       if (isAudioFile(file)) {
         setDialogAudioFile(file);
         setDialogFileContent('');
-        toast({ title: `🎧 "${file.name}" 녹음 파일 선택 완료`, description: '등록 시 Genspark가 자동으로 녹취 후 AI 분석합니다.' });
+        toast({ title: `🎧 "${file.name}" 녹음 파일 선택 완료`, description: '등록 시 Gemini AI가 자동으로 녹취 후 분석합니다.' });
         return;
       } else if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
         text = await file.text();
