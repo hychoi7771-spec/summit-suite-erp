@@ -772,7 +772,7 @@ export default function Meetings() {
                                 <Mic className="h-3.5 w-3.5" />녹음 시작
                               </Button>
                             )}
-                            {recordingMeetingId === meeting.id && transcript.length > 0 && !isRecording && (
+                            {recordingMeetingId === meeting.id && !isRecording && transcript.length > 0 && !isAnalyzing && (
                               <Button
                                 size="sm"
                                 variant="default"
@@ -792,15 +792,20 @@ export default function Meetings() {
                                 <span className="h-2 w-2 rounded-full bg-white animate-pulse" />녹음 중...
                               </Badge>
                             )}
+                            {isAnalyzing && recordingMeetingId === meeting.id && (
+                              <Badge variant="secondary" className="text-[10px] gap-1">
+                                <Loader2 className="h-3 w-3 animate-spin" />Genspark 분석 중...
+                              </Badge>
+                            )}
                           </div>
                           {recordingMeetingId === meeting.id && transcript && (
                             <div className="bg-background rounded-md p-3 border max-h-40 overflow-y-auto">
-                              <p className="text-[10px] text-muted-foreground uppercase font-medium mb-1">녹취록 (실시간)</p>
+                              <p className="text-[10px] text-muted-foreground uppercase font-medium mb-1">녹취록</p>
                               <p className="text-sm leading-relaxed whitespace-pre-wrap">{transcript}</p>
                             </div>
                           )}
                           <p className="text-[10px] text-muted-foreground">
-                            💡 Chrome 브라우저에서 마이크를 허용하고 녹음 시작을 누르세요.
+                            💡 녹음 중지를 누르면 Genspark 녹취 변환 후 AI 회의록 분석이 자동 실행됩니다.
                           </p>
                         </TabsContent>
                         <TabsContent value="paste" className="space-y-3 mt-3">
