@@ -86,12 +86,28 @@ export default function Meetings() {
   const [isReadingDialogFile, setIsReadingDialogFile] = useState(false);
   const [dialogAudioFile, setDialogAudioFile] = useState<File | null>(null);
 
+  const getFunctionErrorMessage = async (error: unknown) => {
+    const response = (error as { context?: { text?: () => Promise<string> } })?.context;
+    if (!response || typeof response.text !== 'function') {
+      return error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+    }
+
+    try {
+      const raw = await response.text();
+      if (!raw) return error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+      const payload = JSON.parse(raw);
+      return payload?.error || payload?.message || raw;
+    } catch {
+      return error instanceof Error ? error.message : '알 수 없는 오류가 발생했습니다.';
+    }
+  };
+
   const analyzeMeetingText = useCallback(async (meetingId: string, text: string) => {
     const members = profiles.map(p => ({ name: p.name, name_kr: p.name_kr, id: p.id }));
     const { data, error } = await supabase.functions.invoke('analyze-meeting', {
       body: { transcript: text.trim(), members },
     });
-    if (error) throw error;
+    if (error) throw new Error(await getFunctionErrorMessage(error));
     if (data?.error) throw new Error(data.error);
 
     await supabase.from('meetings').update({
@@ -138,7 +154,7 @@ export default function Meetings() {
     const { data, error } = await supabase.functions.invoke('genspark-transcribe-meeting', {
       body: { audioUrl: publicUrlData.publicUrl, fileName: file.name },
     });
-    if (error) throw error;
+    if (error) throw new Error(await getFunctionErrorMessage(error));
     if (data?.error) throw new Error(data.error);
     return data.transcript || '';
   }, []);
