@@ -77,6 +77,7 @@ export default function Meetings() {
   const [dialogFileName, setDialogFileName] = useState('');
   const [dialogFileContent, setDialogFileContent] = useState('');
   const [isReadingDialogFile, setIsReadingDialogFile] = useState(false);
+  const [dialogAudioFile, setDialogAudioFile] = useState<File | null>(null);
 
   const analyzeMeetingText = useCallback(async (meetingId: string, text: string) => {
     const members = profiles.map(p => ({ name: p.name, name_kr: p.name_kr, id: p.id }));
@@ -118,26 +119,30 @@ export default function Meetings() {
     return data;
   }, [profiles]);
 
+  const transcribeAudioFile = useCallback(async (meetingId: string, file: File) => {
+    const { data: userData } = await supabase.auth.getUser();
+    const userId = userData.user?.id;
+    if (!userId) throw new Error('로그인이 필요합니다.');
+    const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+    const filePath = `${userId}/${meetingId}/${Date.now()}-${safeName}`;
+    const { error: uploadError } = await supabase.storage.from('meeting-audio').upload(filePath, file, { upsert: false });
+    if (uploadError) throw uploadError;
+    const { data: publicUrlData } = supabase.storage.from('meeting-audio').getPublicUrl(filePath);
+    const { data, error } = await supabase.functions.invoke('genspark-transcribe-meeting', {
+      body: { audioUrl: publicUrlData.publicUrl, fileName: file.name },
+    });
+    if (error) throw error;
+    if (data?.error) throw new Error(data.error);
+    return data.transcript || '';
+  }, []);
+
   const handleFileUpload = useCallback(async (meetingId: string, file: File) => {
     setIsReadingFile(true);
     setUploadedFileName(file.name);
     try {
       let text = '';
       if (isAudioFile(file)) {
-        const { data: userData } = await supabase.auth.getUser();
-        const userId = userData.user?.id;
-        if (!userId) throw new Error('로그인이 필요합니다.');
-        const safeName = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
-        const filePath = `${userId}/${meetingId}/${Date.now()}-${safeName}`;
-        const { error: uploadError } = await supabase.storage.from('meeting-audio').upload(filePath, file, { upsert: false });
-        if (uploadError) throw uploadError;
-        const { data: publicUrlData } = supabase.storage.from('meeting-audio').getPublicUrl(filePath);
-        const { data: transcribeData, error: transcribeError } = await supabase.functions.invoke('genspark-transcribe-meeting', {
-          body: { audioUrl: publicUrlData.publicUrl, fileName: file.name },
-        });
-        if (transcribeError) throw transcribeError;
-        if (transcribeData?.error) throw new Error(transcribeData.error);
-        text = transcribeData.transcript || '';
+        text = await transcribeAudioFile(meetingId, file);
       } else if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
         text = await file.text();
       } else if (file.name.endsWith('.docx')) {
@@ -187,7 +192,7 @@ export default function Meetings() {
       toast({ title: '파일 읽기 실패', description: err.message, variant: 'destructive' });
       setIsReadingFile(false);
     }
-  }, [toast, analyzeMeetingText]);
+  }, [toast, analyzeMeetingText, transcribeAudioFile]);
 
   const startRecording = useCallback((meetingId: string) => {
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
