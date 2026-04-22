@@ -537,7 +537,7 @@ export default function Meetings() {
                   type="file"
                   ref={dialogFileInputRef}
                   className="hidden"
-                  accept=".txt,.md,.csv,.docx"
+                  accept=".txt,.md,.csv,.docx,audio/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.aac"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleDialogFileRead(file);
@@ -564,17 +564,17 @@ export default function Meetings() {
                     <div className="flex items-center justify-center gap-2">
                       <FileText className="h-5 w-5 text-primary" />
                       <p className="text-sm font-medium">{dialogFileName}</p>
-                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setDialogFileName(''); setDialogFileContent(''); }}>제거</Button>
+                      <Button variant="ghost" size="sm" className="h-6 px-2 text-xs" onClick={(e) => { e.stopPropagation(); setDialogFileName(''); setDialogFileContent(''); setDialogAudioFile(null); }}>제거</Button>
                     </div>
                   ) : (
                     <div className="flex flex-col items-center gap-1">
                       <Upload className="h-5 w-5 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">파일을 드래그하거나 클릭 (.txt, .md, .csv, .docx)</p>
+                      <p className="text-xs text-muted-foreground">파일을 드래그하거나 클릭 (.txt, .md, .csv, .docx, 오디오)</p>
                     </div>
                   )}
                 </div>
-                {dialogFileContent && (
-                  <p className="text-[10px] text-muted-foreground">💡 등록 시 AI가 자동으로 회의록을 분석합니다.</p>
+                {(dialogFileContent || dialogAudioFile) && (
+                  <p className="text-[10px] text-muted-foreground">💡 등록 시 Genspark 녹취와 AI 회의록 분석을 자동 실행합니다.</p>
                 )}
               </div>
               <div className="space-y-2"><Label>📊 핵심 지표 (KPI)</Label><Input placeholder="DAU 5% 상승, 이탈률 2% 감소 등" value={meetingForm.kpi_notes} onChange={e => setMeetingForm(f => ({ ...f, kpi_notes: e.target.value }))} /></div>
