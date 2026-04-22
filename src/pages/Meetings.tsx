@@ -328,7 +328,12 @@ export default function Meetings() {
     setDialogFileName(file.name);
     try {
       let text = '';
-      if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
+      if (isAudioFile(file)) {
+        setDialogAudioFile(file);
+        setDialogFileContent('');
+        toast({ title: `🎧 "${file.name}" 녹음 파일 선택 완료`, description: '등록 시 Genspark가 자동으로 녹취 후 AI 분석합니다.' });
+        return;
+      } else if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
         text = await file.text();
       } else if (file.name.endsWith('.docx')) {
         const arrayBuffer = await file.arrayBuffer();
@@ -341,6 +346,7 @@ export default function Meetings() {
       } else {
         text = await file.text();
       }
+      setDialogAudioFile(null);
       setDialogFileContent(text);
       toast({ title: `📄 "${file.name}" 파일 로드 완료`, description: `${text.length}자 추출됨` });
     } catch (err: any) {
