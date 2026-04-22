@@ -44,22 +44,34 @@ serve(async (req) => {
       });
     }
 
-    const response = await fetch("https://www.genspark.ai/api/tool_cli/transcribe", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "X-Api-Key": GENSPARK_API_KEY,
-      },
-      body: JSON.stringify({
-        audio_urls: [audioUrl],
-        model: "whisper-1",
-        prompt: prompt || `Korean business meeting transcription${fileName ? ` for ${fileName}` : ""}`,
-      }),
-    });
+    const requestBody = {
+      audio_urls: [audioUrl],
+      model: "whisper-1",
+      prompt: prompt || `Korean business meeting transcription${fileName ? ` for ${fileName}` : ""}`,
+    };
 
-    const raw = await response.text();
-    const lastJsonLine = raw.trim().split("\n").reverse().find((line) => line.trim().startsWith("{"));
-    const payload = lastJsonLine ? JSON.parse(lastJsonLine) : JSON.parse(raw);
+    const callGenspark = async (endpoint: string) => {
+      const response = await fetch(`https://www.genspark.ai/api/tool_cli/${endpoint}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "X-Api-Key": GENSPARK_API_KEY,
+        },
+        body: JSON.stringify(requestBody),
+      });
+
+      const raw = await response.text();
+      const lastJsonLine = raw.trim().split("\n").reverse().find((line) => line.trim().startsWith("{"));
+      const payload = lastJsonLine ? JSON.parse(lastJsonLine) : JSON.parse(raw);
+
+      return { response, payload };
+    };
+
+    let { response, payload } = await callGenspark("audio_transcribe");
+
+    if (payload?.message === "Tool not found: audio_transcribe") {
+      ({ response, payload } = await callGenspark("transcribe"));
+    }
 
     if (!response.ok || payload?.status === "error") {
       console.error("Genspark transcription error:", response.status, payload);
