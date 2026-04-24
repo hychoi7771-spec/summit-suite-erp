@@ -522,12 +522,14 @@ export default function Attendance() {
 }
 
 function RequestList({
-  requests, profiles, showOwner, onCancel, myProfileId,
+  requests, profiles, showOwner, onCancel, onDelete, isAdmin, myProfileId,
 }: {
   requests: any[];
   profiles: any[];
   showOwner: boolean;
   onCancel?: (id: string) => void;
+  onDelete?: (req: any) => void;
+  isAdmin?: boolean;
   myProfileId?: string;
 }) {
   const getProfile = (id: string) => profiles.find(p => p.id === id);
@@ -561,9 +563,37 @@ function RequestList({
                 </div>
               </div>
             </div>
-            {canCancel && (
-              <Button size="sm" variant="ghost" onClick={() => onCancel!(r.id)}>취소</Button>
-            )}
+            <div className="flex items-center gap-1 shrink-0">
+              {canCancel && (
+                <Button size="sm" variant="ghost" onClick={() => onCancel!(r.id)}>취소</Button>
+              )}
+              {isAdmin && onDelete && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>휴가 신청 삭제</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {p?.name_kr}님의 {LEAVE_TYPE_LABEL[r.leave_type]} 신청({r.start_date}{r.start_date !== r.end_date && ` ~ ${r.end_date}`})을 삭제합니다. 연결된 결재 및 캘린더 일정도 함께 삭제되며, 되돌릴 수 없습니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={() => onDelete(r)}
+                      >
+                        삭제
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </div>
         );
       })}
