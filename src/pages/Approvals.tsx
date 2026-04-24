@@ -465,24 +465,52 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
           </div>
         </div>
 
-        {isCurrentApprover && (
-          <DialogFooter className="flex gap-2">
-            {!showReject ? (
-              <>
-                <Button variant="outline" className="text-destructive" onClick={() => setShowReject(true)}>반려</Button>
-                <Button onClick={() => onApprove(approval)} className="bg-success hover:bg-success/90 text-success-foreground">승인</Button>
-              </>
-            ) : (
-              <div className="w-full space-y-2">
-                <Textarea placeholder="반려 사유를 입력하세요" value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={2} />
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setShowReject(false)}>취소</Button>
-                  <Button variant="destructive" size="sm" onClick={() => { onReject(approval, rejectReason); setRejectReason(''); setShowReject(false); }} disabled={!rejectReason.trim()}>반려 확인</Button>
+        <DialogFooter className="flex gap-2 sm:justify-between">
+          {isAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                  <Trash2 className="h-4 w-4 mr-1" />삭제
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>결재 삭제</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    이 결재 내용을 영구 삭제합니다. 결재 단계와{approval.type === 'leave' ? ' 연결된 휴가 신청도' : ''} 함께 삭제됩니다. 되돌릴 수 없습니다.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>취소</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => onDelete(approval)}
+                  >
+                    삭제
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          {isCurrentApprover && (
+            <div className="flex gap-2 ml-auto">
+              {!showReject ? (
+                <>
+                  <Button variant="outline" className="text-destructive" onClick={() => setShowReject(true)}>반려</Button>
+                  <Button onClick={() => onApprove(approval)} className="bg-success hover:bg-success/90 text-success-foreground">승인</Button>
+                </>
+              ) : (
+                <div className="w-full space-y-2">
+                  <Textarea placeholder="반려 사유를 입력하세요" value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={2} />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setShowReject(false)}>취소</Button>
+                    <Button variant="destructive" size="sm" onClick={() => { onReject(approval, rejectReason); setRejectReason(''); setShowReject(false); }} disabled={!rejectReason.trim()}>반려 확인</Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </DialogFooter>
-        )}
+              )}
+            </div>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
