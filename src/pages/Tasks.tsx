@@ -56,7 +56,35 @@ export default function Tasks() {
   const [selectedDesignTask, setSelectedDesignTask] = useState<any>(null);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [editingTask, setEditingTask] = useState<any>(null);
-  const [editForm, setEditForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: '', start_date: '', due_date: '', project_name: '' });
+  const [editForm, setEditForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: '', start_date: '', due_date: '', project_name: '', category_id: '' });
+  // Phase 1: categories + filters + toggles
+  const [categories, setCategories] = useState<TaskCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all'); // 'all' | '__none__' | id
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [quickFilter, setQuickFilter] = useState<'overdue' | 'week' | null>(null);
+  const [toggles, setToggles] = useState<BoardToggles>(() => {
+    if (typeof window === 'undefined') return DEFAULT_TOGGLES;
+    try {
+      const raw = localStorage.getItem(TOGGLES_STORAGE_KEY);
+      return raw ? { ...DEFAULT_TOGGLES, ...JSON.parse(raw) } : DEFAULT_TOGGLES;
+    } catch { return DEFAULT_TOGGLES; }
+  });
+  const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
+
+  // Persist toggles
+  useEffect(() => {
+    try { localStorage.setItem(TOGGLES_STORAGE_KEY, JSON.stringify(toggles)); } catch { /* noop */ }
+  }, [toggles]);
+
+  // Debounce search 300ms
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 300);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const handleToggleChange = (key: keyof BoardToggles, value: boolean) =>
+    setToggles(t => ({ ...t, [key]: value }));
 
   const getProfile = (id: string | null) => profiles.find(p => p.id === id);
 
