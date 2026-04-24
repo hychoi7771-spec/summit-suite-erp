@@ -10,10 +10,19 @@ import {
 import { ko } from 'date-fns/locale';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
+interface TaskCategory {
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string;
+}
+
 interface GanttChartProps {
   tasks: any[];
   profiles: any[];
+  categories?: TaskCategory[];
   selectedProject: string;
+  selectedCategory?: string;
   onTaskClick?: (task: any) => void;
 }
 
@@ -62,7 +71,7 @@ const ROW_HEIGHT = 38;
 const GROUP_HEADER_HEIGHT = 36;
 const LEFT_PANEL_WIDTH = 540;
 
-export default function GanttChart({ tasks, profiles, selectedProject, onTaskClick }: GanttChartProps) {
+export default function GanttChart({ tasks, profiles, categories = [], selectedProject, selectedCategory = 'all', onTaskClick }: GanttChartProps) {
   const [viewStart, setViewStart] = useState(() => startOfWeek(subDays(new Date(), 3), { weekStartsOn: 1 }));
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -76,11 +85,20 @@ export default function GanttChart({ tasks, profiles, selectedProject, onTaskCli
     [viewStart, viewEnd]
   );
 
+  const categoryById = useMemo(() => {
+    const m = new Map<string, TaskCategory>();
+    categories.forEach(c => m.set(c.id, c));
+    return m;
+  }, [categories]);
+
   const filteredTasks = useMemo(() => {
-    if (selectedProject === 'all') return tasks;
-    if (selectedProject === '__none__') return tasks.filter(t => !t.project_name);
-    return tasks.filter(t => t.project_name === selectedProject);
-  }, [tasks, selectedProject]);
+    let result = tasks;
+    if (selectedProject === '__none__') result = result.filter(t => !t.project_name);
+    else if (selectedProject !== 'all') result = result.filter(t => t.project_name === selectedProject);
+    if (selectedCategory === '__none__') result = result.filter(t => !t.category_id);
+    else if (selectedCategory !== 'all') result = result.filter(t => t.category_id === selectedCategory);
+    return result;
+  }, [tasks, selectedProject, selectedCategory]);
 
   // Summary stats
   const stats = useMemo(() => {
@@ -448,33 +466,38 @@ export default function GanttChart({ tasks, profiles, selectedProject, onTaskCli
                       </div>
 
                       {/* Bar */}
-                      {bar && bar.left + bar.width > 0 && bar.left < days.length * CELL_WIDTH && (
+                      {bar && bar.left + bar.width > 0 && bar.left < days.length * CELL_WIDTH && (() => {
+                        const cat = task.category_id ? categoryById.get(task.category_id) : null;
+                        return (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div
-                              className={`absolute top-[9px] rounded-full h-5 shadow-sm transition-all ${
+                              className={`absolute top-[9px] rounded-full h-5 shadow-sm transition-all overflow-hidden ${
                                 isOverdue ? 'bg-gradient-to-r from-red-400 to-red-600 ring-1 ring-red-400/50' : (statusBarGradients[task.status] || 'bg-muted-foreground/60')
                               }`}
                               style={{
                                 left: Math.max(bar.left + 2, 0),
                                 width: Math.min(bar.width, days.length * CELL_WIDTH - Math.max(bar.left, 0)),
                                 opacity: task.status === 'done' ? 0.45 : 0.9,
+                                boxShadow: cat ? `inset 4px 0 0 0 ${cat.color}` : undefined,
                               }}
                             >
-                              <span className="text-[9px] text-white font-medium px-2 truncate block leading-5 drop-shadow-sm">
+                              <span className="text-[9px] text-white font-medium px-2 truncate block leading-5 drop-shadow-sm" style={{ paddingLeft: cat ? 10 : undefined }}>
                                 {bar.width > 80 ? task.title : ''}
                               </span>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="text-xs max-w-[200px]">
                             <p className="font-semibold">{task.title}</p>
+                            {cat && <p style={{ color: cat.color }}>{cat.icon} {cat.name}</p>}
                             <p className="text-muted-foreground">
                               {task.start_date || '시작일 없음'} → {task.due_date || '마감일 없음'}
                             </p>
                             {isOverdue && <p className="text-destructive font-semibold">⚠ 기한 초과</p>}
                           </TooltipContent>
                         </Tooltip>
-                      )}
+                        );
+                      })()}
                     </div>
                   );
                 })}
