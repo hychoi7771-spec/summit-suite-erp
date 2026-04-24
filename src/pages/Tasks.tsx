@@ -672,6 +672,11 @@ export default function Tasks() {
                   };
                   const colors = columnColors[col.status];
                   const filteredTasks = taskList.filter(t => {
+                    // Category
+                    if (selectedCategory !== 'all') {
+                      if (selectedCategory === '__none__') { if (t.category_id) return false; }
+                      else if (t.category_id !== selectedCategory) return false;
+                    }
                     if (selectedProject !== 'all') {
                       if (selectedProject === '__none__') { if (t.project_name) return false; }
                       else if (t.project_name !== selectedProject) return false;
@@ -685,6 +690,27 @@ export default function Tasks() {
                       if (!d) return false;
                       if (dateFrom && d < dateFrom) return false;
                       if (dateTo && d > dateTo) return false;
+                    }
+                    if (debouncedSearch) {
+                      const hay = [
+                        t.title, t.description, t.project_name,
+                        ...(Array.isArray(t.tags) ? t.tags : []),
+                      ].filter(Boolean).join(' ').toLowerCase();
+                      if (!hay.includes(debouncedSearch)) return false;
+                    }
+                    if (toggles.hideDone && t.status === 'done') return false;
+                    if (toggles.myOnly && profile && t.assignee_id !== profile.id) return false;
+                    if (toggles.overdueOnly) {
+                      const d = getDaysLeft(t.due_date);
+                      if (!(d !== null && d < 0 && t.status !== 'done')) return false;
+                    }
+                    if (quickFilter === 'overdue') {
+                      const d = getDaysLeft(t.due_date);
+                      if (!(d !== null && d < 0 && t.status !== 'done')) return false;
+                    }
+                    if (quickFilter === 'week') {
+                      const d = getDaysLeft(t.due_date);
+                      if (!(d !== null && d >= 0 && d <= 7 && t.status !== 'done')) return false;
                     }
                     return true;
                   });
