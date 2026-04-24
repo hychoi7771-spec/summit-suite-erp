@@ -867,7 +867,9 @@ export default function Tasks() {
           <GanttChart
             tasks={taskList}
             profiles={profiles}
+            categories={categories}
             selectedProject={selectedProject}
+            selectedCategory={selectedCategory}
             onTaskClick={(task) => task.is_design_request ? setSelectedDesignTask(task) : setSelectedTask(task)}
           />
         </TabsContent>
