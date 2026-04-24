@@ -47,7 +47,7 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [createMode, setCreateMode] = useState<'now' | 'scheduled'>('now');
-  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
+  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
@@ -116,9 +116,10 @@ export default function Tasks() {
   }, []);
 
   const fetchData = async () => {
-    const [taskRes, profRes] = await Promise.all([
+    const [taskRes, profRes, catRes] = await Promise.all([
       supabase.from('tasks').select('*').order('position', { ascending: true }),
       supabase.from('profiles').select('id, name, name_kr, avatar'),
+      supabase.from('task_categories').select('*').order('sort_order', { ascending: true }),
     ]);
     let tasks = taskRes.data || [];
 
@@ -138,6 +139,7 @@ export default function Tasks() {
 
     setTaskList(tasks);
     setProfiles(profRes.data || []);
+    setCategories((catRes.data || []) as TaskCategory[]);
     setLoading(false);
   };
 
@@ -171,8 +173,9 @@ export default function Tasks() {
       start_date: taskForm.start_date || null,
       due_date: taskForm.due_date || null,
       project_name: taskForm.project_name || null,
+      category_id: taskForm.category_id || null,
       status: finalStatus as any,
-    });
+    } as any);
     if (error) {
       toast({ title: '업무 등록 실패', description: error.message, variant: 'destructive' });
     } else {
@@ -188,7 +191,7 @@ export default function Tasks() {
       }
       toast({ title: finalStatus === 'scheduled' ? '예약 업무 등록 완료' : '업무 등록 완료' });
       setTaskDialogOpen(false);
-      setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
+      setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
       setCreateMode('now');
       fetchData();
     }
@@ -215,6 +218,7 @@ export default function Tasks() {
       start_date: task.start_date || '',
       due_date: task.due_date || '',
       project_name: task.project_name || '',
+      category_id: task.category_id || '',
     });
   };
 
@@ -228,7 +232,8 @@ export default function Tasks() {
       start_date: editForm.start_date || null,
       due_date: editForm.due_date || null,
       project_name: editForm.project_name || null,
-    }).eq('id', editingTask.id);
+      category_id: editForm.category_id || null,
+    } as any).eq('id', editingTask.id);
     if (error) {
       toast({ title: '수정 실패', description: error.message, variant: 'destructive' });
     } else {
