@@ -242,7 +242,22 @@ export default function Approvals() {
     fetchData();
   };
 
-  const filtered = approvals.filter(a => {
+  const handleDelete = async (approval: any) => {
+    // Delete steps first, then leave_request link, then approval
+    const { error: stepErr } = await supabase.from('approval_steps').delete().eq('approval_id', approval.id);
+    if (stepErr) { toast({ title: '결재 단계 삭제 실패', description: stepErr.message, variant: 'destructive' }); return; }
+
+    if (approval.type === 'leave') {
+      await supabase.from('leave_requests').delete().eq('approval_id', approval.id);
+    }
+
+    const { error } = await supabase.from('approvals').delete().eq('id', approval.id);
+    if (error) { toast({ title: '결재 삭제 실패', description: error.message, variant: 'destructive' }); return; }
+
+    toast({ title: '결재가 삭제되었습니다' });
+    setSelectedApproval(null);
+    fetchData();
+  };
     if (tab === 'my') return a.requester_id === profile?.id;
     if (tab === 'pending') return a.current_approver_id === profile?.id && a.status === 'pending';
     return true;
