@@ -9,7 +9,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Users, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Users, Clock, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths,
   startOfWeek, endOfWeek, isSameMonth, parseISO, isWithinInterval,
@@ -151,6 +155,21 @@ export default function Attendance() {
       .update({ status: 'cancelled' }).eq('id', id);
     if (error) { toast({ title: '취소 실패', description: error.message, variant: 'destructive' }); return; }
     toast({ title: '신청이 취소되었습니다' });
+    fetchData();
+  };
+
+  const deleteRequest = async (req: any) => {
+    // Delete linked approval (cascades steps via separate delete) before request
+    if (req.approval_id) {
+      await supabase.from('approval_steps').delete().eq('approval_id', req.approval_id);
+      await supabase.from('approvals').delete().eq('id', req.approval_id);
+    }
+    if (req.calendar_event_id) {
+      await supabase.from('calendar_events').delete().eq('id', req.calendar_event_id);
+    }
+    const { error } = await supabase.from('leave_requests').delete().eq('id', req.id);
+    if (error) { toast({ title: '삭제 실패', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: '휴가 신청이 삭제되었습니다' });
     fetchData();
   };
 
