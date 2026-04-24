@@ -480,6 +480,8 @@ export default function Attendance() {
                 profiles={profiles}
                 showOwner={false}
                 onCancel={cancelMyRequest}
+                onDelete={isAdmin ? deleteRequest : undefined}
+                isAdmin={isAdmin}
                 myProfileId={profile?.id}
               />
             </CardContent>
@@ -491,7 +493,14 @@ export default function Attendance() {
           <Card>
             <CardHeader><CardTitle className="text-base">전체 휴가 신청</CardTitle></CardHeader>
             <CardContent>
-              <RequestList requests={requests} profiles={profiles} showOwner myProfileId={profile?.id} />
+              <RequestList
+                requests={requests}
+                profiles={profiles}
+                showOwner
+                onDelete={isAdmin ? deleteRequest : undefined}
+                isAdmin={isAdmin}
+                myProfileId={profile?.id}
+              />
             </CardContent>
           </Card>
         </TabsContent>
