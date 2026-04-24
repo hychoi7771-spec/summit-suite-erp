@@ -732,19 +732,24 @@ export default function Tasks() {
                               const isDesign = task.is_design_request;
                               const daysLeft = getDaysLeft(task.due_date);
                               const isOverdue = daysLeft !== null && daysLeft < 0 && task.status !== 'done';
+                              const cat = categories.find(c => c.id === task.category_id);
                               return (
                                 <Draggable key={task.id} draggableId={task.id} index={index}>
                                   {(provided, snapshot) => (
                                     <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
                                       <Card
-                                        className={`group transition-all cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20 rotate-1' : 'hover:shadow-md hover:-translate-y-0.5'} ${isDesign ? 'border-l-2 border-l-primary' : ''} ${isOverdue ? 'border-l-2 border-l-destructive' : ''}`}
+                                        className={`group relative transition-all cursor-grab active:cursor-grabbing overflow-hidden ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20 rotate-1' : 'hover:shadow-md hover:-translate-y-0.5'} ${isDesign ? 'border-l-2 border-l-primary' : ''} ${isOverdue ? 'border-l-2 border-l-destructive' : ''}`}
                                         onClick={() => isDesign ? setSelectedDesignTask(task) : openEditDialog(task)}
                                       >
-                                        <CardContent className="p-3 space-y-2">
+                                        {cat && (
+                                          <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: cat.color }} />
+                                        )}
+                                        <CardContent className={toggles.compact ? 'p-2 pl-3 space-y-1' : 'p-3 pl-3.5 space-y-2'}>
                                           <div className="flex items-start justify-between gap-1">
                                             <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                               {task.priority === 'urgent' && <span className="text-xs shrink-0">🔴</span>}
                                               {task.priority === 'high' && <span className="text-xs shrink-0">🟠</span>}
+                                              {cat?.icon && <span className="text-xs shrink-0" title={cat.name}>{cat.icon}</span>}
                                               {isDesign && <Palette className="h-3.5 w-3.5 text-primary shrink-0" />}
                                               <p className="text-sm font-medium leading-snug truncate">{task.title}</p>
                                             </div>
@@ -761,7 +766,7 @@ export default function Tasks() {
                                               )}
                                             </div>
                                           </div>
-                                          {task.description && <p className="text-[11px] text-muted-foreground line-clamp-2">{task.description}</p>}
+                                          {!toggles.compact && task.description && <p className="text-[11px] text-muted-foreground line-clamp-2">{task.description}</p>}
                                           {isDesign && Array.isArray(task.attachments) && task.attachments.filter((u: string) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)(\?|$)/i.test(u)).length > 0 && (
                                             <div className="flex gap-1 overflow-hidden">
                                               {task.attachments.filter((u: string) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)(\?|$)/i.test(u)).slice(0, 3).map((url: string, i: number) => (
