@@ -988,6 +988,13 @@ export default function Tasks() {
         </DialogContent>
       </Dialog>
 
+      <CategoryManageDialog
+        open={manageCategoriesOpen}
+        onOpenChange={setManageCategoriesOpen}
+        categories={categories}
+        onChange={fetchData}
+      />
+
     </div>
   );
 }

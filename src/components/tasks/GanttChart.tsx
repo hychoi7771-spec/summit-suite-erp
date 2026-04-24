@@ -10,10 +10,19 @@ import {
 import { ko } from 'date-fns/locale';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 
+interface TaskCategory {
+  id: string;
+  name: string;
+  icon: string | null;
+  color: string;
+}
+
 interface GanttChartProps {
   tasks: any[];
   profiles: any[];
+  categories?: TaskCategory[];
   selectedProject: string;
+  selectedCategory?: string;
   onTaskClick?: (task: any) => void;
 }
 
@@ -62,7 +71,7 @@ const ROW_HEIGHT = 38;
 const GROUP_HEADER_HEIGHT = 36;
 const LEFT_PANEL_WIDTH = 540;
 
-export default function GanttChart({ tasks, profiles, selectedProject, onTaskClick }: GanttChartProps) {
+export default function GanttChart({ tasks, profiles, categories = [], selectedProject, selectedCategory = 'all', onTaskClick }: GanttChartProps) {
   const [viewStart, setViewStart] = useState(() => startOfWeek(subDays(new Date(), 3), { weekStartsOn: 1 }));
   const [collapsedGroups, setCollapsedGroups] = useState<Set<string>>(new Set());
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -76,11 +85,20 @@ export default function GanttChart({ tasks, profiles, selectedProject, onTaskCli
     [viewStart, viewEnd]
   );
 
+  const categoryById = useMemo(() => {
+    const m = new Map<string, TaskCategory>();
+    categories.forEach(c => m.set(c.id, c));
+    return m;
+  }, [categories]);
+
   const filteredTasks = useMemo(() => {
-    if (selectedProject === 'all') return tasks;
-    if (selectedProject === '__none__') return tasks.filter(t => !t.project_name);
-    return tasks.filter(t => t.project_name === selectedProject);
-  }, [tasks, selectedProject]);
+    let result = tasks;
+    if (selectedProject === '__none__') result = result.filter(t => !t.project_name);
+    else if (selectedProject !== 'all') result = result.filter(t => t.project_name === selectedProject);
+    if (selectedCategory === '__none__') result = result.filter(t => !t.category_id);
+    else if (selectedCategory !== 'all') result = result.filter(t => t.category_id === selectedCategory);
+    return result;
+  }, [tasks, selectedProject, selectedCategory]);
 
   // Summary stats
   const stats = useMemo(() => {
