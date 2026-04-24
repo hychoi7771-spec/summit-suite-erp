@@ -19,7 +19,13 @@ import DesignRequestDialog from '@/components/tasks/DesignRequestDialog';
 import DesignRequestDetail from '@/components/tasks/DesignRequestDetail';
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog';
 import GanttChart from '@/components/tasks/GanttChart';
+import CategoryBar, { TaskCategory } from '@/components/tasks/CategoryBar';
+import TaskFilterToolbar, { BoardToggles } from '@/components/tasks/TaskFilterToolbar';
+import CategoryManageDialog from '@/components/tasks/CategoryManageDialog';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
+
+const TOGGLES_STORAGE_KEY = 'task-board-toggles';
+const DEFAULT_TOGGLES: BoardToggles = { hideDone: true, compact: false, myOnly: false, overdueOnly: false };
 
 type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done' | 'scheduled';
 
@@ -41,7 +47,7 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [createMode, setCreateMode] = useState<'now' | 'scheduled'>('now');
-  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
+  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
   const [dateFrom, setDateFrom] = useState<string>('');
@@ -50,7 +56,35 @@ export default function Tasks() {
   const [selectedDesignTask, setSelectedDesignTask] = useState<any>(null);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [editingTask, setEditingTask] = useState<any>(null);
-  const [editForm, setEditForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: '', start_date: '', due_date: '', project_name: '' });
+  const [editForm, setEditForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: '', start_date: '', due_date: '', project_name: '', category_id: '' });
+  // Phase 1: categories + filters + toggles
+  const [categories, setCategories] = useState<TaskCategory[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string>('all'); // 'all' | '__none__' | id
+  const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [quickFilter, setQuickFilter] = useState<'overdue' | 'week' | null>(null);
+  const [toggles, setToggles] = useState<BoardToggles>(() => {
+    if (typeof window === 'undefined') return DEFAULT_TOGGLES;
+    try {
+      const raw = localStorage.getItem(TOGGLES_STORAGE_KEY);
+      return raw ? { ...DEFAULT_TOGGLES, ...JSON.parse(raw) } : DEFAULT_TOGGLES;
+    } catch { return DEFAULT_TOGGLES; }
+  });
+  const [manageCategoriesOpen, setManageCategoriesOpen] = useState(false);
+
+  // Persist toggles
+  useEffect(() => {
+    try { localStorage.setItem(TOGGLES_STORAGE_KEY, JSON.stringify(toggles)); } catch { /* noop */ }
+  }, [toggles]);
+
+  // Debounce search 300ms
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search.trim().toLowerCase()), 300);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const handleToggleChange = (key: keyof BoardToggles, value: boolean) =>
+    setToggles(t => ({ ...t, [key]: value }));
 
   const getProfile = (id: string | null) => profiles.find(p => p.id === id);
 
@@ -82,9 +116,10 @@ export default function Tasks() {
   }, []);
 
   const fetchData = async () => {
-    const [taskRes, profRes] = await Promise.all([
+    const [taskRes, profRes, catRes] = await Promise.all([
       supabase.from('tasks').select('*').order('position', { ascending: true }),
       supabase.from('profiles').select('id, name, name_kr, avatar'),
+      supabase.from('task_categories').select('*').order('sort_order', { ascending: true }),
     ]);
     let tasks = taskRes.data || [];
 
@@ -104,6 +139,7 @@ export default function Tasks() {
 
     setTaskList(tasks);
     setProfiles(profRes.data || []);
+    setCategories((catRes.data || []) as TaskCategory[]);
     setLoading(false);
   };
 
@@ -137,8 +173,9 @@ export default function Tasks() {
       start_date: taskForm.start_date || null,
       due_date: taskForm.due_date || null,
       project_name: taskForm.project_name || null,
+      category_id: taskForm.category_id || null,
       status: finalStatus as any,
-    });
+    } as any);
     if (error) {
       toast({ title: '업무 등록 실패', description: error.message, variant: 'destructive' });
     } else {
@@ -154,7 +191,7 @@ export default function Tasks() {
       }
       toast({ title: finalStatus === 'scheduled' ? '예약 업무 등록 완료' : '업무 등록 완료' });
       setTaskDialogOpen(false);
-      setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '' });
+      setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
       setCreateMode('now');
       fetchData();
     }
@@ -181,6 +218,7 @@ export default function Tasks() {
       start_date: task.start_date || '',
       due_date: task.due_date || '',
       project_name: task.project_name || '',
+      category_id: task.category_id || '',
     });
   };
 
@@ -194,7 +232,8 @@ export default function Tasks() {
       start_date: editForm.start_date || null,
       due_date: editForm.due_date || null,
       project_name: editForm.project_name || null,
-    }).eq('id', editingTask.id);
+      category_id: editForm.category_id || null,
+    } as any).eq('id', editingTask.id);
     if (error) {
       toast({ title: '수정 실패', description: error.message, variant: 'destructive' });
     } else {
@@ -300,6 +339,18 @@ export default function Tasks() {
                     </Select>
                   </div>
                   <div className="space-y-2">
+                    <Label>카테고리 (선택)</Label>
+                    <Select value={taskForm.category_id || '__none__'} onValueChange={v => setTaskForm(f => ({ ...f, category_id: v === '__none__' ? '' : v }))}>
+                      <SelectTrigger><SelectValue placeholder="카테고리 선택" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">미분류</SelectItem>
+                        {categories.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.icon ? `${c.icon} ` : ''}{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
                     <Label>담당자</Label>
                     <Select value={taskForm.assignee_id} onValueChange={v => setTaskForm(f => ({ ...f, assignee_id: v }))}>
                       <SelectTrigger><SelectValue placeholder="담당자 선택" /></SelectTrigger>
@@ -339,22 +390,91 @@ export default function Tasks() {
         </TabsList>
 
         <TabsContent value="board" className="mt-4 space-y-4">
+          {/* Unified filter helper */}
+          {(() => null)()}
+
+          {/* Category bar */}
+          {(() => {
+            const overdueCount = taskList.filter(t => {
+              const d = getDaysLeft(t.due_date);
+              return d !== null && d < 0 && t.status !== 'done';
+            }).length;
+            const weekDueCount = taskList.filter(t => {
+              const d = getDaysLeft(t.due_date);
+              return d !== null && d >= 0 && d <= 7 && t.status !== 'done';
+            }).length;
+            return (
+              <CategoryBar
+                categories={categories}
+                tasks={taskList}
+                selectedCategory={selectedCategory}
+                onSelect={setSelectedCategory}
+                isAdmin={isAdmin}
+                onManageClick={() => setManageCategoriesOpen(true)}
+                overdueCount={overdueCount}
+                weekDueCount={weekDueCount}
+                onQuickFilter={setQuickFilter}
+                activeQuickFilter={quickFilter}
+              />
+            );
+          })()}
+
+          {/* Search + toggles toolbar */}
+          <TaskFilterToolbar
+            search={search}
+            onSearchChange={setSearch}
+            toggles={toggles}
+            onToggleChange={handleToggleChange}
+          />
+
           {/* Status Summary Dashboard */}
           {(() => {
             const filtered = taskList.filter(t => {
+              // Category
+              if (selectedCategory !== 'all') {
+                if (selectedCategory === '__none__') { if (t.category_id) return false; }
+                else if (t.category_id !== selectedCategory) return false;
+              }
+              // Project
               if (selectedProject !== 'all') {
                 if (selectedProject === '__none__') { if (t.project_name) return false; }
                 else if (t.project_name !== selectedProject) return false;
               }
+              // Assignee
               if (selectedAssignee !== 'all') {
                 if (selectedAssignee === '__unassigned__') { if (t.assignee_id) return false; }
                 else if (t.assignee_id !== selectedAssignee) return false;
               }
+              // Date range
               if (dateFrom || dateTo) {
                 const d = t[dateField];
                 if (!d) return false;
                 if (dateFrom && d < dateFrom) return false;
                 if (dateTo && d > dateTo) return false;
+              }
+              // Search (debounced)
+              if (debouncedSearch) {
+                const hay = [
+                  t.title, t.description, t.project_name,
+                  ...(Array.isArray(t.tags) ? t.tags : []),
+                ].filter(Boolean).join(' ').toLowerCase();
+                if (!hay.includes(debouncedSearch)) return false;
+              }
+              // Toggles
+              if (toggles.hideDone && t.status === 'done') return false;
+              if (toggles.myOnly && profile && t.assignee_id !== profile.id) return false;
+              if (toggles.overdueOnly) {
+                const d = getDaysLeft(t.due_date);
+                if (!(d !== null && d < 0 && t.status !== 'done')) return false;
+              }
+              // Quick filters from CategoryBar
+              if (quickFilter === 'overdue') {
+                const d = getDaysLeft(t.due_date);
+                if (!(d !== null && d < 0 && t.status !== 'done')) return false;
+              }
+              if (quickFilter === 'week') {
+                const d = getDaysLeft(t.due_date);
+                if (!(d !== null && d >= 0 && d <= 7 && t.status !== 'done')) return false;
               }
               return true;
             });
@@ -564,6 +684,11 @@ export default function Tasks() {
                   };
                   const colors = columnColors[col.status];
                   const filteredTasks = taskList.filter(t => {
+                    // Category
+                    if (selectedCategory !== 'all') {
+                      if (selectedCategory === '__none__') { if (t.category_id) return false; }
+                      else if (t.category_id !== selectedCategory) return false;
+                    }
                     if (selectedProject !== 'all') {
                       if (selectedProject === '__none__') { if (t.project_name) return false; }
                       else if (t.project_name !== selectedProject) return false;
@@ -577,6 +702,27 @@ export default function Tasks() {
                       if (!d) return false;
                       if (dateFrom && d < dateFrom) return false;
                       if (dateTo && d > dateTo) return false;
+                    }
+                    if (debouncedSearch) {
+                      const hay = [
+                        t.title, t.description, t.project_name,
+                        ...(Array.isArray(t.tags) ? t.tags : []),
+                      ].filter(Boolean).join(' ').toLowerCase();
+                      if (!hay.includes(debouncedSearch)) return false;
+                    }
+                    if (toggles.hideDone && t.status === 'done') return false;
+                    if (toggles.myOnly && profile && t.assignee_id !== profile.id) return false;
+                    if (toggles.overdueOnly) {
+                      const d = getDaysLeft(t.due_date);
+                      if (!(d !== null && d < 0 && t.status !== 'done')) return false;
+                    }
+                    if (quickFilter === 'overdue') {
+                      const d = getDaysLeft(t.due_date);
+                      if (!(d !== null && d < 0 && t.status !== 'done')) return false;
+                    }
+                    if (quickFilter === 'week') {
+                      const d = getDaysLeft(t.due_date);
+                      if (!(d !== null && d >= 0 && d <= 7 && t.status !== 'done')) return false;
                     }
                     return true;
                   });
@@ -598,19 +744,24 @@ export default function Tasks() {
                               const isDesign = task.is_design_request;
                               const daysLeft = getDaysLeft(task.due_date);
                               const isOverdue = daysLeft !== null && daysLeft < 0 && task.status !== 'done';
+                              const cat = categories.find(c => c.id === task.category_id);
                               return (
                                 <Draggable key={task.id} draggableId={task.id} index={index}>
                                   {(provided, snapshot) => (
                                     <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
                                       <Card
-                                        className={`group transition-all cursor-grab active:cursor-grabbing ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20 rotate-1' : 'hover:shadow-md hover:-translate-y-0.5'} ${isDesign ? 'border-l-2 border-l-primary' : ''} ${isOverdue ? 'border-l-2 border-l-destructive' : ''}`}
+                                        className={`group relative transition-all cursor-grab active:cursor-grabbing overflow-hidden ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20 rotate-1' : 'hover:shadow-md hover:-translate-y-0.5'} ${isDesign ? 'border-l-2 border-l-primary' : ''} ${isOverdue ? 'border-l-2 border-l-destructive' : ''}`}
                                         onClick={() => isDesign ? setSelectedDesignTask(task) : openEditDialog(task)}
                                       >
-                                        <CardContent className="p-3 space-y-2">
+                                        {cat && (
+                                          <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: cat.color }} />
+                                        )}
+                                        <CardContent className={toggles.compact ? 'p-2 pl-3 space-y-1' : 'p-3 pl-3.5 space-y-2'}>
                                           <div className="flex items-start justify-between gap-1">
                                             <div className="flex items-center gap-1.5 flex-1 min-w-0">
                                               {task.priority === 'urgent' && <span className="text-xs shrink-0">🔴</span>}
                                               {task.priority === 'high' && <span className="text-xs shrink-0">🟠</span>}
+                                              {cat?.icon && <span className="text-xs shrink-0" title={cat.name}>{cat.icon}</span>}
                                               {isDesign && <Palette className="h-3.5 w-3.5 text-primary shrink-0" />}
                                               <p className="text-sm font-medium leading-snug truncate">{task.title}</p>
                                             </div>
@@ -627,7 +778,7 @@ export default function Tasks() {
                                               )}
                                             </div>
                                           </div>
-                                          {task.description && <p className="text-[11px] text-muted-foreground line-clamp-2">{task.description}</p>}
+                                          {!toggles.compact && task.description && <p className="text-[11px] text-muted-foreground line-clamp-2">{task.description}</p>}
                                           {isDesign && Array.isArray(task.attachments) && task.attachments.filter((u: string) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)(\?|$)/i.test(u)).length > 0 && (
                                             <div className="flex gap-1 overflow-hidden">
                                               {task.attachments.filter((u: string) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)(\?|$)/i.test(u)).slice(0, 3).map((url: string, i: number) => (
@@ -787,6 +938,18 @@ export default function Tasks() {
                 <SelectContent>
                   <SelectItem value="low">낮음</SelectItem><SelectItem value="medium">보통</SelectItem>
                   <SelectItem value="high">높음</SelectItem><SelectItem value="urgent">긴급</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>카테고리</Label>
+              <Select value={editForm.category_id || '__none__'} onValueChange={v => setEditForm(f => ({ ...f, category_id: v === '__none__' ? '' : v }))} disabled={!canEdit}>
+                <SelectTrigger><SelectValue placeholder="카테고리 선택" /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="__none__">미분류</SelectItem>
+                  {categories.map(c => (
+                    <SelectItem key={c.id} value={c.id}>{c.icon ? `${c.icon} ` : ''}{c.name}</SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
             </div>
