@@ -258,6 +258,8 @@ export default function Approvals() {
     setSelectedApproval(null);
     fetchData();
   };
+
+  const filtered = approvals.filter(a => {
     if (tab === 'my') return a.requester_id === profile?.id;
     if (tab === 'pending') return a.current_approver_id === profile?.id && a.status === 'pending';
     return true;
