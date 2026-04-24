@@ -19,7 +19,13 @@ import DesignRequestDialog from '@/components/tasks/DesignRequestDialog';
 import DesignRequestDetail from '@/components/tasks/DesignRequestDetail';
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog';
 import GanttChart from '@/components/tasks/GanttChart';
+import CategoryBar, { TaskCategory } from '@/components/tasks/CategoryBar';
+import TaskFilterToolbar, { BoardToggles } from '@/components/tasks/TaskFilterToolbar';
+import CategoryManageDialog from '@/components/tasks/CategoryManageDialog';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
+
+const TOGGLES_STORAGE_KEY = 'task-board-toggles';
+const DEFAULT_TOGGLES: BoardToggles = { hideDone: true, compact: false, myOnly: false, overdueOnly: false };
 
 type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done' | 'scheduled';
 
