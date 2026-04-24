@@ -466,33 +466,38 @@ export default function GanttChart({ tasks, profiles, categories = [], selectedP
                       </div>
 
                       {/* Bar */}
-                      {bar && bar.left + bar.width > 0 && bar.left < days.length * CELL_WIDTH && (
+                      {bar && bar.left + bar.width > 0 && bar.left < days.length * CELL_WIDTH && (() => {
+                        const cat = task.category_id ? categoryById.get(task.category_id) : null;
+                        return (
                         <Tooltip>
                           <TooltipTrigger asChild>
                             <div
-                              className={`absolute top-[9px] rounded-full h-5 shadow-sm transition-all ${
+                              className={`absolute top-[9px] rounded-full h-5 shadow-sm transition-all overflow-hidden ${
                                 isOverdue ? 'bg-gradient-to-r from-red-400 to-red-600 ring-1 ring-red-400/50' : (statusBarGradients[task.status] || 'bg-muted-foreground/60')
                               }`}
                               style={{
                                 left: Math.max(bar.left + 2, 0),
                                 width: Math.min(bar.width, days.length * CELL_WIDTH - Math.max(bar.left, 0)),
                                 opacity: task.status === 'done' ? 0.45 : 0.9,
+                                boxShadow: cat ? `inset 4px 0 0 0 ${cat.color}` : undefined,
                               }}
                             >
-                              <span className="text-[9px] text-white font-medium px-2 truncate block leading-5 drop-shadow-sm">
+                              <span className="text-[9px] text-white font-medium px-2 truncate block leading-5 drop-shadow-sm" style={{ paddingLeft: cat ? 10 : undefined }}>
                                 {bar.width > 80 ? task.title : ''}
                               </span>
                             </div>
                           </TooltipTrigger>
                           <TooltipContent side="top" className="text-xs max-w-[200px]">
                             <p className="font-semibold">{task.title}</p>
+                            {cat && <p style={{ color: cat.color }}>{cat.icon} {cat.name}</p>}
                             <p className="text-muted-foreground">
                               {task.start_date || '시작일 없음'} → {task.due_date || '마감일 없음'}
                             </p>
                             {isOverdue && <p className="text-destructive font-semibold">⚠ 기한 초과</p>}
                           </TooltipContent>
                         </Tooltip>
-                      )}
+                        );
+                      })()}
                     </div>
                   );
                 })}
