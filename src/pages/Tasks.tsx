@@ -339,6 +339,18 @@ export default function Tasks() {
                     </Select>
                   </div>
                   <div className="space-y-2">
+                    <Label>카테고리 (선택)</Label>
+                    <Select value={taskForm.category_id || '__none__'} onValueChange={v => setTaskForm(f => ({ ...f, category_id: v === '__none__' ? '' : v }))}>
+                      <SelectTrigger><SelectValue placeholder="카테고리 선택" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">미분류</SelectItem>
+                        {categories.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.icon ? `${c.icon} ` : ''}{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
                     <Label>담당자</Label>
                     <Select value={taskForm.assignee_id} onValueChange={v => setTaskForm(f => ({ ...f, assignee_id: v }))}>
                       <SelectTrigger><SelectValue placeholder="담당자 선택" /></SelectTrigger>
