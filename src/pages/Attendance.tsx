@@ -9,7 +9,11 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Users, Clock, CheckCircle2, XCircle } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Users, Clock, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import {
   format, startOfMonth, endOfMonth, eachDayOfInterval, isSameDay, addMonths, subMonths,
   startOfWeek, endOfWeek, isSameMonth, parseISO, isWithinInterval,
@@ -151,6 +155,21 @@ export default function Attendance() {
       .update({ status: 'cancelled' }).eq('id', id);
     if (error) { toast({ title: '취소 실패', description: error.message, variant: 'destructive' }); return; }
     toast({ title: '신청이 취소되었습니다' });
+    fetchData();
+  };
+
+  const deleteRequest = async (req: any) => {
+    // Delete linked approval (cascades steps via separate delete) before request
+    if (req.approval_id) {
+      await supabase.from('approval_steps').delete().eq('approval_id', req.approval_id);
+      await supabase.from('approvals').delete().eq('id', req.approval_id);
+    }
+    if (req.calendar_event_id) {
+      await supabase.from('calendar_events').delete().eq('id', req.calendar_event_id);
+    }
+    const { error } = await supabase.from('leave_requests').delete().eq('id', req.id);
+    if (error) { toast({ title: '삭제 실패', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: '휴가 신청이 삭제되었습니다' });
     fetchData();
   };
 
@@ -461,6 +480,8 @@ export default function Attendance() {
                 profiles={profiles}
                 showOwner={false}
                 onCancel={cancelMyRequest}
+                onDelete={isAdmin ? deleteRequest : undefined}
+                isAdmin={isAdmin}
                 myProfileId={profile?.id}
               />
             </CardContent>
@@ -472,7 +493,14 @@ export default function Attendance() {
           <Card>
             <CardHeader><CardTitle className="text-base">전체 휴가 신청</CardTitle></CardHeader>
             <CardContent>
-              <RequestList requests={requests} profiles={profiles} showOwner myProfileId={profile?.id} />
+              <RequestList
+                requests={requests}
+                profiles={profiles}
+                showOwner
+                onDelete={isAdmin ? deleteRequest : undefined}
+                isAdmin={isAdmin}
+                myProfileId={profile?.id}
+              />
             </CardContent>
           </Card>
         </TabsContent>
@@ -494,12 +522,14 @@ export default function Attendance() {
 }
 
 function RequestList({
-  requests, profiles, showOwner, onCancel, myProfileId,
+  requests, profiles, showOwner, onCancel, onDelete, isAdmin, myProfileId,
 }: {
   requests: any[];
   profiles: any[];
   showOwner: boolean;
   onCancel?: (id: string) => void;
+  onDelete?: (req: any) => void;
+  isAdmin?: boolean;
   myProfileId?: string;
 }) {
   const getProfile = (id: string) => profiles.find(p => p.id === id);
@@ -533,9 +563,37 @@ function RequestList({
                 </div>
               </div>
             </div>
-            {canCancel && (
-              <Button size="sm" variant="ghost" onClick={() => onCancel!(r.id)}>취소</Button>
-            )}
+            <div className="flex items-center gap-1 shrink-0">
+              {canCancel && (
+                <Button size="sm" variant="ghost" onClick={() => onCancel!(r.id)}>취소</Button>
+              )}
+              {isAdmin && onDelete && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>휴가 신청 삭제</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {p?.name_kr}님의 {LEAVE_TYPE_LABEL[r.leave_type]} 신청({r.start_date}{r.start_date !== r.end_date && ` ~ ${r.end_date}`})을 삭제합니다. 연결된 결재 및 캘린더 일정도 함께 삭제되며, 되돌릴 수 없습니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={() => onDelete(r)}
+                      >
+                        삭제
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
           </div>
         );
       })}

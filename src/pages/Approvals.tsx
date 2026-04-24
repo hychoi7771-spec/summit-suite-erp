@@ -11,7 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FileText, Receipt, Briefcase, CalendarDays, CheckCircle2, XCircle, Clock, ChevronRight } from 'lucide-react';
+import { Plus, FileText, Receipt, Briefcase, CalendarDays, CheckCircle2, XCircle, Clock, ChevronRight, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
 
@@ -46,7 +50,7 @@ const roleOrder: Record<string, number> = {
 };
 
 export default function Approvals() {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const { toast } = useToast();
   const [approvals, setApprovals] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
@@ -238,6 +242,23 @@ export default function Approvals() {
     fetchData();
   };
 
+  const handleDelete = async (approval: any) => {
+    // Delete steps first, then leave_request link, then approval
+    const { error: stepErr } = await supabase.from('approval_steps').delete().eq('approval_id', approval.id);
+    if (stepErr) { toast({ title: '결재 단계 삭제 실패', description: stepErr.message, variant: 'destructive' }); return; }
+
+    if (approval.type === 'leave') {
+      await supabase.from('leave_requests').delete().eq('approval_id', approval.id);
+    }
+
+    const { error } = await supabase.from('approvals').delete().eq('id', approval.id);
+    if (error) { toast({ title: '결재 삭제 실패', description: error.message, variant: 'destructive' }); return; }
+
+    toast({ title: '결재가 삭제되었습니다' });
+    setSelectedApproval(null);
+    fetchData();
+  };
+
   const filtered = approvals.filter(a => {
     if (tab === 'my') return a.requester_id === profile?.id;
     if (tab === 'pending') return a.current_approver_id === profile?.id && a.status === 'pending';
@@ -376,13 +397,15 @@ export default function Approvals() {
         onClose={() => setSelectedApproval(null)}
         onApprove={handleApprove}
         onReject={handleReject}
+        onDelete={handleDelete}
+        isAdmin={isAdmin}
         getProfileName={getProfileName}
       />
     </div>
   );
 }
 
-function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, onApprove, onReject, getProfileName }: any) {
+function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, onApprove, onReject, onDelete, isAdmin, getProfileName }: any) {
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
 
@@ -442,24 +465,52 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
           </div>
         </div>
 
-        {isCurrentApprover && (
-          <DialogFooter className="flex gap-2">
-            {!showReject ? (
-              <>
-                <Button variant="outline" className="text-destructive" onClick={() => setShowReject(true)}>반려</Button>
-                <Button onClick={() => onApprove(approval)} className="bg-success hover:bg-success/90 text-success-foreground">승인</Button>
-              </>
-            ) : (
-              <div className="w-full space-y-2">
-                <Textarea placeholder="반려 사유를 입력하세요" value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={2} />
-                <div className="flex justify-end gap-2">
-                  <Button variant="outline" size="sm" onClick={() => setShowReject(false)}>취소</Button>
-                  <Button variant="destructive" size="sm" onClick={() => { onReject(approval, rejectReason); setRejectReason(''); setShowReject(false); }} disabled={!rejectReason.trim()}>반려 확인</Button>
+        <DialogFooter className="flex gap-2 sm:justify-between">
+          {isAdmin && (
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                  <Trash2 className="h-4 w-4 mr-1" />삭제
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>결재 삭제</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    이 결재 내용을 영구 삭제합니다. 결재 단계와{approval.type === 'leave' ? ' 연결된 휴가 신청도' : ''} 함께 삭제됩니다. 되돌릴 수 없습니다.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>취소</AlertDialogCancel>
+                  <AlertDialogAction
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    onClick={() => onDelete(approval)}
+                  >
+                    삭제
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          )}
+          {isCurrentApprover && (
+            <div className="flex gap-2 ml-auto">
+              {!showReject ? (
+                <>
+                  <Button variant="outline" className="text-destructive" onClick={() => setShowReject(true)}>반려</Button>
+                  <Button onClick={() => onApprove(approval)} className="bg-success hover:bg-success/90 text-success-foreground">승인</Button>
+                </>
+              ) : (
+                <div className="w-full space-y-2">
+                  <Textarea placeholder="반려 사유를 입력하세요" value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={2} />
+                  <div className="flex justify-end gap-2">
+                    <Button variant="outline" size="sm" onClick={() => setShowReject(false)}>취소</Button>
+                    <Button variant="destructive" size="sm" onClick={() => { onReject(approval, rejectReason); setRejectReason(''); setShowReject(false); }} disabled={!rejectReason.trim()}>반려 확인</Button>
+                  </div>
                 </div>
-              </div>
-            )}
-          </DialogFooter>
-        )}
+              )}
+            </div>
+          )}
+        </DialogFooter>
       </DialogContent>
     </Dialog>
   );
