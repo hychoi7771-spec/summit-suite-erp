@@ -1541,6 +1541,36 @@ export type Database = {
           },
         ]
       }
+      task_categories: {
+        Row: {
+          color: string
+          created_at: string
+          icon: string | null
+          id: string
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          color?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          color?: string
+          created_at?: string
+          icon?: string | null
+          id?: string
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       task_comments: {
         Row: {
           content: string
@@ -1668,6 +1698,7 @@ export type Database = {
         Row: {
           assignee_id: string | null
           attachments: string[] | null
+          category_id: string | null
           created_at: string
           description: string | null
           due_date: string | null
@@ -1687,6 +1718,7 @@ export type Database = {
         Insert: {
           assignee_id?: string | null
           attachments?: string[] | null
+          category_id?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
@@ -1706,6 +1738,7 @@ export type Database = {
         Update: {
           assignee_id?: string | null
           attachments?: string[] | null
+          category_id?: string | null
           created_at?: string
           description?: string | null
           due_date?: string | null
@@ -1728,6 +1761,13 @@ export type Database = {
             columns: ["assignee_id"]
             isOneToOne: false
             referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "task_categories"
             referencedColumns: ["id"]
           },
         ]
