@@ -11,7 +11,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FileText, Receipt, Briefcase, CalendarDays, CheckCircle2, XCircle, Clock, ChevronRight } from 'lucide-react';
+import { Plus, FileText, Receipt, Briefcase, CalendarDays, CheckCircle2, XCircle, Clock, ChevronRight, Trash2 } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
 
@@ -46,7 +50,7 @@ const roleOrder: Record<string, number> = {
 };
 
 export default function Approvals() {
-  const { profile } = useAuth();
+  const { profile, isAdmin } = useAuth();
   const { toast } = useToast();
   const [approvals, setApprovals] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
