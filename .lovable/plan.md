@@ -1,61 +1,104 @@
 
 
-## 변경 요청
-체크인/체크아웃 기능 자체를 완전히 제거. 데일리 체크인 탭도 삭제. 업무 관리는 칸반/간트만 남긴다.
+## 업무 관리 효율화 — 단계적 도입 (추천안)
 
-## 최종 통합 계획
+복잡도를 최소화하면서 즉시 효과가 큰 **Phase 1만 먼저** 진행하는 것을 추천합니다. 운영해보고 부족한 부분을 Phase 2~4로 점진적으로 추가하면 학습 비용 없이 안착시킬 수 있습니다.
 
-### 페이지 구조 (`/tasks` 단순화)
+### 추천 이유
+
+- **즉시 가시성 개선**: 카테고리 칩 + 화면 정리 토글만으로도 135개 업무가 한눈에 분류됨
+- **데이터 이전 부담 없음**: 카테고리는 nullable로 시작 → 기존 업무는 천천히 분류
+- **학습 곡선 낮음**: 새 개념 1개(카테고리) + 토글 3개만 추가
+- **확장 가능**: 이후 라벨·스마트 뷰·완료 단계 세분화는 데이터 누적 후 필요 시 도입
+
+---
+
+### Phase 1 — 즉시 도입 (이번 작업 범위)
+
+#### 1. 카테고리(Category) 시스템
+
+`tasks` 테이블에 `category` 컬럼 추가. 기본 카테고리 6종:
+
+- 🚀 **런칭 준비** — 신제품 출시 관련
+- 🎨 **디자인** — 시안·패키지·SNS
+- 📦 **생산/발주** — 공장·자재·재고
+- 📋 **인허가** — 인증·서류
+- 💰 **온라인 이커머스 MD** — 와디즈·카카오메이커스·자사몰·플랫폼 입점·광고·판매·제휴
+- 🛠 **운영/기타** — 사내 잡무
+
+관리자가 자유롭게 카테고리 추가/편집(이름·아이콘·색상). 칸반 카드 좌측 색상 막대로 구분.
+
+#### 2. 카테고리 요약 바 (보드 상단)
 
 ```text
-┌─ 헤더: "업무 관리"
-│   ├─ [디자인 의뢰하기]
-│   └─ [+ 새 업무 등록]
-│
-└─ 메인 탭
-    ├─ 📋 칸반 보드
-    └─ 📊 간트차트
+🚀 런칭(12)  🎨 디자인(8)  📦 생산(5)  📋 인허가(3)  💰 이커머스 MD(7)  🛠 운영(15)
+[지연 4건] [이번 주 마감 9건]
 ```
 
-### 삭제 항목
-1. **업무 탭의 데일리 로그 탭** (자유 메모형) — state/핸들러/다이얼로그 모두 제거
-2. **데일리 체크인/체크아웃 기능 전체**
-   - 체크인/체크아웃 버튼 및 핸들러
-   - 오늘 업무 스냅샷 로직
-   - 4단계 승인 플로우 (이미 이전 단계에서 제거 합의)
-   - 6가지 뷰 (타임라인/담당자별/현황표/주간/월간/연간)
-   - 코멘트, 이모지 반응 (데일리 보고 한정)
-   - 날짜 네비게이션
-   - `linked_task_id` 양방향 동기화 로직
-3. **`src/pages/DailyWorkReport.tsx`** 파일 삭제
-4. **사이드바 "데일리 체크인" 메뉴** 제거 (`AppSidebar.tsx`)
-5. **`/daily-report` 라우트** — `/tasks`로 리다이렉트
-6. 관련 알림 호출 (데일리 보고 작성/승인 알림)
+칩 클릭 → 해당 카테고리만 필터. 한 번 더 클릭 → 해제.
 
-### 보존 항목
-- 칸반 보드, 간트차트 (기존 그대로)
-- 업무 등록/수정/삭제, 디자인 의뢰
-- 업무 댓글, 멘션, 상태 변경 히스토리
-- `tasks` 테이블 자체 (변경 없음)
+#### 3. 화면 정리 토글 (툴바)
 
-### DB 처리
-- `daily_work_reports` 테이블은 **보존** (과거 데이터 보호)
-- 신규 쓰기 없음, UI에서 노출 안 함
-- 마이그레이션 불필요 (추후 정리는 별도 요청 시)
+상단에 토글 4개, 사용자별 `localStorage` 저장:
 
-### 라우팅
-- `/daily-report` → `<Navigate to="/tasks" replace />`
-- 사이드바에서 "데일리 체크인" 항목 삭제
+- ☐ **완료 숨기기** (기본 ON)
+- ☐ **컴팩트 모드** — 카드 높이 절반
+- ☐ **내 업무만**
+- ☐ **지연된 업무만**
 
-### 영향 범위
-- **수정**: `src/pages/Tasks.tsx` (데일리 로그 탭만 제거), `src/components/layout/AppSidebar.tsx`, `src/App.tsx`
-- **삭제**: `src/pages/DailyWorkReport.tsx`
-- **DB**: 변경 없음 (`daily_work_reports` 테이블은 미사용 상태로 잔존)
+#### 4. 통합 검색창
 
-### 구현 단계
-1. `Tasks.tsx`에서 데일리 로그 관련 state, 핸들러, 탭, 다이얼로그 제거 → 칸반/간트 2개 탭만 유지
-2. `AppSidebar.tsx`의 `mainNavItems`에서 "데일리 체크인" 항목 제거
-3. `App.tsx`에서 `/daily-report` 라우트를 `/tasks`로 리다이렉트, `DailyWorkReport` import 제거
-4. `src/pages/DailyWorkReport.tsx` 파일 삭제
-5. 관련 메모리 업데이트 (`mem://features/daily-work-report` → 폐기 표시 또는 제거)
+제목·설명·태그·프로젝트명 통합 검색 (디바운스 300ms).
+
+---
+
+### Phase 2~4 (이후 필요 시)
+
+- **Phase 2**: 완료 → 종결 → 아카이브 3단계 + 자동 전환
+- **Phase 3**: 스마트 뷰 (저장 가능한 필터) + 그룹화 모드 전환 (카테고리별/담당자별/마감일별)
+- **Phase 4**: 라벨 시스템 + 검색 고도화
+
+---
+
+### 기술 메모
+
+```text
+DB:
+  CREATE TABLE task_categories (
+    id uuid PK default gen_random_uuid(),
+    name text not null,
+    icon text,
+    color text,
+    sort_order int default 0,
+    created_at timestamptz default now()
+  );
+  -- 기본 6개 카테고리 시드 데이터 INSERT
+
+  ALTER TABLE tasks ADD COLUMN category_id uuid REFERENCES task_categories(id);
+  CREATE INDEX idx_tasks_category_id ON tasks(category_id);
+
+RLS:
+  task_categories: 전체 조회 가능, 관리자만 INSERT/UPDATE/DELETE
+
+UI 상태:
+  localStorage 'task-board-toggles' → { hideDone, compact, myOnly, overdueOnly }
+  URL 쿼리스트링 ?category=<id> 동기화 (공유 가능한 필터 링크)
+
+카테고리 색상 매핑:
+  카드 좌측 4px 컬러 막대 + 카테고리 칩 배경색
+```
+
+### 변경 파일
+
+- `supabase/migrations/...` — `task_categories` 테이블 + `category_id` 컬럼 + 시드 데이터 + RLS
+- `src/pages/Tasks.tsx` — 카테고리 바, 토글 툴바, 검색창 통합
+- `src/components/tasks/CategoryBar.tsx` (신규) — 카테고리 칩 + 카운트
+- `src/components/tasks/TaskFilterToolbar.tsx` (신규) — 토글 4종 + 검색
+- `src/components/tasks/TaskCard.tsx` — 좌측 컬러 막대, 컴팩트 모드 대응
+- `src/components/tasks/TaskDetailDialog.tsx` — 카테고리 선택 드롭다운
+- `src/components/tasks/CategoryManageDialog.tsx` (신규, 관리자 전용) — 카테고리 CRUD
+- `src/components/tasks/GanttChart.tsx` — 카테고리 색상·필터 연동
+- `mem://features/task-management` — 카테고리 시스템 메모 업데이트
+
+승인하시면 마이그레이션부터 진행합니다.
 
