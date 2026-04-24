@@ -397,13 +397,15 @@ export default function Approvals() {
         onClose={() => setSelectedApproval(null)}
         onApprove={handleApprove}
         onReject={handleReject}
+        onDelete={handleDelete}
+        isAdmin={isAdmin}
         getProfileName={getProfileName}
       />
     </div>
   );
 }
 
-function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, onApprove, onReject, getProfileName }: any) {
+function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, onApprove, onReject, onDelete, isAdmin, getProfileName }: any) {
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
 
