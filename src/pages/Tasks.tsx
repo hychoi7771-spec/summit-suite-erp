@@ -378,22 +378,91 @@ export default function Tasks() {
         </TabsList>
 
         <TabsContent value="board" className="mt-4 space-y-4">
+          {/* Unified filter helper */}
+          {(() => null)()}
+
+          {/* Category bar */}
+          {(() => {
+            const overdueCount = taskList.filter(t => {
+              const d = getDaysLeft(t.due_date);
+              return d !== null && d < 0 && t.status !== 'done';
+            }).length;
+            const weekDueCount = taskList.filter(t => {
+              const d = getDaysLeft(t.due_date);
+              return d !== null && d >= 0 && d <= 7 && t.status !== 'done';
+            }).length;
+            return (
+              <CategoryBar
+                categories={categories}
+                tasks={taskList}
+                selectedCategory={selectedCategory}
+                onSelect={setSelectedCategory}
+                isAdmin={isAdmin}
+                onManageClick={() => setManageCategoriesOpen(true)}
+                overdueCount={overdueCount}
+                weekDueCount={weekDueCount}
+                onQuickFilter={setQuickFilter}
+                activeQuickFilter={quickFilter}
+              />
+            );
+          })()}
+
+          {/* Search + toggles toolbar */}
+          <TaskFilterToolbar
+            search={search}
+            onSearchChange={setSearch}
+            toggles={toggles}
+            onToggleChange={handleToggleChange}
+          />
+
           {/* Status Summary Dashboard */}
           {(() => {
             const filtered = taskList.filter(t => {
+              // Category
+              if (selectedCategory !== 'all') {
+                if (selectedCategory === '__none__') { if (t.category_id) return false; }
+                else if (t.category_id !== selectedCategory) return false;
+              }
+              // Project
               if (selectedProject !== 'all') {
                 if (selectedProject === '__none__') { if (t.project_name) return false; }
                 else if (t.project_name !== selectedProject) return false;
               }
+              // Assignee
               if (selectedAssignee !== 'all') {
                 if (selectedAssignee === '__unassigned__') { if (t.assignee_id) return false; }
                 else if (t.assignee_id !== selectedAssignee) return false;
               }
+              // Date range
               if (dateFrom || dateTo) {
                 const d = t[dateField];
                 if (!d) return false;
                 if (dateFrom && d < dateFrom) return false;
                 if (dateTo && d > dateTo) return false;
+              }
+              // Search (debounced)
+              if (debouncedSearch) {
+                const hay = [
+                  t.title, t.description, t.project_name,
+                  ...(Array.isArray(t.tags) ? t.tags : []),
+                ].filter(Boolean).join(' ').toLowerCase();
+                if (!hay.includes(debouncedSearch)) return false;
+              }
+              // Toggles
+              if (toggles.hideDone && t.status === 'done') return false;
+              if (toggles.myOnly && profile && t.assignee_id !== profile.id) return false;
+              if (toggles.overdueOnly) {
+                const d = getDaysLeft(t.due_date);
+                if (!(d !== null && d < 0 && t.status !== 'done')) return false;
+              }
+              // Quick filters from CategoryBar
+              if (quickFilter === 'overdue') {
+                const d = getDaysLeft(t.due_date);
+                if (!(d !== null && d < 0 && t.status !== 'done')) return false;
+              }
+              if (quickFilter === 'week') {
+                const d = getDaysLeft(t.due_date);
+                if (!(d !== null && d >= 0 && d <= 7 && t.status !== 'done')) return false;
               }
               return true;
             });
