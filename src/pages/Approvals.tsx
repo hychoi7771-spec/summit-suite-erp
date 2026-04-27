@@ -63,6 +63,8 @@ export default function Approvals() {
 
   // Form state
   const [form, setForm] = useState({ title: '', type: 'document' as string, content: '' });
+  const [editTarget, setEditTarget] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ title: '', type: 'document' as string, content: '' });
 
   const fetchData = async () => {
     const [appRes, profRes, roleRes, stepRes] = await Promise.all([
@@ -259,6 +261,28 @@ export default function Approvals() {
     fetchData();
   };
 
+  const openEdit = (approval: any) => {
+    setEditTarget(approval);
+    setEditForm({ title: approval.title, type: approval.type, content: approval.content || '' });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTarget) return;
+    if (!editForm.title.trim()) {
+      toast({ title: '제목을 입력해주세요', variant: 'destructive' });
+      return;
+    }
+    const { error } = await supabase
+      .from('approvals')
+      .update({ title: editForm.title, type: editForm.type as any, content: editForm.content })
+      .eq('id', editTarget.id);
+    if (error) { toast({ title: '수정 실패', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: '결재가 수정되었습니다' });
+    setEditTarget(null);
+    setSelectedApproval(null);
+    fetchData();
+  };
+
   const filtered = approvals.filter(a => {
     if (tab === 'my') return a.requester_id === profile?.id;
     if (tab === 'pending') return a.current_approver_id === profile?.id && a.status === 'pending';
@@ -398,20 +422,62 @@ export default function Approvals() {
         onApprove={handleApprove}
         onReject={handleReject}
         onDelete={handleDelete}
+        onEdit={openEdit}
         isAdmin={isAdmin}
         getProfileName={getProfileName}
       />
+
+      {/* Edit Dialog */}
+      <Dialog open={!!editTarget} onOpenChange={(o) => !o && setEditTarget(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>결재 요청 수정</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label>결재 유형</Label>
+              <Select value={editForm.type} onValueChange={v => setEditForm(f => ({ ...f, type: v }))}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="document">문서 기안</SelectItem>
+                  <SelectItem value="expense">경비 결재</SelectItem>
+                  <SelectItem value="project">프로젝트 제출</SelectItem>
+                  <SelectItem value="leave">휴가/근태 신청</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <Label>제목</Label>
+              <Input value={editForm.title} onChange={e => setEditForm(f => ({ ...f, title: e.target.value }))} />
+            </div>
+            <div>
+              <Label>내용</Label>
+              <Textarea value={editForm.content} onChange={e => setEditForm(f => ({ ...f, content: e.target.value }))} rows={5} />
+            </div>
+            <p className="text-xs text-muted-foreground">
+              ※ 수정은 결재 승인 전(대기 상태)인 본인 기안에 한해 가능합니다.
+            </p>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditTarget(null)}>취소</Button>
+            <Button onClick={handleSaveEdit} disabled={!editForm.title.trim()}>저장</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
 
-function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, onApprove, onReject, onDelete, isAdmin, getProfileName }: any) {
+function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, onApprove, onReject, onDelete, onEdit, isAdmin, getProfileName }: any) {
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
 
   if (!approval) return null;
 
   const isCurrentApprover = approval.current_approver_id === currentProfileId && approval.status === 'pending';
+  const isOwnerPending = approval.requester_id === currentProfileId && approval.status === 'pending';
+  const canDelete = isAdmin || isOwnerPending;
+  const canEdit = isOwnerPending;
 
   return (
     <Dialog open={!!approval} onOpenChange={() => onClose()}>
@@ -466,32 +532,39 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
         </div>
 
         <DialogFooter className="flex gap-2 sm:justify-between">
-          {isAdmin && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
-                  <Trash2 className="h-4 w-4 mr-1" />삭제
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>결재 삭제</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    이 결재 내용을 영구 삭제합니다. 결재 단계와{approval.type === 'leave' ? ' 연결된 휴가 신청도' : ''} 함께 삭제됩니다. 되돌릴 수 없습니다.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>취소</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => onDelete(approval)}
-                  >
-                    삭제
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+          <div className="flex gap-2">
+            {canEdit && (
+              <Button variant="outline" size="sm" onClick={() => onEdit(approval)}>
+                수정
+              </Button>
+            )}
+            {canDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4 mr-1" />삭제
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>결재 삭제</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      이 결재 내용을 영구 삭제합니다. 결재 단계와{approval.type === 'leave' ? ' 연결된 휴가 신청도' : ''} 함께 삭제됩니다. 되돌릴 수 없습니다.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>취소</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => onDelete(approval)}
+                    >
+                      삭제
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
           {isCurrentApprover && (
             <div className="flex gap-2 ml-auto">
               {!showReject ? (
