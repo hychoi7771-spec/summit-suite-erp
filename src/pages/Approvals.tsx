@@ -63,6 +63,8 @@ export default function Approvals() {
 
   // Form state
   const [form, setForm] = useState({ title: '', type: 'document' as string, content: '' });
+  const [editTarget, setEditTarget] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ title: '', type: 'document' as string, content: '' });
 
   const fetchData = async () => {
     const [appRes, profRes, roleRes, stepRes] = await Promise.all([
