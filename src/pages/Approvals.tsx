@@ -532,32 +532,39 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
         </div>
 
         <DialogFooter className="flex gap-2 sm:justify-between">
-          {isAdmin && (
-            <AlertDialog>
-              <AlertDialogTrigger asChild>
-                <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
-                  <Trash2 className="h-4 w-4 mr-1" />삭제
-                </Button>
-              </AlertDialogTrigger>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle>결재 삭제</AlertDialogTitle>
-                  <AlertDialogDescription>
-                    이 결재 내용을 영구 삭제합니다. 결재 단계와{approval.type === 'leave' ? ' 연결된 휴가 신청도' : ''} 함께 삭제됩니다. 되돌릴 수 없습니다.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <AlertDialogFooter>
-                  <AlertDialogCancel>취소</AlertDialogCancel>
-                  <AlertDialogAction
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    onClick={() => onDelete(approval)}
-                  >
-                    삭제
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
-          )}
+          <div className="flex gap-2">
+            {canEdit && (
+              <Button variant="outline" size="sm" onClick={() => onEdit(approval)}>
+                수정
+              </Button>
+            )}
+            {canDelete && (
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button variant="outline" size="sm" className="text-destructive hover:text-destructive">
+                    <Trash2 className="h-4 w-4 mr-1" />삭제
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>결재 삭제</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      이 결재 내용을 영구 삭제합니다. 결재 단계와{approval.type === 'leave' ? ' 연결된 휴가 신청도' : ''} 함께 삭제됩니다. 되돌릴 수 없습니다.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>취소</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                      onClick={() => onDelete(approval)}
+                    >
+                      삭제
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            )}
+          </div>
           {isCurrentApprover && (
             <div className="flex gap-2 ml-auto">
               {!showReject ? (
