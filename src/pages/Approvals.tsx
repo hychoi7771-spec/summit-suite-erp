@@ -261,6 +261,28 @@ export default function Approvals() {
     fetchData();
   };
 
+  const openEdit = (approval: any) => {
+    setEditTarget(approval);
+    setEditForm({ title: approval.title, type: approval.type, content: approval.content || '' });
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editTarget) return;
+    if (!editForm.title.trim()) {
+      toast({ title: '제목을 입력해주세요', variant: 'destructive' });
+      return;
+    }
+    const { error } = await supabase
+      .from('approvals')
+      .update({ title: editForm.title, type: editForm.type as any, content: editForm.content })
+      .eq('id', editTarget.id);
+    if (error) { toast({ title: '수정 실패', description: error.message, variant: 'destructive' }); return; }
+    toast({ title: '결재가 수정되었습니다' });
+    setEditTarget(null);
+    setSelectedApproval(null);
+    fetchData();
+  };
+
   const filtered = approvals.filter(a => {
     if (tab === 'my') return a.requester_id === profile?.id;
     if (tab === 'pending') return a.current_approver_id === profile?.id && a.status === 'pending';
