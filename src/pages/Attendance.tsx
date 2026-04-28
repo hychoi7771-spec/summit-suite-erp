@@ -427,7 +427,7 @@ export default function Attendance() {
 
           {/* 사용 일자 상세표 (이미지 형식) */}
           <Card>
-            <CardHeader><CardTitle className="text-base">{year}년 휴가 사용 내역</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">휴가 사용 내역 (전체 기간 누적)</CardTitle></CardHeader>
             <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -440,18 +440,32 @@ export default function Attendance() {
                 </TableHeader>
                 <TableBody>
                   {profiles.map(p => {
-                    const myReqs = requests.filter(r =>
-                      r.user_id === p.id && r.status === 'approved'
-                      && new Date(r.start_date).getFullYear() === year,
-                    );
-                    const annualReqs = myReqs.filter(r => r.leave_type === 'annual' || r.leave_type === 'sick');
-                    const halfReqs = myReqs.filter(r => r.leave_type === 'half_day');
+                    const myReqs = requests.filter(r => r.user_id === p.id && r.status === 'approved');
+                    const sortByDate = (a: any, b: any) => a.start_date.localeCompare(b.start_date);
+                    const monthlyReqs = myReqs.filter(r => r.leave_type === 'monthly').sort(sortByDate);
+                    const annualReqs = myReqs.filter(r => r.leave_type === 'annual' || r.leave_type === 'sick').sort(sortByDate);
+                    const halfReqs = myReqs.filter(r => r.leave_type === 'half_day').sort(sortByDate);
+                    const monthlySum = monthlyReqs.reduce((s, r) => s + Number(r.days), 0);
                     const annualSum = annualReqs.reduce((s, r) => s + Number(r.days), 0);
                     const halfSum = halfReqs.reduce((s, r) => s + Number(r.days), 0);
+                    const hasMonthly = monthlySum > 0;
+                    const rowSpan = hasMonthly ? 3 : 2;
                     return (
                       <Fragment key={p.id}>
+                        {hasMonthly && (
+                          <TableRow>
+                            <TableCell rowSpan={rowSpan} className="font-medium align-middle">{p.name_kr}</TableCell>
+                            <TableCell className="text-xs">월차</TableCell>
+                            <TableCell className="text-xs">
+                              {monthlyReqs.map(r => format(parseISO(r.start_date), 'yyyy.MM.dd')).join(', ')}
+                            </TableCell>
+                            <TableCell className="text-right text-xs">{monthlySum}일</TableCell>
+                          </TableRow>
+                        )}
                         <TableRow>
-                          <TableCell rowSpan={2} className="font-medium align-middle">{p.name_kr}</TableCell>
+                          {!hasMonthly && (
+                            <TableCell rowSpan={rowSpan} className="font-medium align-middle">{p.name_kr}</TableCell>
+                          )}
                           <TableCell className="text-xs">연차</TableCell>
                           <TableCell className="text-xs">
                             {annualReqs.length > 0
