@@ -356,13 +356,21 @@ export default function Attendance() {
                     <TableHead className="text-center">다음 적립일</TableHead>
                   </TableRow>
                 </TableHeader>
-                <TableBody>
+                 <TableBody>
                   {profiles.map(p => {
                     const bal = balanceFor(p.id);
                     const annual = Number(bal?.total_days ?? 0);
                     const monthly = Number(bal?.monthly_total_days ?? 0);
+                    // 누적 사용량 (입사 이래 전체 승인된 휴가)
+                    const allMyReqs = requests.filter(r => r.user_id === p.id && r.status === 'approved');
+                    const usedAnnual = allMyReqs
+                      .filter(r => ['annual', 'half_day', 'sick'].includes(r.leave_type))
+                      .reduce((s, r) => s + Number(r.days), 0);
+                    const usedMonthly = allMyReqs
+                      .filter(r => r.leave_type === 'monthly')
+                      .reduce((s, r) => s + Number(r.days), 0);
+                    const used = usedAnnual + usedMonthly;
                     const total = annual + monthly;
-                    const used = Number(bal?.used_days ?? 0);
                     const remaining = total - used;
                     return (
                       <TableRow key={p.id}>
