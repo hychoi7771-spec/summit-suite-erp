@@ -427,7 +427,7 @@ export default function Attendance() {
 
           {/* 사용 일자 상세표 (이미지 형식) */}
           <Card>
-            <CardHeader><CardTitle className="text-base">휴가 사용 내역 (전체 기간 누적)</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="text-base">{year}년 휴가 사용 내역</CardTitle></CardHeader>
             <CardContent className="overflow-x-auto">
               <Table>
                 <TableHeader>
@@ -440,32 +440,18 @@ export default function Attendance() {
                 </TableHeader>
                 <TableBody>
                   {profiles.map(p => {
-                    const myReqs = requests.filter(r => r.user_id === p.id && r.status === 'approved');
-                    const sortByDate = (a: any, b: any) => a.start_date.localeCompare(b.start_date);
-                    const monthlyReqs = myReqs.filter(r => r.leave_type === 'monthly').sort(sortByDate);
-                    const annualReqs = myReqs.filter(r => r.leave_type === 'annual' || r.leave_type === 'sick').sort(sortByDate);
-                    const halfReqs = myReqs.filter(r => r.leave_type === 'half_day').sort(sortByDate);
-                    const monthlySum = monthlyReqs.reduce((s, r) => s + Number(r.days), 0);
+                    const myReqs = requests.filter(r =>
+                      r.user_id === p.id && r.status === 'approved'
+                      && new Date(r.start_date).getFullYear() === year,
+                    );
+                    const annualReqs = myReqs.filter(r => r.leave_type === 'annual' || r.leave_type === 'sick');
+                    const halfReqs = myReqs.filter(r => r.leave_type === 'half_day');
                     const annualSum = annualReqs.reduce((s, r) => s + Number(r.days), 0);
                     const halfSum = halfReqs.reduce((s, r) => s + Number(r.days), 0);
-                    const hasMonthly = monthlySum > 0;
-                    const rowSpan = hasMonthly ? 3 : 2;
                     return (
                       <Fragment key={p.id}>
-                        {hasMonthly && (
-                          <TableRow>
-                            <TableCell rowSpan={rowSpan} className="font-medium align-middle">{p.name_kr}</TableCell>
-                            <TableCell className="text-xs">월차</TableCell>
-                            <TableCell className="text-xs">
-                              {monthlyReqs.map(r => format(parseISO(r.start_date), 'yyyy.MM.dd')).join(', ')}
-                            </TableCell>
-                            <TableCell className="text-right text-xs">{monthlySum}일</TableCell>
-                          </TableRow>
-                        )}
                         <TableRow>
-                          {!hasMonthly && (
-                            <TableCell rowSpan={rowSpan} className="font-medium align-middle">{p.name_kr}</TableCell>
-                          )}
+                          <TableCell rowSpan={2} className="font-medium align-middle">{p.name_kr}</TableCell>
                           <TableCell className="text-xs">연차</TableCell>
                           <TableCell className="text-xs">
                             {annualReqs.length > 0
@@ -490,6 +476,336 @@ export default function Attendance() {
               </Table>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        {/* 내 신청 내역 */}
+        <TabsContent value="my" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader><CardTitle className="text-base">내 휴가 신청 내역</CardTitle></CardHeader>
+            <CardContent>
+              <RequestList
+                requests={myRequests}
+                profiles={profiles}
+                showOwner={false}
+                onCancel={cancelMyRequest}
+                onDelete={isAdmin ? deleteRequest : undefined}
+                isAdmin={isAdmin}
+                myProfileId={profile?.id}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 전체 신청 */}
+        <TabsContent value="all" className="space-y-4 mt-4">
+          <Card>
+            <CardHeader><CardTitle className="text-base">전체 휴가 신청</CardTitle></CardHeader>
+            <CardContent>
+              <RequestList
+                requests={requests}
+                profiles={profiles}
+                showOwner
+                onDelete={isAdmin ? deleteRequest : undefined}
+                isAdmin={isAdmin}
+                myProfileId={profile?.id}
+              />
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* 🏖️ 여름휴가 현황 */}
+        <TabsContent value="summer" className="space-y-4 mt-4">
+          <SummerLeaveOverview
+            requests={requests}
+            profiles={profiles}
+            year={year}
+            onYearChange={setYear}
+          />
+        </TabsContent>
+      </Tabs>
+
+      <LeaveRequestDialog open={showRequest} onOpenChange={setShowRequest} onCreated={fetchData} />
+    </div>
+  );
+}
+
+function RequestList({
+  requests, profiles, showOwner, onCancel, onDelete, isAdmin, myProfileId,
+}: {
+  requests: any[];
+  profiles: any[];
+  showOwner: boolean;
+  onCancel?: (id: string) => void;
+  onDelete?: (req: any) => void;
+  isAdmin?: boolean;
+  myProfileId?: string;
+}) {
+  const getProfile = (id: string) => profiles.find(p => p.id === id);
+  if (requests.length === 0) {
+    return <p className="text-sm text-muted-foreground text-center py-8">신청 내역이 없습니다.</p>;
+  }
+  return (
+    <div className="space-y-2">
+      {requests.map(r => {
+        const p = getProfile(r.user_id);
+        const canCancel = onCancel && r.user_id === myProfileId && r.status === 'pending';
+        return (
+          <div key={r.id} className="flex items-center justify-between p-3 rounded-md border border-border hover:bg-muted/30 transition-colors">
+            <div className="flex items-center gap-3 min-w-0">
+              {showOwner && (
+                <Avatar className="h-8 w-8 shrink-0"><AvatarFallback className="text-[10px]">{p?.avatar}</AvatarFallback></Avatar>
+              )}
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  {showOwner && <span className="font-medium text-sm">{p?.name_kr}</span>}
+                  <Badge variant="outline" className={`${LEAVE_TYPE_COLOR[r.leave_type]} text-xs`}>
+                    {LEAVE_TYPE_LABEL[r.leave_type]}
+                  </Badge>
+                  <Badge variant="outline" className={`${STATUS_STYLE[r.status]} text-xs`}>
+                    {STATUS_LABEL[r.status]}
+                  </Badge>
+                </div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {r.start_date}{r.start_date !== r.end_date && ` ~ ${r.end_date}`} · {Number(r.days)}일
+                  {r.reason && ` · ${r.reason}`}
+                </div>
+              </div>
+            </div>
+            <div className="flex items-center gap-1 shrink-0">
+              {canCancel && (
+                <Button size="sm" variant="ghost" onClick={() => onCancel!(r.id)}>취소</Button>
+              )}
+              {isAdmin && onDelete && (
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>휴가 신청 삭제</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        {p?.name_kr}님의 {LEAVE_TYPE_LABEL[r.leave_type]} 신청({r.start_date}{r.start_date !== r.end_date && ` ~ ${r.end_date}`})을 삭제합니다. 연결된 결재 및 캘린더 일정도 함께 삭제되며, 되돌릴 수 없습니다.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>취소</AlertDialogCancel>
+                      <AlertDialogAction
+                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        onClick={() => onDelete(r)}
+                      >
+                        삭제
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 🏖️ 여름휴가 현황 (담당자별 일정 모니터링)
+// ─────────────────────────────────────────────────────────────────────
+function SummerLeaveOverview({
+  requests, profiles, year, onYearChange,
+}: {
+  requests: any[];
+  profiles: any[];
+  year: number;
+  onYearChange: (y: number) => void;
+}) {
+  const summerByUser = useMemo(() => {
+    const map = new Map<string, any[]>();
+    requests.forEach(r => {
+      if (r.leave_type !== 'summer') return;
+      if (r.status === 'cancelled' || r.status === 'rejected') return;
+      const startYear = new Date(r.start_date).getFullYear();
+      if (startYear !== year) return;
+      const arr = map.get(r.user_id) || [];
+      arr.push(r);
+      map.set(r.user_id, arr);
+    });
+    return map;
+  }, [requests, year]);
+
+  // 6월 ~ 9월
+  const startDate = new Date(year, 5, 1);
+  const endDate = new Date(year, 8, 30);
+  const days = eachDayOfInterval({ start: startDate, end: endDate });
+
+  const allReqs = Array.from(summerByUser.values()).flat();
+  const totalApproved = allReqs.filter(r => r.status === 'approved').reduce((s, r) => s + Number(r.days || 0), 0);
+  const totalPending = allReqs.filter(r => r.status === 'pending').reduce((s, r) => s + Number(r.days || 0), 0);
+  const usersWithLeave = summerByUser.size;
+
+  // 피크일 분석
+  const concurrentMap = new Map<string, number>();
+  allReqs.forEach(r => {
+    if (r.status !== 'approved') return;
+    const range = eachDayOfInterval({ start: parseISO(r.start_date), end: parseISO(r.end_date) });
+    range.forEach(d => {
+      const key = format(d, 'yyyy-MM-dd');
+      concurrentMap.set(key, (concurrentMap.get(key) || 0) + 1);
+    });
+  });
+  const peakDay = Array.from(concurrentMap.entries()).sort((a, b) => b[1] - a[1])[0];
+
+  return (
+    <div className="space-y-4">
+      {/* 헤더 */}
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="flex items-center gap-2">
+          <Button variant="outline" size="icon" onClick={() => onYearChange(year - 1)}>
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+          <h3 className="text-lg font-bold tabular-nums px-2">{year}년 여름휴가</h3>
+          <Button variant="outline" size="icon" onClick={() => onYearChange(year + 1)}>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </div>
+        <div className="flex items-center gap-2 flex-wrap text-xs">
+          <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950/40 dark:text-orange-300">
+            사용자 {usersWithLeave}명
+          </Badge>
+          <Badge variant="outline" className="bg-success/10 text-success border-success/20">
+            승인 {totalApproved}일
+          </Badge>
+          <Badge variant="outline" className="bg-warning/10 text-warning border-warning/20">
+            대기 {totalPending}일
+          </Badge>
+          {peakDay && (
+            <Badge variant="outline" className="bg-destructive/10 text-destructive border-destructive/20">
+              피크 {format(parseISO(peakDay[0]), 'M/d')} · {peakDay[1]}명
+            </Badge>
+          )}
+        </div>
+      </div>
+
+      {/* 직원별 타임라인 */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Users className="h-4 w-4" /> 담당자별 여름휴가 타임라인 (6월~9월)
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          {profiles.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-8">직원 정보가 없습니다.</p>
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="min-w-[900px]">
+                {/* 월 헤더 */}
+                <div className="flex border-b border-border pb-2 mb-2">
+                  <div className="w-32 shrink-0 text-xs font-semibold text-muted-foreground">담당자</div>
+                  <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+                    {[6, 7, 8, 9].map(m => {
+                      const monthDays = days.filter(d => d.getMonth() === m - 1).length;
+                      return (
+                        <div
+                          key={m}
+                          className="text-center text-xs font-bold text-muted-foreground border-l border-border first:border-l-0"
+                          style={{ gridColumn: `span ${monthDays}` }}
+                        >
+                          {m}월
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 직원별 행 */}
+                <div className="space-y-1.5">
+                  {profiles.map(p => {
+                    const userReqs = summerByUser.get(p.id) || [];
+                    const totalDays = userReqs
+                      .filter(r => r.status === 'approved')
+                      .reduce((s, r) => s + Number(r.days || 0), 0);
+                    return (
+                      <div key={p.id} className="flex items-center group hover:bg-muted/30 rounded transition-colors py-1">
+                        <div className="w-32 shrink-0 flex items-center gap-2 pr-2">
+                          <Avatar className="h-6 w-6"><AvatarFallback className="text-[9px]">{p.avatar}</AvatarFallback></Avatar>
+                          <div className="min-w-0">
+                            <p className="text-xs font-medium truncate">{p.name_kr}</p>
+                            {totalDays > 0 && (
+                              <p className="text-[10px] text-muted-foreground">{totalDays}일</p>
+                            )}
+                          </div>
+                        </div>
+                        <div className="flex-1 relative h-7 bg-muted/30 rounded border border-border">
+                          {/* 주말/월구분 음영 */}
+                          <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${days.length}, minmax(0, 1fr))` }}>
+                            {days.map((d, i) => {
+                              const isWk = isWeekend(d);
+                              const isMonthStart = d.getDate() === 1 && i !== 0;
+                              return (
+                                <div
+                                  key={i}
+                                  className={`${isWk ? 'bg-muted/50' : ''} ${isMonthStart ? 'border-l border-border' : ''}`}
+                                />
+                              );
+                            })}
+                          </div>
+                          {/* 휴가 바 */}
+                          {userReqs.map(r => {
+                            const reqStart = parseISO(r.start_date);
+                            const reqEnd = parseISO(r.end_date);
+                            const startIdx = days.findIndex(d => isSameDay(d, reqStart));
+                            const endIdx = days.findIndex(d => isSameDay(d, reqEnd));
+                            if (startIdx === -1 && endIdx === -1) return null;
+                            const s = startIdx === -1 ? 0 : startIdx;
+                            const e = endIdx === -1 ? days.length - 1 : endIdx;
+                            const span = e - s + 1;
+                            const isPending = r.status === 'pending';
+                            return (
+                              <div
+                                key={r.id}
+                                className={`absolute top-0.5 bottom-0.5 rounded text-[10px] flex items-center justify-center px-1 font-medium truncate ${
+                                  isPending
+                                    ? 'bg-warning/30 text-warning border border-warning/40'
+                                    : 'bg-orange-500/80 text-white border border-orange-600 dark:bg-orange-600/80'
+                                }`}
+                                style={{
+                                  left: `${(s / days.length) * 100}%`,
+                                  width: `${(span / days.length) * 100}%`,
+                                }}
+                                title={`${r.start_date} ~ ${r.end_date} · ${r.days}일${r.reason ? ' · ' + r.reason : ''}${isPending ? ' (대기)' : ''}`}
+                              >
+                                {span >= 3 ? `${r.days}일` : ''}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* 범례 */}
+                <div className="mt-4 flex items-center gap-3 text-[10px] text-muted-foreground">
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-orange-500/80 border border-orange-600" />
+                    <span>승인</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-warning/30 border border-warning/40" />
+                    <span>대기</span>
+                  </div>
+                  <div className="flex items-center gap-1.5">
+                    <div className="w-3 h-3 rounded bg-muted/50 border border-border" />
+                    <span>주말</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
       {/* 신청 상세 리스트 */}
       <Card>
