@@ -18,6 +18,13 @@ import { notifyAdmins, notifyUser } from '@/lib/notifications';
 
 const formatKRW = (n: number) => `₩${n.toLocaleString('ko-KR')}`;
 const categories = Constants.public.Enums.expense_category;
+const PAYMENT_METHODS: { value: 'personal' | 'card' | 'corporate' | 'other'; label: string }[] = [
+  { value: 'personal', label: '개인지출 (정산)' },
+  { value: 'card', label: '카드결제' },
+  { value: 'corporate', label: '법인계좌' },
+  { value: 'other', label: '기타' },
+];
+const paymentMethodLabel = (v: string) => PAYMENT_METHODS.find(p => p.value === v)?.label ?? v;
 
 export default function Expenses() {
   const { user, profile, userRole } = useAuth();
