@@ -53,13 +53,15 @@ const roleOrder: Record<string, number> = {
 export default function Approvals() {
   const { profile, isAdmin } = useAuth();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [approvals, setApprovals] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
   const [steps, setSteps] = useState<any[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedApproval, setSelectedApproval] = useState<any>(null);
-  const [tab, setTab] = useState('all');
+  const initialTab = searchParams.get('tab') || 'pending';
+  const [tab, setTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
 
   // Form state
