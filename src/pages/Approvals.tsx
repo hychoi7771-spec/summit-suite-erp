@@ -662,18 +662,47 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
             )}
           </div>
           {isCurrentApprover && (
-            <div className="flex gap-2 ml-auto">
+            <div className="flex gap-2 ml-auto w-full sm:w-auto">
               {!showReject ? (
                 <>
-                  <Button variant="outline" className="text-destructive" onClick={() => setShowReject(true)}>반려</Button>
-                  <Button onClick={() => onApprove(approval)} className="bg-success hover:bg-success/90 text-success-foreground">승인</Button>
+                  <Button
+                    variant="outline"
+                    size="lg"
+                    className="flex-1 sm:flex-none border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive gap-2"
+                    onClick={() => setShowReject(true)}
+                  >
+                    <ThumbsDown className="h-4 w-4" /> 반려
+                  </Button>
+                  <Button
+                    size="lg"
+                    onClick={() => onApprove(approval)}
+                    className="flex-1 sm:flex-none bg-success hover:bg-success/90 text-success-foreground gap-2 shadow-sm"
+                  >
+                    <ThumbsUp className="h-4 w-4" /> 승인
+                  </Button>
                 </>
               ) : (
                 <div className="w-full space-y-2">
-                  <Textarea placeholder="반려 사유를 입력하세요" value={rejectReason} onChange={e => setRejectReason(e.target.value)} rows={2} />
+                  <Label className="text-xs text-destructive font-medium">반려 사유 (필수)</Label>
+                  <Textarea
+                    placeholder="반려 사유를 구체적으로 입력해주세요"
+                    value={rejectReason}
+                    onChange={e => setRejectReason(e.target.value)}
+                    rows={3}
+                    className="border-destructive/30 focus-visible:ring-destructive"
+                    autoFocus
+                  />
                   <div className="flex justify-end gap-2">
-                    <Button variant="outline" size="sm" onClick={() => setShowReject(false)}>취소</Button>
-                    <Button variant="destructive" size="sm" onClick={() => { onReject(approval, rejectReason); setRejectReason(''); setShowReject(false); }} disabled={!rejectReason.trim()}>반려 확인</Button>
+                    <Button variant="outline" size="sm" onClick={() => { setShowReject(false); setRejectReason(''); }}>취소</Button>
+                    <Button
+                      variant="destructive"
+                      size="sm"
+                      onClick={() => { onReject(approval, rejectReason); setRejectReason(''); setShowReject(false); }}
+                      disabled={!rejectReason.trim()}
+                      className="gap-1.5"
+                    >
+                      <ThumbsDown className="h-3.5 w-3.5" /> 반려 확정
+                    </Button>
                   </div>
                 </div>
               )}
