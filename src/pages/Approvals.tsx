@@ -299,10 +299,21 @@ export default function Approvals() {
   const filtered = approvals.filter(a => {
     if (tab === 'my') return a.requester_id === profile?.id;
     if (tab === 'pending') return a.current_approver_id === profile?.id && a.status === 'pending';
+    if (tab === 'approved') return a.status === 'approved';
+    if (tab === 'rejected') return a.status === 'rejected';
     return true;
   });
 
   const pendingCount = approvals.filter(a => a.current_approver_id === profile?.id && a.status === 'pending').length;
+  const myCount = approvals.filter(a => a.requester_id === profile?.id).length;
+  const myPendingCount = approvals.filter(a => a.requester_id === profile?.id && a.status === 'pending').length;
+  const approvedCount = approvals.filter(a => a.status === 'approved').length;
+  const rejectedCount = approvals.filter(a => a.status === 'rejected').length;
+
+  const handleTabChange = (v: string) => {
+    setTab(v);
+    setSearchParams(v === 'all' ? {} : { tab: v }, { replace: true });
+  };
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
 
@@ -313,57 +324,129 @@ export default function Approvals() {
           <h1 className="text-2xl font-bold text-foreground">전자결재</h1>
           <p className="text-sm text-muted-foreground">문서 기안, 경비 결재, 프로젝트 제출, 휴가/근태 신청</p>
         </div>
-        <Button onClick={() => setShowCreate(true)}>
+        <Button onClick={() => setShowCreate(true)} size="lg" className="shadow-sm">
           <Plus className="h-4 w-4 mr-2" />새 결재 요청
         </Button>
       </div>
 
-      <Tabs value={tab} onValueChange={setTab}>
+      {/* 미결재 알림 배너 */}
+      {pendingCount > 0 && (
+        <Card className="border-warning/40 bg-warning/5">
+          <CardContent className="flex items-center gap-3 py-3">
+            <div className="h-10 w-10 rounded-full bg-warning/15 flex items-center justify-center shrink-0">
+              <AlertCircle className="h-5 w-5 text-warning" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-foreground">
+                결재 대기 <span className="text-warning">{pendingCount}건</span>이 있습니다
+              </p>
+              <p className="text-xs text-muted-foreground">승인 또는 반려 처리가 필요합니다.</p>
+            </div>
+            <Button size="sm" variant="outline" onClick={() => handleTabChange('pending')}>
+              바로 처리하기 <ChevronRight className="h-3.5 w-3.5 ml-1" />
+            </Button>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* 통계 카드 */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <button onClick={() => handleTabChange('pending')} className={`text-left rounded-xl border p-4 transition-all hover:shadow-sm ${tab === 'pending' ? 'border-warning bg-warning/5' : 'bg-card border-border'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <Clock className="h-4 w-4 text-warning" />
+            <span className="text-xs text-muted-foreground">결재 대기</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{pendingCount}</p>
+        </button>
+        <button onClick={() => handleTabChange('my')} className={`text-left rounded-xl border p-4 transition-all hover:shadow-sm ${tab === 'my' ? 'border-primary bg-primary/5' : 'bg-card border-border'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <Send className="h-4 w-4 text-primary" />
+            <span className="text-xs text-muted-foreground">내 요청 / 진행중</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{myCount}<span className="text-sm font-normal text-muted-foreground"> / {myPendingCount}</span></p>
+        </button>
+        <button onClick={() => handleTabChange('approved')} className={`text-left rounded-xl border p-4 transition-all hover:shadow-sm ${tab === 'approved' ? 'border-success bg-success/5' : 'bg-card border-border'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <CheckCircle2 className="h-4 w-4 text-success" />
+            <span className="text-xs text-muted-foreground">승인됨</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{approvedCount}</p>
+        </button>
+        <button onClick={() => handleTabChange('rejected')} className={`text-left rounded-xl border p-4 transition-all hover:shadow-sm ${tab === 'rejected' ? 'border-destructive bg-destructive/5' : 'bg-card border-border'}`}>
+          <div className="flex items-center justify-between mb-2">
+            <XCircle className="h-4 w-4 text-destructive" />
+            <span className="text-xs text-muted-foreground">반려됨</span>
+          </div>
+          <p className="text-2xl font-bold text-foreground">{rejectedCount}</p>
+        </button>
+      </div>
+
+      <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="all">전체</TabsTrigger>
-          <TabsTrigger value="my">내 요청</TabsTrigger>
-          <TabsTrigger value="pending" className="relative">
-            결재 대기
+          <TabsTrigger value="pending" className="relative gap-1.5">
+            <Inbox className="h-3.5 w-3.5" /> 결재 대기
             {pendingCount > 0 && (
-              <span className="ml-1.5 inline-flex items-center justify-center h-5 min-w-[20px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
+              <span className="ml-0.5 inline-flex items-center justify-center h-4 min-w-[16px] rounded-full bg-destructive text-destructive-foreground text-[10px] font-bold px-1">
                 {pendingCount}
               </span>
             )}
           </TabsTrigger>
+          <TabsTrigger value="my" className="gap-1.5"><Send className="h-3.5 w-3.5" /> 내 요청</TabsTrigger>
+          <TabsTrigger value="approved" className="gap-1.5"><CheckCircle2 className="h-3.5 w-3.5" /> 승인</TabsTrigger>
+          <TabsTrigger value="rejected" className="gap-1.5"><XCircle className="h-3.5 w-3.5" /> 반려</TabsTrigger>
+          <TabsTrigger value="all">전체</TabsTrigger>
         </TabsList>
 
         <TabsContent value={tab} className="mt-4">
           {filtered.length === 0 ? (
-            <Card><CardContent className="py-12 text-center text-muted-foreground">결재 내역이 없습니다.</CardContent></Card>
+            <Card><CardContent className="py-12 text-center text-muted-foreground">
+              <Inbox className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
+              결재 내역이 없습니다.
+            </CardContent></Card>
           ) : (
             <div className="space-y-2">
               {filtered.map(approval => {
                 const Icon = typeIcons[approval.type] || FileText;
                 const isMyApproval = approval.current_approver_id === profile?.id && approval.status === 'pending';
+                const isMine = approval.requester_id === profile?.id;
                 return (
                   <Card
                     key={approval.id}
-                    className={`cursor-pointer transition-colors hover:bg-accent/5 ${isMyApproval ? 'border-warning/40' : ''}`}
+                    className={`cursor-pointer transition-all hover:shadow-md hover:border-primary/30 ${isMyApproval ? 'border-warning/50 bg-warning/[0.02] ring-1 ring-warning/20' : ''}`}
                     onClick={() => setSelectedApproval(approval)}
                   >
                     <CardContent className="flex items-center gap-4 py-4">
-                      <div className={`h-10 w-10 rounded-lg flex items-center justify-center shrink-0 ${isMyApproval ? 'bg-warning/10' : 'bg-muted'}`}>
-                        <Icon className={`h-5 w-5 ${isMyApproval ? 'text-warning' : 'text-muted-foreground'}`} />
+                      <div className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 ${
+                        approval.status === 'approved' ? 'bg-success/10' :
+                        approval.status === 'rejected' ? 'bg-destructive/10' :
+                        isMyApproval ? 'bg-warning/15' : 'bg-muted'
+                      }`}>
+                        <Icon className={`h-5 w-5 ${
+                          approval.status === 'approved' ? 'text-success' :
+                          approval.status === 'rejected' ? 'text-destructive' :
+                          isMyApproval ? 'text-warning' : 'text-muted-foreground'
+                        }`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-foreground truncate">{approval.title}</span>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-foreground truncate">{approval.title}</span>
                           <Badge variant="outline" className="text-[10px] shrink-0">{typeLabels[approval.type]}</Badge>
+                          {isMine && <Badge variant="outline" className="text-[10px] shrink-0 bg-primary/5 text-primary border-primary/20">내 기안</Badge>}
+                          {isMyApproval && <Badge className="text-[10px] shrink-0 bg-warning text-warning-foreground animate-pulse">처리 필요</Badge>}
                         </div>
-                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground">
-                          <span>기안자: {getProfileName(approval.requester_id)}</span>
-                          <span>{format(new Date(approval.created_at), 'yyyy.MM.dd')}</span>
+                        <div className="flex items-center gap-3 mt-1 text-xs text-muted-foreground flex-wrap">
+                          <span>기안: {getProfileName(approval.requester_id)}</span>
+                          <span>·</span>
+                          <span>{format(new Date(approval.created_at), 'yyyy.MM.dd HH:mm')}</span>
                           {approval.current_approver_id && approval.status === 'pending' && (
-                            <span className="text-warning">현재 결재자: {getProfileName(approval.current_approver_id)}</span>
+                            <>
+                              <span>·</span>
+                              <span className="text-warning font-medium">대기: {getProfileName(approval.current_approver_id)}</span>
+                            </>
                           )}
                         </div>
                       </div>
-                      <Badge variant="outline" className={`shrink-0 ${statusStyles[approval.status]}`}>
+                      <Badge variant="outline" className={`shrink-0 ${statusStyles[approval.status]} font-semibold`}>
                         {statusLabels[approval.status]}
                       </Badge>
                       <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
