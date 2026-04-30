@@ -18,6 +18,13 @@ import { notifyAdmins, notifyUser } from '@/lib/notifications';
 
 const formatKRW = (n: number) => `₩${n.toLocaleString('ko-KR')}`;
 const categories = Constants.public.Enums.expense_category;
+const PAYMENT_METHODS: { value: 'personal' | 'card' | 'corporate' | 'other'; label: string }[] = [
+  { value: 'personal', label: '개인지출 (정산)' },
+  { value: 'card', label: '카드결제' },
+  { value: 'corporate', label: '법인계좌' },
+  { value: 'other', label: '기타' },
+];
+const paymentMethodLabel = (v: string) => PAYMENT_METHODS.find(p => p.value === v)?.label ?? v;
 
 export default function Expenses() {
   const { user, profile, userRole } = useAuth();
@@ -28,7 +35,7 @@ export default function Expenses() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [form, setForm] = useState({ amount: '', category: '' as string, description: '' });
+  const [form, setForm] = useState({ amount: '', category: '' as string, description: '', payment_method: 'personal' as 'personal' | 'card' | 'corporate' | 'other' });
 
   useEffect(() => {
     fetchData();
@@ -65,26 +72,33 @@ export default function Expenses() {
       receiptUrl = urlData.publicUrl;
     }
 
+    const isCeo = userRole === 'ceo';
+
     const { error } = await supabase.from('expenses').insert({
       amount: parseInt(form.amount),
       category: form.category as any,
       description: form.description,
       submitted_by: profile.id,
       receipt_url: receiptUrl,
+      payment_method: form.payment_method as any,
+      status: isCeo ? 'Approved' as any : 'Pending' as any,
     });
 
     if (error) {
       toast({ title: '경비 등록 실패', description: error.message, variant: 'destructive' });
     } else {
-      await notifyAdmins(
-        '새 경비 청구',
-        `${profile.name_kr}님이 ${formatKRW(parseInt(form.amount))} 경비를 청구했습니다. (${form.category})`,
-        'expense'
-      );
-
-      toast({ title: '경비 등록 완료' });
+      if (isCeo) {
+        toast({ title: '전결 완료', description: '대표 권한으로 즉시 승인되었습니다.' });
+      } else {
+        await notifyAdmins(
+          '새 경비 청구',
+          `${profile.name_kr}님이 ${formatKRW(parseInt(form.amount))} 경비를 청구했습니다. (${form.category} / ${paymentMethodLabel(form.payment_method)})`,
+          'expense'
+        );
+        toast({ title: '경비 등록 완료' });
+      }
       setDialogOpen(false);
-      setForm({ amount: '', category: '', description: '' });
+      setForm({ amount: '', category: '', description: '', payment_method: 'personal' });
       setReceiptFile(null);
       fetchData();
     }
@@ -165,6 +179,15 @@ export default function Expenses() {
                 </Select>
               </div>
               <div className="space-y-2">
+                <Label>결제수단</Label>
+                <Select value={form.payment_method} onValueChange={v => setForm(f => ({ ...f, payment_method: v as any }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    {PAYMENT_METHODS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
                 <Label>내역</Label>
                 <Textarea placeholder="경비 내역을 입력하세요" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
               </div>
@@ -227,6 +250,7 @@ export default function Expenses() {
                   <TableHead>날짜</TableHead>
                   <TableHead>내역</TableHead>
                   <TableHead>분류</TableHead>
+                  <TableHead>결제수단</TableHead>
                   <TableHead>청구자</TableHead>
                   <TableHead className="text-right">금액</TableHead>
                   <TableHead>영수증</TableHead>
@@ -243,6 +267,11 @@ export default function Expenses() {
                       <TableCell className="text-sm font-medium max-w-[200px] truncate">{expense.description}</TableCell>
                       <TableCell>
                         <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">{expense.category}</span>
+                      </TableCell>
+                      <TableCell>
+                        <span className={`text-xs px-2 py-0.5 rounded ${expense.payment_method === 'card' ? 'bg-info/10 text-info' : expense.payment_method === 'corporate' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
+                          {paymentMethodLabel(expense.payment_method || 'personal')}
+                        </span>
                       </TableCell>
                       <TableCell>
                         {submitter && (

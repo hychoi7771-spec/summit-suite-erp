@@ -761,6 +761,7 @@ export type Database = {
           date: string
           description: string | null
           id: string
+          payment_method: Database["public"]["Enums"]["payment_method"]
           receipt_url: string | null
           status: Database["public"]["Enums"]["expense_status"]
           submitted_by: string
@@ -773,6 +774,7 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
           submitted_by: string
@@ -785,6 +787,7 @@ export type Database = {
           date?: string
           description?: string | null
           id?: string
+          payment_method?: Database["public"]["Enums"]["payment_method"]
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
           submitted_by?: string
@@ -1833,6 +1836,7 @@ export type Database = {
         | "sick"
         | "other"
         | "monthly"
+      payment_method: "personal" | "card" | "corporate" | "other"
       presence_status: "working" | "away" | "offline"
       product_category: "의약외품" | "뷰티" | "건강기능식품"
       product_stage:
@@ -1994,6 +1998,7 @@ export const Constants = {
         "other",
         "monthly",
       ],
+      payment_method: ["personal", "card", "corporate", "other"],
       presence_status: ["working", "away", "offline"],
       product_category: ["의약외품", "뷰티", "건강기능식품"],
       product_stage: [
