@@ -242,7 +242,7 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
             '⚠️ 여름휴가 일정 겹침 알림',
             `${rangeText} 기간에 최대 ${maxOverlap}명이 여름휴가로 겹칩니다. (${profile.name_kr}님 신청 포함)`,
             'leave_overlap',
-            approval.id,
+            approvalId ?? undefined,
           );
         }
       }
