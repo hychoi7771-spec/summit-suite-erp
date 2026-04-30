@@ -35,7 +35,7 @@ export default function Expenses() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [form, setForm] = useState({ amount: '', category: '' as string, description: '' });
+  const [form, setForm] = useState({ amount: '', category: '' as string, description: '', payment_method: 'personal' as 'personal' | 'card' | 'corporate' | 'other' });
 
   useEffect(() => {
     fetchData();
