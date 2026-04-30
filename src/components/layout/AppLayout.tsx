@@ -187,6 +187,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </div>
       </div>
       <NoticePopupOnLogin />
+      <PendingApprovalToast />
     </SidebarProvider>
   );
 }
