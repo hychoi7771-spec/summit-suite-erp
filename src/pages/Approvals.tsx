@@ -124,15 +124,21 @@ export default function Approvals() {
   const handleCreate = async () => {
     if (!profile || !form.title.trim()) return;
 
+    const requesterRole = getProfileRole(profile.id);
+    const isCeo = requesterRole === 'ceo';
+
     const chain = buildApprovalChain(profile.id);
     const firstApprover = chain.length > 0 ? chain[0].id : null;
 
+    // 대표(ceo)는 결재 단계 없이 즉시 전결 처리
     const { data: approval, error } = await supabase.from('approvals').insert({
       title: form.title,
       type: form.type as any,
       content: form.content,
       requester_id: profile.id,
-      current_approver_id: firstApprover,
+      current_approver_id: isCeo ? null : firstApprover,
+      status: isCeo ? 'approved' : 'pending',
+      approved_at: isCeo ? new Date().toISOString() : null,
     }).select().single();
 
     if (error || !approval) {
@@ -140,8 +146,8 @@ export default function Approvals() {
       return;
     }
 
-    // Insert approval steps
-    if (chain.length > 0) {
+    // 일반 사용자: 결재선 생성
+    if (!isCeo && chain.length > 0) {
       const stepsData = chain.map((p, i) => ({
         approval_id: approval.id,
         approver_id: p.id,
@@ -150,20 +156,24 @@ export default function Approvals() {
       await supabase.from('approval_steps').insert(stepsData);
     }
 
-    // Notify admins about new approval request
-    await notifyAdmins(
-      '새 결재 요청',
-      `${profile.name_kr}님이 [${typeLabels[form.type]}] "${form.title}" 결재를 요청했습니다.`,
-      'approval',
-      approval.id
-    );
+    if (isCeo) {
+      toast({ title: '전결 완료', description: '대표 권한으로 즉시 승인 처리되었습니다.' });
+    } else {
+      // Notify admins about new approval request
+      await notifyAdmins(
+        '새 결재 요청',
+        `${profile.name_kr}님이 [${typeLabels[form.type]}] "${form.title}" 결재를 요청했습니다.`,
+        'approval',
+        approval.id
+      );
 
-    // Notify first approver
-    if (firstApprover) {
-      await notifyUser(firstApprover, '결재 대기', `${profile.name_kr}님의 "${form.title}" 결재가 대기 중입니다.`, 'approval', approval.id);
+      // Notify first approver
+      if (firstApprover) {
+        await notifyUser(firstApprover, '결재 대기', `${profile.name_kr}님의 "${form.title}" 결재가 대기 중입니다.`, 'approval', approval.id);
+      }
+      toast({ title: '성공', description: '결재 요청이 생성되었습니다.' });
     }
 
-    toast({ title: '성공', description: '결재 요청이 생성되었습니다.' });
     setShowCreate(false);
     setForm({ title: '', type: 'document', content: '' });
     fetchData();
