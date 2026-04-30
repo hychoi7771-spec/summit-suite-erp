@@ -250,6 +250,7 @@ export default function Expenses() {
                   <TableHead>날짜</TableHead>
                   <TableHead>내역</TableHead>
                   <TableHead>분류</TableHead>
+                  <TableHead>결제수단</TableHead>
                   <TableHead>청구자</TableHead>
                   <TableHead className="text-right">금액</TableHead>
                   <TableHead>영수증</TableHead>
