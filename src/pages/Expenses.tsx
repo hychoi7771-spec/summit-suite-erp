@@ -18,13 +18,19 @@ import { notifyAdmins, notifyUser } from '@/lib/notifications';
 
 const formatKRW = (n: number) => `₩${n.toLocaleString('ko-KR')}`;
 const categories = Constants.public.Enums.expense_category;
-const PAYMENT_METHODS: { value: 'personal' | 'card' | 'corporate' | 'other'; label: string }[] = [
+type PaymentMethodValue = 'personal' | 'personal_card' | 'corporate_card' | 'corporate' | 'card' | 'other';
+const PAYMENT_METHODS: { value: PaymentMethodValue; label: string }[] = [
   { value: 'personal', label: '개인지출 (정산)' },
-  { value: 'card', label: '카드결제' },
-  { value: 'corporate', label: '법인계좌' },
+  { value: 'personal_card', label: '개인카드 (정산)' },
+  { value: 'corporate_card', label: '법인카드 (기록용)' },
+  { value: 'corporate', label: '법인계좌 (기록용)' },
   { value: 'other', label: '기타' },
 ];
-const paymentMethodLabel = (v: string) => PAYMENT_METHODS.find(p => p.value === v)?.label ?? v;
+// 법인 결제수단: 회사가 이미 지불 → 등록 시 자동 Approved, 정산 단계 없음
+const CORPORATE_METHODS: PaymentMethodValue[] = ['corporate_card', 'corporate'];
+// 정산이 필요한 결제수단: 본인이 먼저 지불 → 승인 후 Reimbursed
+const REIMBURSABLE_METHODS: PaymentMethodValue[] = ['personal', 'personal_card', 'card'];
+const paymentMethodLabel = (v: string) => PAYMENT_METHODS.find(p => p.value === v)?.label ?? (v === 'card' ? '카드결제' : v);
 
 export default function Expenses() {
   const { user, profile, userRole } = useAuth();
@@ -35,7 +41,7 @@ export default function Expenses() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
-  const [form, setForm] = useState({ amount: '', category: '' as string, description: '', payment_method: 'personal' as 'personal' | 'card' | 'corporate' | 'other' });
+  const [form, setForm] = useState({ amount: '', category: '' as string, description: '', payment_method: 'personal' as PaymentMethodValue });
 
   useEffect(() => {
     fetchData();
@@ -73,6 +79,9 @@ export default function Expenses() {
     }
 
     const isCeo = userRole === 'ceo';
+    const isCorporate = CORPORATE_METHODS.includes(form.payment_method);
+    // 대표 등록 또는 법인 결제수단(법인카드/법인계좌)은 등록 즉시 Approved
+    const autoApproved = isCeo || isCorporate;
 
     const { error } = await supabase.from('expenses').insert({
       amount: parseInt(form.amount),
@@ -81,7 +90,7 @@ export default function Expenses() {
       submitted_by: profile.id,
       receipt_url: receiptUrl,
       payment_method: form.payment_method as any,
-      status: isCeo ? 'Approved' as any : 'Pending' as any,
+      status: (autoApproved ? 'Approved' : 'Pending') as any,
     });
 
     if (error) {
@@ -89,6 +98,13 @@ export default function Expenses() {
     } else {
       if (isCeo) {
         toast({ title: '전결 완료', description: '대표 권한으로 즉시 승인되었습니다.' });
+      } else if (isCorporate) {
+        toast({ title: '등록 완료', description: '법인 결제수단은 기록용으로 자동 승인됩니다.' });
+        await notifyAdmins(
+          '법인 결제 기록',
+          `${profile.name_kr}님이 ${formatKRW(parseInt(form.amount))} (${form.category} / ${paymentMethodLabel(form.payment_method)})을 등록했습니다.`,
+          'expense'
+        );
       } else {
         await notifyAdmins(
           '새 경비 청구',
@@ -269,7 +285,12 @@ export default function Expenses() {
                         <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">{expense.category}</span>
                       </TableCell>
                       <TableCell>
-                        <span className={`text-xs px-2 py-0.5 rounded ${expense.payment_method === 'card' ? 'bg-info/10 text-info' : expense.payment_method === 'corporate' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          expense.payment_method === 'personal_card' || expense.payment_method === 'card' ? 'bg-info/10 text-info'
+                          : expense.payment_method === 'corporate_card' ? 'bg-warning/10 text-warning'
+                          : expense.payment_method === 'corporate' ? 'bg-success/10 text-success'
+                          : 'bg-muted text-muted-foreground'
+                        }`}>
                           {paymentMethodLabel(expense.payment_method || 'personal')}
                         </span>
                       </TableCell>
@@ -302,8 +323,11 @@ export default function Expenses() {
                               <Button size="sm" variant="outline" className="h-7 text-xs text-destructive" onClick={() => handleStatusChange(expense.id, 'Rejected')}>반려</Button>
                             </div>
                           )}
-                          {expense.status === 'Approved' && (
+                          {expense.status === 'Approved' && REIMBURSABLE_METHODS.includes(expense.payment_method as PaymentMethodValue) && (
                             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleStatusChange(expense.id, 'Reimbursed')}>정산</Button>
+                          )}
+                          {expense.status === 'Approved' && CORPORATE_METHODS.includes(expense.payment_method as PaymentMethodValue) && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs text-destructive" onClick={() => handleStatusChange(expense.id, 'Rejected')}>반려</Button>
                           )}
                         </TableCell>
                       )}
