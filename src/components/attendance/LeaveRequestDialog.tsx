@@ -248,7 +248,9 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
       }
     }
 
-    toast({ title: '휴가 신청 완료', description: '결재 승인 후 자동 반영됩니다.' });
+    if (!isCeo) {
+      toast({ title: '휴가 신청 완료', description: '결재 승인 후 자동 반영됩니다.' });
+    }
     setSubmitting(false);
     onOpenChange(false);
     onCreated();
