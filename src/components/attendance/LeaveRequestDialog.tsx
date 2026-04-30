@@ -65,101 +65,145 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
     setSubmitting(true);
     const days = computeDays();
     const typeLabel = LEAVE_TYPES.find(t => t.value === form.leave_type)?.label || '휴가';
+    const isCeo = userRole === 'ceo';
 
-    // 0) 결재선 구성: 이사(general_director) → 대표(ceo)
-    const { data: approverRoles } = await supabase
-      .from('user_roles')
-      .select('user_id, role')
-      .in('role', ['general_director', 'ceo']);
+    let approvalId: string | null = null;
 
-    const approverUserIds = (approverRoles ?? []).map(r => r.user_id);
-    const { data: approverProfiles } = approverUserIds.length
-      ? await supabase.from('profiles').select('id, user_id').in('user_id', approverUserIds)
-      : { data: [] as { id: string; user_id: string }[] };
+    if (isCeo) {
+      // 대표: 결재 단계 없이 즉시 전결
+      const { data: approval, error: appErr } = await supabase
+        .from('approvals')
+        .insert({
+          requester_id: profile.id,
+          type: 'leave',
+          title: `[${typeLabel}] ${form.start_date}${form.start_date !== form.end_date ? ` ~ ${form.end_date}` : ''} (${days}일)`,
+          content: form.reason || '',
+          status: 'approved',
+          current_approver_id: null,
+          approved_at: new Date().toISOString(),
+        })
+        .select()
+        .single();
 
-    const userIdToProfileId = new Map((approverProfiles ?? []).map(p => [p.user_id, p.id]));
-    const orderedApproverProfileIds: string[] = [];
-    // 1순위: 이사
-    (approverRoles ?? [])
-      .filter(r => r.role === 'general_director')
-      .forEach(r => {
-        const pid = userIdToProfileId.get(r.user_id);
-        if (pid && !orderedApproverProfileIds.includes(pid)) orderedApproverProfileIds.push(pid);
+      if (appErr || !approval) {
+        toast({ title: '결재 신청 실패', description: appErr?.message, variant: 'destructive' });
+        setSubmitting(false);
+        return;
+      }
+      approvalId = approval.id;
+
+      // 휴가 신청 — 즉시 approved (트리거가 캘린더/잔액 자동 처리)
+      const { error: leaveErr } = await supabase.from('leave_requests').insert({
+        user_id: profile.id,
+        leave_type: form.leave_type as any,
+        start_date: form.start_date,
+        end_date: form.end_date,
+        days,
+        reason: form.reason || null,
+        status: 'approved',
+        approved_by: profile.id,
+        approved_at: new Date().toISOString(),
+        approval_id: approval.id,
       });
-    // 2순위: 대표
-    (approverRoles ?? [])
-      .filter(r => r.role === 'ceo')
-      .forEach(r => {
-        const pid = userIdToProfileId.get(r.user_id);
-        if (pid && !orderedApproverProfileIds.includes(pid)) orderedApproverProfileIds.push(pid);
-      });
 
-    if (orderedApproverProfileIds.length === 0) {
-      toast({ title: '결재자 없음', description: '이사/대표 계정이 등록되어 있지 않습니다.', variant: 'destructive' });
-      setSubmitting(false);
-      return;
-    }
+      if (leaveErr) {
+        toast({ title: '휴가 등록 실패', description: leaveErr.message, variant: 'destructive' });
+        setSubmitting(false);
+        return;
+      }
 
-    // 1) 전자결재 등록 (leave 타입) + current_approver_id 지정
-    const { data: approval, error: appErr } = await supabase
-      .from('approvals')
-      .insert({
-        requester_id: profile.id,
-        type: 'leave',
-        title: `[${typeLabel}] ${form.start_date}${form.start_date !== form.end_date ? ` ~ ${form.end_date}` : ''} (${days}일)`,
-        content: form.reason || '',
+      toast({ title: '전결 완료', description: '대표 권한으로 즉시 승인되었습니다.' });
+    } else {
+      // 일반 사용자: 결재선 구성 (이사 → 대표)
+      const { data: approverRoles } = await supabase
+        .from('user_roles')
+        .select('user_id, role')
+        .in('role', ['general_director', 'ceo']);
+
+      const approverUserIds = (approverRoles ?? []).map(r => r.user_id);
+      const { data: approverProfiles } = approverUserIds.length
+        ? await supabase.from('profiles').select('id, user_id').in('user_id', approverUserIds)
+        : { data: [] as { id: string; user_id: string }[] };
+
+      const userIdToProfileId = new Map((approverProfiles ?? []).map(p => [p.user_id, p.id]));
+      const orderedApproverProfileIds: string[] = [];
+      (approverRoles ?? [])
+        .filter(r => r.role === 'general_director')
+        .forEach(r => {
+          const pid = userIdToProfileId.get(r.user_id);
+          if (pid && !orderedApproverProfileIds.includes(pid)) orderedApproverProfileIds.push(pid);
+        });
+      (approverRoles ?? [])
+        .filter(r => r.role === 'ceo')
+        .forEach(r => {
+          const pid = userIdToProfileId.get(r.user_id);
+          if (pid && !orderedApproverProfileIds.includes(pid)) orderedApproverProfileIds.push(pid);
+        });
+
+      if (orderedApproverProfileIds.length === 0) {
+        toast({ title: '결재자 없음', description: '이사/대표 계정이 등록되어 있지 않습니다.', variant: 'destructive' });
+        setSubmitting(false);
+        return;
+      }
+
+      const { data: approval, error: appErr } = await supabase
+        .from('approvals')
+        .insert({
+          requester_id: profile.id,
+          type: 'leave',
+          title: `[${typeLabel}] ${form.start_date}${form.start_date !== form.end_date ? ` ~ ${form.end_date}` : ''} (${days}일)`,
+          content: form.reason || '',
+          status: 'pending',
+          current_approver_id: orderedApproverProfileIds[0],
+        })
+        .select()
+        .single();
+
+      if (appErr || !approval) {
+        toast({ title: '결재 신청 실패', description: appErr?.message, variant: 'destructive' });
+        setSubmitting(false);
+        return;
+      }
+      approvalId = approval.id;
+
+      const steps = orderedApproverProfileIds.map((approverId, idx) => ({
+        approval_id: approval.id,
+        approver_id: approverId,
+        step_order: idx + 1,
+        status: 'pending' as const,
+      }));
+      const { error: stepsErr } = await supabase.from('approval_steps').insert(steps);
+      if (stepsErr) {
+        toast({ title: '결재선 생성 실패', description: stepsErr.message, variant: 'destructive' });
+        setSubmitting(false);
+        return;
+      }
+
+      const { error: leaveErr } = await supabase.from('leave_requests').insert({
+        user_id: profile.id,
+        leave_type: form.leave_type as any,
+        start_date: form.start_date,
+        end_date: form.end_date,
+        days,
+        reason: form.reason || null,
         status: 'pending',
-        current_approver_id: orderedApproverProfileIds[0],
-      })
-      .select()
-      .single();
+        approval_id: approval.id,
+      });
 
-    if (appErr || !approval) {
-      toast({ title: '결재 신청 실패', description: appErr?.message, variant: 'destructive' });
-      setSubmitting(false);
-      return;
+      if (leaveErr) {
+        toast({ title: '휴가 신청 실패', description: leaveErr.message, variant: 'destructive' });
+        setSubmitting(false);
+        return;
+      }
+
+      await notifyUsers(
+        [orderedApproverProfileIds[0]],
+        '새 휴가 결재 요청',
+        `${profile.name_kr}님이 ${typeLabel} ${days}일을 신청했습니다.`,
+        'approval',
+        approval.id,
+      );
     }
-
-    // 1-1) 결재 단계(approval_steps) 생성
-    const steps = orderedApproverProfileIds.map((approverId, idx) => ({
-      approval_id: approval.id,
-      approver_id: approverId,
-      step_order: idx + 1,
-      status: 'pending' as const,
-    }));
-    const { error: stepsErr } = await supabase.from('approval_steps').insert(steps);
-    if (stepsErr) {
-      toast({ title: '결재선 생성 실패', description: stepsErr.message, variant: 'destructive' });
-      setSubmitting(false);
-      return;
-    }
-
-    // 2) 휴가 신청 등록 (approval과 연결)
-    const { error: leaveErr } = await supabase.from('leave_requests').insert({
-      user_id: profile.id,
-      leave_type: form.leave_type as any,
-      start_date: form.start_date,
-      end_date: form.end_date,
-      days,
-      reason: form.reason || null,
-      status: 'pending',
-      approval_id: approval.id,
-    });
-
-    if (leaveErr) {
-      toast({ title: '휴가 신청 실패', description: leaveErr.message, variant: 'destructive' });
-      setSubmitting(false);
-      return;
-    }
-
-    // 3) 1순위 결재자에게 알림 (이사 우선)
-    await notifyUsers(
-      [orderedApproverProfileIds[0]],
-      '새 휴가 결재 요청',
-      `${profile.name_kr}님이 ${typeLabel} ${days}일을 신청했습니다.`,
-      'approval',
-      approval.id,
-    );
 
     // 4) 여름휴가 겹침 감지 → 같은 기간(승인+대기 포함, 본인 제외) 3명 이상이면 관리자 알림
     if (form.leave_type === 'summer') {
