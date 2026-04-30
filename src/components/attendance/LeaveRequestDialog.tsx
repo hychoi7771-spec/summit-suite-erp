@@ -28,7 +28,7 @@ const LEAVE_TYPES = [
 ];
 
 export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveRequestDialogProps) {
-  const { profile } = useAuth();
+  const { profile, userRole } = useAuth();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
   const [form, setForm] = useState({
