@@ -10,6 +10,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { NoticePopupOnLogin } from '@/components/notices/NoticePopupOnLogin';
+import { PendingApprovalToast } from '@/components/approvals/PendingApprovalToast';
 
 interface AppLayoutProps {
   children: ReactNode;
