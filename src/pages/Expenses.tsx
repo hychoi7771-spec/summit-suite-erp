@@ -18,13 +18,19 @@ import { notifyAdmins, notifyUser } from '@/lib/notifications';
 
 const formatKRW = (n: number) => `₩${n.toLocaleString('ko-KR')}`;
 const categories = Constants.public.Enums.expense_category;
-const PAYMENT_METHODS: { value: 'personal' | 'card' | 'corporate' | 'other'; label: string }[] = [
+type PaymentMethodValue = 'personal' | 'personal_card' | 'corporate_card' | 'corporate' | 'card' | 'other';
+const PAYMENT_METHODS: { value: PaymentMethodValue; label: string }[] = [
   { value: 'personal', label: '개인지출 (정산)' },
-  { value: 'card', label: '카드결제' },
-  { value: 'corporate', label: '법인계좌' },
+  { value: 'personal_card', label: '개인카드 (정산)' },
+  { value: 'corporate_card', label: '법인카드 (기록용)' },
+  { value: 'corporate', label: '법인계좌 (기록용)' },
   { value: 'other', label: '기타' },
 ];
-const paymentMethodLabel = (v: string) => PAYMENT_METHODS.find(p => p.value === v)?.label ?? v;
+// 법인 결제수단: 회사가 이미 지불 → 등록 시 자동 Approved, 정산 단계 없음
+const CORPORATE_METHODS: PaymentMethodValue[] = ['corporate_card', 'corporate'];
+// 정산이 필요한 결제수단: 본인이 먼저 지불 → 승인 후 Reimbursed
+const REIMBURSABLE_METHODS: PaymentMethodValue[] = ['personal', 'personal_card', 'card'];
+const paymentMethodLabel = (v: string) => PAYMENT_METHODS.find(p => p.value === v)?.label ?? (v === 'card' ? '카드결제' : v);
 
 export default function Expenses() {
   const { user, profile, userRole } = useAuth();
