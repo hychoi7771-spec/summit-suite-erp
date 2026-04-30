@@ -72,26 +72,33 @@ export default function Expenses() {
       receiptUrl = urlData.publicUrl;
     }
 
+    const isCeo = userRole === 'ceo';
+
     const { error } = await supabase.from('expenses').insert({
       amount: parseInt(form.amount),
       category: form.category as any,
       description: form.description,
       submitted_by: profile.id,
       receipt_url: receiptUrl,
+      payment_method: form.payment_method as any,
+      status: isCeo ? 'Approved' as any : 'Pending' as any,
     });
 
     if (error) {
       toast({ title: '경비 등록 실패', description: error.message, variant: 'destructive' });
     } else {
-      await notifyAdmins(
-        '새 경비 청구',
-        `${profile.name_kr}님이 ${formatKRW(parseInt(form.amount))} 경비를 청구했습니다. (${form.category})`,
-        'expense'
-      );
-
-      toast({ title: '경비 등록 완료' });
+      if (isCeo) {
+        toast({ title: '전결 완료', description: '대표 권한으로 즉시 승인되었습니다.' });
+      } else {
+        await notifyAdmins(
+          '새 경비 청구',
+          `${profile.name_kr}님이 ${formatKRW(parseInt(form.amount))} 경비를 청구했습니다. (${form.category} / ${paymentMethodLabel(form.payment_method)})`,
+          'expense'
+        );
+        toast({ title: '경비 등록 완료' });
+      }
       setDialogOpen(false);
-      setForm({ amount: '', category: '', description: '' });
+      setForm({ amount: '', category: '', description: '', payment_method: 'personal' });
       setReceiptFile(null);
       fetchData();
     }
