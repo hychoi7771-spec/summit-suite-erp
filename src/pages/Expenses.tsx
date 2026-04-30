@@ -323,8 +323,11 @@ export default function Expenses() {
                               <Button size="sm" variant="outline" className="h-7 text-xs text-destructive" onClick={() => handleStatusChange(expense.id, 'Rejected')}>반려</Button>
                             </div>
                           )}
-                          {expense.status === 'Approved' && (
+                          {expense.status === 'Approved' && REIMBURSABLE_METHODS.includes(expense.payment_method as PaymentMethodValue) && (
                             <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleStatusChange(expense.id, 'Reimbursed')}>정산</Button>
+                          )}
+                          {expense.status === 'Approved' && CORPORATE_METHODS.includes(expense.payment_method as PaymentMethodValue) && (
+                            <Button size="sm" variant="outline" className="h-7 text-xs text-destructive" onClick={() => handleStatusChange(expense.id, 'Rejected')}>반려</Button>
                           )}
                         </TableCell>
                       )}
