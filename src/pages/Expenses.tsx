@@ -269,6 +269,11 @@ export default function Expenses() {
                         <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">{expense.category}</span>
                       </TableCell>
                       <TableCell>
+                        <span className={`text-xs px-2 py-0.5 rounded ${expense.payment_method === 'card' ? 'bg-info/10 text-info' : expense.payment_method === 'corporate' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
+                          {paymentMethodLabel(expense.payment_method || 'personal')}
+                        </span>
+                      </TableCell>
+                      <TableCell>
                         {submitter && (
                           <div className="flex items-center gap-1.5">
                             <Avatar className="h-5 w-5 bg-primary">
