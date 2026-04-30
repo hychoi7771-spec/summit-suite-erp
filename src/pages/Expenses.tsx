@@ -285,7 +285,12 @@ export default function Expenses() {
                         <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">{expense.category}</span>
                       </TableCell>
                       <TableCell>
-                        <span className={`text-xs px-2 py-0.5 rounded ${expense.payment_method === 'card' ? 'bg-info/10 text-info' : expense.payment_method === 'corporate' ? 'bg-success/10 text-success' : 'bg-muted text-muted-foreground'}`}>
+                        <span className={`text-xs px-2 py-0.5 rounded ${
+                          expense.payment_method === 'personal_card' || expense.payment_method === 'card' ? 'bg-info/10 text-info'
+                          : expense.payment_method === 'corporate_card' ? 'bg-warning/10 text-warning'
+                          : expense.payment_method === 'corporate' ? 'bg-success/10 text-success'
+                          : 'bg-muted text-muted-foreground'
+                        }`}>
                           {paymentMethodLabel(expense.payment_method || 'personal')}
                         </span>
                       </TableCell>
