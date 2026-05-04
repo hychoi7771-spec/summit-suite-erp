@@ -26,6 +26,10 @@ interface CalendarEvent {
   createdById?: string;
   start_time?: string;
   end_time?: string;
+  assigneeId?: string;
+  assigneeName?: string;
+  attendeeIds?: string[];
+  attendeeNames?: string[];
 }
 
 export default function CalendarPage() {
@@ -52,8 +56,8 @@ export default function CalendarPage() {
     const end = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
 
     const [tasksRes, meetingsRes, customRes, profRes] = await Promise.all([
-      supabase.from('tasks').select('id, title, due_date, priority').gte('due_date', start).lte('due_date', end),
-      supabase.from('meetings').select('id, title, date, category').gte('date', start).lte('date', end),
+      supabase.from('tasks').select('id, title, due_date, priority, assignee_id').gte('due_date', start).lte('due_date', end),
+      supabase.from('meetings').select('id, title, date, category, attendee_ids').gte('date', start).lte('date', end),
       supabase.from('calendar_events').select('*').gte('date', start).lte('date', end),
       supabase.from('profiles').select('id, name_kr'),
     ]);
@@ -63,9 +67,13 @@ export default function CalendarPage() {
 
     const taskEvents: CalendarEvent[] = (tasksRes.data || []).map(t => ({
       id: t.id, title: t.title, date: t.due_date!, type: 'task' as const, meta: t.priority,
+      assigneeId: t.assignee_id || undefined,
+      assigneeName: t.assignee_id ? getProfileName(t.assignee_id) : undefined,
     }));
     const meetingEvents: CalendarEvent[] = (meetingsRes.data || []).map(m => ({
       id: m.id, title: m.title, date: m.date, type: 'meeting' as const, meta: m.category || '',
+      attendeeIds: m.attendee_ids || [],
+      attendeeNames: (m.attendee_ids || []).map((id: string) => getProfileName(id)).filter(Boolean),
     }));
     const customEvents: CalendarEvent[] = (customRes.data || []).map(c => ({
       id: c.id, title: c.title, date: c.date, type: 'custom' as const,
@@ -163,8 +171,11 @@ export default function CalendarPage() {
   };
 
   const canEditEvent = (event: CalendarEvent) => {
-    if (event.type === 'custom') return event.createdById === profile?.id || isAdmin;
-    return isAdmin;
+    if (isAdmin) return true;
+    if (event.type === 'custom') return event.createdById === profile?.id;
+    if (event.type === 'task') return event.assigneeId === profile?.id;
+    if (event.type === 'meeting') return (event.attendeeIds || []).includes(profile?.id || '');
+    return false;
   };
 
   const openEditDialog = (event: CalendarEvent) => {
@@ -328,9 +339,17 @@ export default function CalendarPage() {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{event.title}</p>
                           {event.description && <p className="text-xs mt-0.5 opacity-70 line-clamp-2">{event.description}</p>}
-                          <div className="flex flex-wrap gap-1.5 mt-1">
+                          <div className="flex flex-wrap gap-1.5 mt-1 items-center">
                             <Badge variant="outline" className="text-[10px]">{config.label}</Badge>
                             {event.meta && <Badge variant="outline" className="text-[10px]">{event.meta}</Badge>}
+                            {event.assigneeName && (
+                              <Badge variant="secondary" className="text-[10px]">담당 {event.assigneeName}</Badge>
+                            )}
+                            {event.attendeeNames && event.attendeeNames.length > 0 && (
+                              <Badge variant="secondary" className="text-[10px]">
+                                참석 {event.attendeeNames.slice(0, 3).join(', ')}{event.attendeeNames.length > 3 ? ` 외 ${event.attendeeNames.length - 3}명` : ''}
+                              </Badge>
+                            )}
                             {event.createdBy && <span className="text-[10px] text-muted-foreground">by {event.createdBy}</span>}
                           </div>
                         </div>
