@@ -339,9 +339,17 @@ export default function CalendarPage() {
                         <div className="min-w-0 flex-1">
                           <p className="text-sm font-medium truncate">{event.title}</p>
                           {event.description && <p className="text-xs mt-0.5 opacity-70 line-clamp-2">{event.description}</p>}
-                          <div className="flex flex-wrap gap-1.5 mt-1">
+                          <div className="flex flex-wrap gap-1.5 mt-1 items-center">
                             <Badge variant="outline" className="text-[10px]">{config.label}</Badge>
                             {event.meta && <Badge variant="outline" className="text-[10px]">{event.meta}</Badge>}
+                            {event.assigneeName && (
+                              <Badge variant="secondary" className="text-[10px]">담당 {event.assigneeName}</Badge>
+                            )}
+                            {event.attendeeNames && event.attendeeNames.length > 0 && (
+                              <Badge variant="secondary" className="text-[10px]">
+                                참석 {event.attendeeNames.slice(0, 3).join(', ')}{event.attendeeNames.length > 3 ? ` 외 ${event.attendeeNames.length - 3}명` : ''}
+                              </Badge>
+                            )}
                             {event.createdBy && <span className="text-[10px] text-muted-foreground">by {event.createdBy}</span>}
                           </div>
                         </div>
