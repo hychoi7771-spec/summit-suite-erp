@@ -26,6 +26,10 @@ interface CalendarEvent {
   createdById?: string;
   start_time?: string;
   end_time?: string;
+  assigneeId?: string;
+  assigneeName?: string;
+  attendeeIds?: string[];
+  attendeeNames?: string[];
 }
 
 export default function CalendarPage() {
