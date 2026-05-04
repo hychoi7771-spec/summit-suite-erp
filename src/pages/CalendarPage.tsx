@@ -56,8 +56,8 @@ export default function CalendarPage() {
     const end = format(endOfMonth(currentMonth), 'yyyy-MM-dd');
 
     const [tasksRes, meetingsRes, customRes, profRes] = await Promise.all([
-      supabase.from('tasks').select('id, title, due_date, priority').gte('due_date', start).lte('due_date', end),
-      supabase.from('meetings').select('id, title, date, category').gte('date', start).lte('date', end),
+      supabase.from('tasks').select('id, title, due_date, priority, assignee_id').gte('due_date', start).lte('due_date', end),
+      supabase.from('meetings').select('id, title, date, category, attendee_ids').gte('date', start).lte('date', end),
       supabase.from('calendar_events').select('*').gte('date', start).lte('date', end),
       supabase.from('profiles').select('id, name_kr'),
     ]);
@@ -67,9 +67,13 @@ export default function CalendarPage() {
 
     const taskEvents: CalendarEvent[] = (tasksRes.data || []).map(t => ({
       id: t.id, title: t.title, date: t.due_date!, type: 'task' as const, meta: t.priority,
+      assigneeId: t.assignee_id || undefined,
+      assigneeName: t.assignee_id ? getProfileName(t.assignee_id) : undefined,
     }));
     const meetingEvents: CalendarEvent[] = (meetingsRes.data || []).map(m => ({
       id: m.id, title: m.title, date: m.date, type: 'meeting' as const, meta: m.category || '',
+      attendeeIds: m.attendee_ids || [],
+      attendeeNames: (m.attendee_ids || []).map((id: string) => getProfileName(id)).filter(Boolean),
     }));
     const customEvents: CalendarEvent[] = (customRes.data || []).map(c => ({
       id: c.id, title: c.title, date: c.date, type: 'custom' as const,
