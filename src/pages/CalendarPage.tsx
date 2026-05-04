@@ -171,8 +171,11 @@ export default function CalendarPage() {
   };
 
   const canEditEvent = (event: CalendarEvent) => {
-    if (event.type === 'custom') return event.createdById === profile?.id || isAdmin;
-    return isAdmin;
+    if (isAdmin) return true;
+    if (event.type === 'custom') return event.createdById === profile?.id;
+    if (event.type === 'task') return event.assigneeId === profile?.id;
+    if (event.type === 'meeting') return (event.attendeeIds || []).includes(profile?.id || '');
+    return false;
   };
 
   const openEditDialog = (event: CalendarEvent) => {
