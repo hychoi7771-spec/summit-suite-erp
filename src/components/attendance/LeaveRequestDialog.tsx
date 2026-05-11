@@ -114,11 +114,11 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
 
       toast({ title: '전결 완료', description: '대표 권한으로 즉시 승인되었습니다.' });
     } else {
-      // 일반 사용자: 결재선 구성 (이사 → 대표)
+      // 일반 사용자: 결재선 구성 (대표만 결재)
       const { data: approverRoles } = await supabase
         .from('user_roles')
         .select('user_id, role')
-        .in('role', ['general_director', 'ceo']);
+        .eq('role', 'ceo');
 
       const approverUserIds = (approverRoles ?? []).map(r => r.user_id);
       const { data: approverProfiles } = approverUserIds.length
@@ -128,12 +128,6 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
       const userIdToProfileId = new Map((approverProfiles ?? []).map(p => [p.user_id, p.id]));
       const orderedApproverProfileIds: string[] = [];
       (approverRoles ?? [])
-        .filter(r => r.role === 'general_director')
-        .forEach(r => {
-          const pid = userIdToProfileId.get(r.user_id);
-          if (pid && !orderedApproverProfileIds.includes(pid)) orderedApproverProfileIds.push(pid);
-        });
-      (approverRoles ?? [])
         .filter(r => r.role === 'ceo')
         .forEach(r => {
           const pid = userIdToProfileId.get(r.user_id);
@@ -141,7 +135,7 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
         });
 
       if (orderedApproverProfileIds.length === 0) {
-        toast({ title: '결재자 없음', description: '이사/대표 계정이 등록되어 있지 않습니다.', variant: 'destructive' });
+        toast({ title: '결재자 없음', description: '대표 계정이 등록되어 있지 않습니다.', variant: 'destructive' });
         setSubmitting(false);
         return;
       }
