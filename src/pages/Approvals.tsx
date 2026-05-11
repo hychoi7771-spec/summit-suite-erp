@@ -99,15 +99,12 @@ export default function Approvals() {
     return roles.find(r => r.user_id === p.user_id)?.role || null;
   };
 
-  // Build approval chain: 담당자 → 총괄이사 → 대표이사 (간략화)
+  // Build approval chain: 담당자 → 대표이사 (단일 결재자)
   const buildApprovalChain = (requesterId: string) => {
     const requesterRole = getProfileRole(requesterId);
 
-    // Chain: general_director first, then ceo
+    // 대표만 결재 가능. 본인이 대표면 chain은 비어있음(즉시 전결)
     const targetRoles: string[] = [];
-    if (requesterRole !== 'general_director' && requesterRole !== 'ceo') {
-      targetRoles.push('general_director');
-    }
     if (requesterRole !== 'ceo') {
       targetRoles.push('ceo');
     }
