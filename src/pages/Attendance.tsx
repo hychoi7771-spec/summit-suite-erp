@@ -519,6 +519,7 @@ export default function Attendance() {
                 requests={requests}
                 profiles={profiles}
                 showOwner
+                onCancel={isAdmin ? cancelMyRequest : undefined}
                 onDelete={isAdmin ? deleteRequest : undefined}
                 isAdmin={isAdmin}
                 myProfileId={profile?.id}
