@@ -151,18 +151,35 @@ export default function Attendance() {
   };
 
   const cancelMyRequest = async (id: string) => {
+    // 휴가 신청 정보 가져오기 (연결된 결재/캘린더 함께 정리하기 위함)
+    const { data: req } = await supabase.from('leave_requests')
+      .select('id, approval_id, calendar_event_id, status').eq('id', id).maybeSingle();
+
     const { error } = await supabase.from('leave_requests')
       .update({ status: 'cancelled' }).eq('id', id);
     if (error) { toast({ title: '취소 실패', description: error.message, variant: 'destructive' }); return; }
+
+    // 연결된 결재가 살아있으면 반려 처리하여 재신청 흐름이 꼬이지 않도록 함
+    if (req?.approval_id) {
+      await supabase.from('approvals')
+        .update({ status: 'rejected', rejected_reason: '신청자 취소', rejected_at: new Date().toISOString() })
+        .eq('id', req.approval_id);
+      await supabase.from('approval_steps')
+        .update({ status: 'rejected', acted_at: new Date().toISOString(), comment: '신청자 취소' })
+        .eq('approval_id', req.approval_id)
+        .eq('status', 'pending');
+    }
     toast({ title: '신청이 취소되었습니다' });
     fetchData();
   };
 
   const deleteRequest = async (req: any) => {
-    // Delete linked approval (cascades steps via separate delete) before request
+    // 연결된 결재 단계와 결재를 먼저 삭제 (실패 시 사용자에게 알림)
     if (req.approval_id) {
-      await supabase.from('approval_steps').delete().eq('approval_id', req.approval_id);
-      await supabase.from('approvals').delete().eq('id', req.approval_id);
+      const { error: stepErr } = await supabase.from('approval_steps').delete().eq('approval_id', req.approval_id);
+      if (stepErr) { toast({ title: '결재 단계 삭제 실패', description: stepErr.message, variant: 'destructive' }); return; }
+      const { error: appErr } = await supabase.from('approvals').delete().eq('id', req.approval_id);
+      if (appErr) { toast({ title: '결재 삭제 실패', description: appErr.message, variant: 'destructive' }); return; }
     }
     if (req.calendar_event_id) {
       await supabase.from('calendar_events').delete().eq('id', req.calendar_event_id);
