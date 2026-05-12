@@ -159,13 +159,13 @@ export default function Attendance() {
       .update({ status: 'cancelled' }).eq('id', id);
     if (error) { toast({ title: '취소 실패', description: error.message, variant: 'destructive' }); return; }
 
-    // 연결된 결재가 살아있으면 동일하게 취소 처리하여 재신청 흐름이 꼬이지 않도록 함
+    // 연결된 결재가 살아있으면 반려 처리하여 재신청 흐름이 꼬이지 않도록 함
     if (req?.approval_id) {
       await supabase.from('approvals')
-        .update({ status: 'cancelled', rejected_reason: '신청자 취소', rejected_at: new Date().toISOString() })
+        .update({ status: 'rejected', rejected_reason: '신청자 취소', rejected_at: new Date().toISOString() })
         .eq('id', req.approval_id);
       await supabase.from('approval_steps')
-        .update({ status: 'cancelled', acted_at: new Date().toISOString() })
+        .update({ status: 'rejected', acted_at: new Date().toISOString(), comment: '신청자 취소' })
         .eq('approval_id', req.approval_id)
         .eq('status', 'pending');
     }
