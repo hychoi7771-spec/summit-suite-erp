@@ -77,9 +77,12 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
 
     if (isCeo) {
       // 대표: 결재 단계 없이 즉시 전결
-      const { data: approval, error: appErr } = await supabase
+      // UUID를 클라이언트에서 생성해 .select() 없이 INSERT → RLS SELECT 정책 무한재귀 회피
+      const newApprovalId = crypto.randomUUID();
+      const { error: appErr } = await supabase
         .from('approvals')
         .insert({
+          id: newApprovalId,
           requester_id: profile.id,
           type: 'leave',
           title: `[${typeLabel}] ${form.start_date}${form.start_date !== form.end_date ? ` ~ ${form.end_date}` : ''} (${days}일)`,
@@ -87,16 +90,14 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
           status: 'approved',
           current_approver_id: null,
           approved_at: new Date().toISOString(),
-        })
-        .select()
-        .single();
+        });
 
-      if (appErr || !approval) {
+      if (appErr) {
         toast({ title: '결재 신청 실패', description: appErr?.message, variant: 'destructive' });
         setSubmitting(false);
         return;
       }
-      approvalId = approval.id;
+      approvalId = newApprovalId;
 
       // 휴가 신청 — 즉시 approved (트리거가 캘린더/잔액 자동 처리)
       const { error: leaveErr } = await supabase.from('leave_requests').insert({
@@ -109,7 +110,7 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
         status: 'approved',
         approved_by: profile.id,
         approved_at: new Date().toISOString(),
-        approval_id: approval.id,
+        approval_id: newApprovalId,
       });
 
       if (leaveErr) {
@@ -146,28 +147,29 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
         return;
       }
 
-      const { data: approval, error: appErr } = await supabase
+      // UUID를 클라이언트에서 생성해 .select() 없이 INSERT → RLS SELECT 정책 무한재귀 회피
+      const newApprovalId = crypto.randomUUID();
+      const { error: appErr } = await supabase
         .from('approvals')
         .insert({
+          id: newApprovalId,
           requester_id: profile.id,
           type: 'leave',
           title: `[${typeLabel}] ${form.start_date}${form.start_date !== form.end_date ? ` ~ ${form.end_date}` : ''} (${days}일)`,
           content: form.reason || '',
           status: 'pending',
           current_approver_id: orderedApproverProfileIds[0],
-        })
-        .select()
-        .single();
+        });
 
-      if (appErr || !approval) {
+      if (appErr) {
         toast({ title: '결재 신청 실패', description: appErr?.message, variant: 'destructive' });
         setSubmitting(false);
         return;
       }
-      approvalId = approval.id;
+      approvalId = newApprovalId;
 
       const steps = orderedApproverProfileIds.map((approverId, idx) => ({
-        approval_id: approval.id,
+        approval_id: newApprovalId,
         approver_id: approverId,
         step_order: idx + 1,
         status: 'pending' as const,
@@ -187,7 +189,7 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
         days,
         reason: form.reason || null,
         status: 'pending',
-        approval_id: approval.id,
+        approval_id: newApprovalId,
       });
 
       if (leaveErr) {
