@@ -43,14 +43,19 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
     if (open) {
       const today = new Date().toISOString().slice(0, 10);
       setForm({ leave_type: 'annual', start_date: today, end_date: today, reason: '' });
+      loadCompanyHolidays();
     }
   }, [open]);
 
   const computeDays = () => {
     if (form.leave_type === 'half_day') return 0.5;
     if (!form.start_date || !form.end_date) return 1;
-    const diff = differenceInCalendarDays(new Date(form.end_date), new Date(form.start_date)) + 1;
-    return diff > 0 ? diff : 1;
+    const start = new Date(form.start_date);
+    const end = new Date(form.end_date);
+    if (end < start) return 1;
+    // 주말 및 공휴일 제외한 영업일 수 계산
+    const days = eachDayOfInterval({ start, end }).filter(d => !isNonWorkingDay(d)).length;
+    return days > 0 ? days : 0;
   };
 
   const handleSubmit = async () => {
