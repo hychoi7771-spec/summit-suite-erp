@@ -11,6 +11,7 @@ import { useToast } from '@/hooks/use-toast';
 import { differenceInCalendarDays } from 'date-fns';
 import { notifyUsers, notifyAdmins } from '@/lib/notifications';
 import { eachDayOfInterval, format } from 'date-fns';
+import { isNonWorkingDay, loadCompanyHolidays } from '@/lib/holidays';
 
 interface LeaveRequestDialogProps {
   open: boolean;
