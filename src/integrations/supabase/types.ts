@@ -1813,6 +1813,7 @@ export type Database = {
         Args: { t: Database["public"]["Enums"]["leave_type"] }
         Returns: string
       }
+      profile_is_director: { Args: { _profile_id: string }; Returns: boolean }
       run_monthly_leave_grant: { Args: never; Returns: number }
     }
     Enums: {
