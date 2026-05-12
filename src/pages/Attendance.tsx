@@ -519,6 +519,7 @@ export default function Attendance() {
                 requests={requests}
                 profiles={profiles}
                 showOwner
+                onCancel={isAdmin ? cancelMyRequest : undefined}
                 onDelete={isAdmin ? deleteRequest : undefined}
                 isAdmin={isAdmin}
                 myProfileId={profile?.id}
@@ -562,7 +563,10 @@ function RequestList({
     <div className="space-y-2">
       {requests.map(r => {
         const p = getProfile(r.user_id);
-        const canCancel = onCancel && r.user_id === myProfileId && r.status === 'pending';
+        const canCancelOwn = onCancel && r.user_id === myProfileId && r.status === 'pending';
+        const canAdminCancel = onCancel && isAdmin && (r.status === 'approved' || r.status === 'pending');
+        const canCancel = canCancelOwn || canAdminCancel;
+        const cancelLabel = r.status === 'approved' ? '승인 취소' : '취소';
         return (
           <div key={r.id} className="flex items-center justify-between p-3 rounded-md border border-border hover:bg-muted/30 transition-colors">
             <div className="flex items-center gap-3 min-w-0">
@@ -587,7 +591,7 @@ function RequestList({
             </div>
             <div className="flex items-center gap-1 shrink-0">
               {canCancel && (
-                <Button size="sm" variant="ghost" onClick={() => onCancel!(r.id)}>취소</Button>
+                <Button size="sm" variant="ghost" onClick={() => onCancel!(r.id)}>{cancelLabel}</Button>
               )}
               {isAdmin && onDelete && (
                 <AlertDialog>
