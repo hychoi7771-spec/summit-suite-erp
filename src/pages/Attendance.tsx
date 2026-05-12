@@ -174,10 +174,8 @@ export default function Attendance() {
   };
 
   const deleteRequest = async (req: any) => {
-    // 연결된 결재 단계와 결재를 먼저 삭제 (실패 시 사용자에게 알림)
+    // approval_steps는 approval_id ON DELETE CASCADE → approvals 삭제 시 자동 처리
     if (req.approval_id) {
-      const { error: stepErr } = await supabase.from('approval_steps').delete().eq('approval_id', req.approval_id);
-      if (stepErr) { toast({ title: '결재 단계 삭제 실패', description: stepErr.message, variant: 'destructive' }); return; }
       const { error: appErr } = await supabase.from('approvals').delete().eq('id', req.approval_id);
       if (appErr) { toast({ title: '결재 삭제 실패', description: appErr.message, variant: 'destructive' }); return; }
     }

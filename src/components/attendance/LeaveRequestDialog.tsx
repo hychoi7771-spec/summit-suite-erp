@@ -203,7 +203,7 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
         '새 휴가 결재 요청',
         `${profile.name_kr}님이 ${typeLabel} ${days}일을 신청했습니다.`,
         'approval',
-        approval.id,
+        newApprovalId,
       );
     }
 
