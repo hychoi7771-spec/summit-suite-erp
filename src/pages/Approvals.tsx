@@ -231,6 +231,7 @@ export default function Approvals() {
 
     setShowCreate(false);
     setForm({ title: '', type: 'document', content: '' });
+    setCreateFiles([]);
     fetchData();
   };
 
