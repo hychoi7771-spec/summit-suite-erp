@@ -112,17 +112,23 @@ export default function Approvals() {
         toast({ title: '지원하지 않는 파일', description: `${file.name} (허용: pdf, doc(x), xls(x), ppt(x), 이미지)`, variant: 'destructive' });
         continue;
       }
-      if (file.size > 25 * 1024 * 1024) {
-        toast({ title: '파일이 너무 큼', description: `${file.name}는 25MB를 초과합니다.`, variant: 'destructive' });
+      if (file.size > 10 * 1024 * 1024) {
+        toast({ title: '파일이 너무 큼', description: `${file.name}는 10MB를 초과합니다.`, variant: 'destructive' });
         continue;
       }
-      const safeName = file.name.replace(/[^\w.\-가-힣()\s]/g, '_');
+      // URL-safe 파일명: 영문/숫자/점/하이픈만 허용, 한글 등은 모두 밑줄로 치환
+      const safeName = file.name
+        .replace(/\s+/g, '_')
+        .replace(/[^\w.\-]/g, '_')
+        .replace(/_+/g, '_');
       const path = `${profile?.id || 'anon'}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeName}`;
+      const contentType = file.type || 'application/octet-stream';
       const { error } = await supabase.storage.from('approval-attachments').upload(path, file, {
-        contentType: file.type || undefined,
+        contentType,
         upsert: false,
       });
       if (error) {
+        console.error('[attachment upload error]', { file: file.name, path, error });
         toast({ title: '업로드 실패', description: `${file.name}: ${error.message}`, variant: 'destructive' });
         continue;
       }
