@@ -831,7 +831,12 @@ export default function Tasks() {
                                                   <ChevronRight className="h-3.5 w-3.5" />
                                                 </button>
                                               )}
-                                              {daysLeft !== null && (
+                                              {daysLeft !== null && task.status === 'done' ? (
+                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-success/10 text-success border-success/20">
+                                                  <Calendar className="h-2.5 w-2.5 mr-0.5" />
+                                                  완료
+                                                </Badge>
+                                              ) : daysLeft !== null && (
                                                 <Badge variant={daysLeft < 0 ? 'destructive' : daysLeft <= 3 ? 'destructive' : daysLeft <= 7 ? 'secondary' : 'outline'} className="text-[10px] px-1.5 py-0">
                                                   <Calendar className="h-2.5 w-2.5 mr-0.5" />
                                                   {daysLeft < 0 ? `${Math.abs(daysLeft)}일 초과` : daysLeft === 0 ? '오늘 마감' : `D-${daysLeft}`}
