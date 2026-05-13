@@ -780,6 +780,33 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
             </div>
           )}
 
+          {attachments.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                <Paperclip className="h-3.5 w-3.5" /> 첨부파일 ({attachments.length})
+              </p>
+              <ul className="space-y-1.5">
+                {attachments.map((a, i) => {
+                  const ext = getExt(a.name);
+                  return (
+                    <li key={i} className="flex items-center justify-between gap-2 bg-muted/30 hover:bg-muted/60 transition-colors rounded-md px-3 py-2 text-sm">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <FileText className="h-4 w-4 text-primary shrink-0" />
+                        <span className="truncate">{a.name}</span>
+                        <Badge variant="outline" className="text-[10px] uppercase shrink-0">{ext || 'file'}</Badge>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setViewerAttachment(a)}>
+                          <Eye className="h-3.5 w-3.5" /> 보기
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+
           {approval.rejected_reason && (
             <div className="bg-destructive/5 border border-destructive/20 rounded-lg p-3">
               <p className="text-xs font-medium text-destructive mb-1">반려 사유</p>
