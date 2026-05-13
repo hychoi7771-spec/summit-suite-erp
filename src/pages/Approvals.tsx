@@ -744,8 +744,10 @@ export default function Approvals() {
 function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, onApprove, onReject, onDelete, onEdit, isAdmin, getProfileName }: any) {
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
+  const [viewerAttachment, setViewerAttachment] = useState<AttachmentEntry | null>(null);
 
   if (!approval) return null;
+  const attachments = parseAttachments(approval.attachment_urls);
 
   const isCurrentApprover = approval.current_approver_id === currentProfileId && approval.status === 'pending';
   const isOwnerPending = approval.requester_id === currentProfileId && approval.status === 'pending';
