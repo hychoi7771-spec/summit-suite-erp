@@ -101,6 +101,43 @@ export default function Approvals() {
     setLoading(false);
   };
 
+  // Form state
+  const [form, setForm] = useState({ title: '', type: 'document' as string, content: '' });
+  const [createFiles, setCreateFiles] = useState<File[]>([]);
+  const [editTarget, setEditTarget] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ title: '', type: 'document' as string, content: '' });
+  const [editAttachments, setEditAttachments] = useState<AttachmentEntry[]>([]);
+  const [editNewFiles, setEditNewFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadFiles = async (files: File[]): Promise<AttachmentEntry[]> => {
+    const out: AttachmentEntry[] = [];
+    for (const file of files) {
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      if (!ALLOWED_EXTS.includes(ext)) {
+        toast({ title: '지원하지 않는 파일', description: `${file.name} (허용: pdf, doc(x), xls(x), ppt(x), 이미지)`, variant: 'destructive' });
+        continue;
+      }
+      if (file.size > 25 * 1024 * 1024) {
+        toast({ title: '파일이 너무 큼', description: `${file.name}는 25MB를 초과합니다.`, variant: 'destructive' });
+        continue;
+      }
+      const safeName = file.name.replace(/[^\w.\-가-힣()\s]/g, '_');
+      const path = `${profile?.id || 'anon'}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeName}`;
+      const { error } = await supabase.storage.from('approval-attachments').upload(path, file, {
+        contentType: file.type || undefined,
+        upsert: false,
+      });
+      if (error) {
+        toast({ title: '업로드 실패', description: `${file.name}: ${error.message}`, variant: 'destructive' });
+        continue;
+      }
+      const { data } = supabase.storage.from('approval-attachments').getPublicUrl(path);
+      out.push({ name: file.name, url: data.publicUrl });
+    }
+    return out;
+  };
+
   useEffect(() => {
     fetchData();
     const channel = supabase
