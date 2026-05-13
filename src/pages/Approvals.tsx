@@ -131,7 +131,10 @@ export default function Approvals() {
     const firstApprover = chain.length > 0 ? chain[0].id : null;
 
     // 대표(ceo)는 결재 단계 없이 즉시 전결 처리
-    const { data: approval, error } = await supabase.from('approvals').insert({
+    // client UUID 생성으로 .select() 없이 INSERT → RLS SELECT 정책 재귀 회피
+    const newApprovalId = crypto.randomUUID();
+    const { error } = await supabase.from('approvals').insert({
+      id: newApprovalId,
       title: form.title,
       type: form.type as any,
       content: form.content,
@@ -139,17 +142,17 @@ export default function Approvals() {
       current_approver_id: isCeo ? null : firstApprover,
       status: isCeo ? 'approved' : 'pending',
       approved_at: isCeo ? new Date().toISOString() : null,
-    }).select().single();
+    });
 
-    if (error || !approval) {
-      toast({ title: '오류', description: '결재 요청 생성에 실패했습니다.', variant: 'destructive' });
+    if (error) {
+      toast({ title: '오류', description: '결재 요청 생성에 실패했습니다: ' + error.message, variant: 'destructive' });
       return;
     }
 
     // 일반 사용자: 결재선 생성
     if (!isCeo && chain.length > 0) {
       const stepsData = chain.map((p, i) => ({
-        approval_id: approval.id,
+        approval_id: newApprovalId,
         approver_id: p.id,
         step_order: i,
       }));
@@ -159,17 +162,14 @@ export default function Approvals() {
     if (isCeo) {
       toast({ title: '전결 완료', description: '대표 권한으로 즉시 승인 처리되었습니다.' });
     } else {
-      // Notify admins about new approval request
       await notifyAdmins(
         '새 결재 요청',
         `${profile.name_kr}님이 [${typeLabels[form.type]}] "${form.title}" 결재를 요청했습니다.`,
         'approval',
-        approval.id
+        newApprovalId
       );
-
-      // Notify first approver
       if (firstApprover) {
-        await notifyUser(firstApprover, '결재 대기', `${profile.name_kr}님의 "${form.title}" 결재가 대기 중입니다.`, 'approval', approval.id);
+        await notifyUser(firstApprover, '결재 대기', `${profile.name_kr}님의 "${form.title}" 결재가 대기 중입니다.`, 'approval', newApprovalId);
       }
       toast({ title: '성공', description: '결재 요청이 생성되었습니다.' });
     }
@@ -182,39 +182,53 @@ export default function Approvals() {
   const handleApprove = async (approval: any) => {
     if (!profile) return;
 
-    // Mark current step as approved
+    // 현재 결재 단계 승인 처리
     const currentStep = steps.find(s => s.approval_id === approval.id && s.approver_id === profile.id && s.status === 'pending');
     if (currentStep) {
-      await supabase.from('approval_steps').update({ status: 'approved', acted_at: new Date().toISOString() }).eq('id', currentStep.id);
+      const { error: stepErr } = await supabase.from('approval_steps')
+        .update({ status: 'approved', acted_at: new Date().toISOString() })
+        .eq('id', currentStep.id);
+      if (stepErr) {
+        toast({ title: '결재 단계 처리 실패', description: stepErr.message, variant: 'destructive' });
+        return;
+      }
     }
 
-    // Find next pending step
+    // 다음 결재 단계 확인
     const approvalSteps = steps
       .filter(s => s.approval_id === approval.id)
       .sort((a, b) => a.step_order - b.step_order);
     const nextStep = approvalSteps.find(s => s.id !== currentStep?.id && s.status === 'pending');
 
     if (nextStep) {
-      await supabase.from('approvals').update({ current_approver_id: nextStep.approver_id }).eq('id', approval.id);
+      const { error: nextErr } = await supabase.from('approvals')
+        .update({ current_approver_id: nextStep.approver_id })
+        .eq('id', approval.id);
+      if (nextErr) {
+        toast({ title: '결재 진행 실패', description: nextErr.message, variant: 'destructive' });
+        return;
+      }
     } else {
-      await supabase.from('approvals').update({
+      // 최종 승인: approvals 상태 변경 → trg_sync_leave_from_approval 트리거가 leave_requests 자동 처리
+      const { error: appErr } = await supabase.from('approvals').update({
         status: 'approved',
         current_approver_id: null,
         approved_at: new Date().toISOString(),
       }).eq('id', approval.id);
+      if (appErr) {
+        toast({ title: '승인 처리 실패', description: appErr.message, variant: 'destructive' });
+        return;
+      }
 
-      // 휴가 결재 최종 승인 시 → leave_requests 자동 승인 (트리거가 캘린더/잔액 처리)
+      // 트리거가 leave_requests를 자동 처리하나 approved_by 보정
       if (approval.type === 'leave') {
         await supabase.from('leave_requests')
-          .update({ status: 'approved', approved_by: profile.id })
+          .update({ approved_by: profile.id })
           .eq('approval_id', approval.id);
       }
     }
 
-    // Notify requester about approval
     await notifyUser(approval.requester_id, '결재 승인', `"${approval.title}" 결재가 ${nextStep ? '다음 단계로 진행' : '최종 승인'}되었습니다.`, 'approval', approval.id);
-
-    // Notify next approver if exists
     if (nextStep) {
       await notifyUser(nextStep.approver_id, '결재 대기', `"${approval.title}" 결재가 대기 중입니다.`, 'approval', approval.id);
     }
@@ -255,10 +269,8 @@ export default function Approvals() {
   };
 
   const handleDelete = async (approval: any) => {
-    // Delete steps first, then leave_request link, then approval
-    const { error: stepErr } = await supabase.from('approval_steps').delete().eq('approval_id', approval.id);
-    if (stepErr) { toast({ title: '결재 단계 삭제 실패', description: stepErr.message, variant: 'destructive' }); return; }
-
+    // approval_steps는 approval_id ON DELETE CASCADE → approvals 삭제 시 자동 처리
+    // leave_requests.approval_id는 ON DELETE SET NULL → 별도 삭제 필요
     if (approval.type === 'leave') {
       await supabase.from('leave_requests').delete().eq('approval_id', approval.id);
     }
