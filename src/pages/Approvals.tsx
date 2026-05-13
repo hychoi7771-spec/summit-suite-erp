@@ -179,8 +179,12 @@ export default function Approvals() {
     const chain = buildApprovalChain(profile.id);
     const firstApprover = chain.length > 0 ? chain[0].id : null;
 
-    // 대표(ceo)는 결재 단계 없이 즉시 전결 처리
-    // client UUID 생성으로 .select() 없이 INSERT → RLS SELECT 정책 재귀 회피
+    setUploading(true);
+    let uploaded: AttachmentEntry[] = [];
+    if (createFiles.length > 0) {
+      uploaded = await uploadFiles(createFiles);
+    }
+
     const newApprovalId = crypto.randomUUID();
     const { error } = await supabase.from('approvals').insert({
       id: newApprovalId,
@@ -191,7 +195,9 @@ export default function Approvals() {
       current_approver_id: isCeo ? null : firstApprover,
       status: isCeo ? 'approved' : 'pending',
       approved_at: isCeo ? new Date().toISOString() : null,
+      attachment_urls: serializeAttachments(uploaded),
     });
+    setUploading(false);
 
     if (error) {
       toast({ title: '오류', description: '결재 요청 생성에 실패했습니다: ' + error.message, variant: 'destructive' });
