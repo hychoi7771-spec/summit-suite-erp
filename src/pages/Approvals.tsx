@@ -566,6 +566,45 @@ export default function Approvals() {
               <Label>내용</Label>
               <Textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder="상세 내용 입력" rows={5} />
             </div>
+            <div>
+              <Label className="flex items-center gap-1.5"><Paperclip className="h-3.5 w-3.5" /> 첨부파일</Label>
+              <div className="mt-1.5">
+                <label className="flex items-center justify-center gap-2 px-3 py-2 border border-dashed border-border rounded-md cursor-pointer hover:bg-muted/50 transition-colors text-sm text-muted-foreground">
+                  <Upload className="h-4 w-4" />
+                  파일 선택 (PDF, Word, Excel, PowerPoint, 이미지 / 최대 25MB)
+                  <input
+                    type="file"
+                    multiple
+                    accept={ATTACH_ACCEPT}
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setCreateFiles(prev => [...prev, ...files]);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {createFiles.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {createFiles.map((f, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 text-xs bg-muted/40 rounded px-2 py-1">
+                        <span className="truncate flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          {f.name} <span className="text-muted-foreground">({Math.round(f.size / 1024)}KB)</span>
+                        </span>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-destructive shrink-0"
+                          onClick={() => setCreateFiles(prev => prev.filter((_, idx) => idx !== i))}
+                        >
+                          <XIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
             {profile && (
               <div className="bg-muted/50 rounded-lg p-3">
                 <p className="text-xs font-medium text-muted-foreground mb-2">결재 라인 (직급 순서 자동)</p>
