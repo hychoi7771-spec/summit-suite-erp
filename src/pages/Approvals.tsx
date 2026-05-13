@@ -342,6 +342,8 @@ export default function Approvals() {
   const openEdit = (approval: any) => {
     setEditTarget(approval);
     setEditForm({ title: approval.title, type: approval.type, content: approval.content || '' });
+    setEditAttachments(parseAttachments(approval.attachment_urls));
+    setEditNewFiles([]);
   };
 
   const handleSaveEdit = async () => {
@@ -350,14 +352,27 @@ export default function Approvals() {
       toast({ title: '제목을 입력해주세요', variant: 'destructive' });
       return;
     }
+    setUploading(true);
+    let merged = [...editAttachments];
+    if (editNewFiles.length > 0) {
+      const uploaded = await uploadFiles(editNewFiles);
+      merged = [...merged, ...uploaded];
+    }
     const { error } = await supabase
       .from('approvals')
-      .update({ title: editForm.title, type: editForm.type as any, content: editForm.content })
+      .update({
+        title: editForm.title,
+        type: editForm.type as any,
+        content: editForm.content,
+        attachment_urls: serializeAttachments(merged),
+      })
       .eq('id', editTarget.id);
+    setUploading(false);
     if (error) { toast({ title: '수정 실패', description: error.message, variant: 'destructive' }); return; }
     toast({ title: '결재가 수정되었습니다' });
     setEditTarget(null);
     setSelectedApproval(null);
+    setEditNewFiles([]);
     fetchData();
   };
 
