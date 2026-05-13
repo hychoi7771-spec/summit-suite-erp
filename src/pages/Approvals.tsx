@@ -81,12 +81,6 @@ export default function Approvals() {
   const initialTab = searchParams.get('tab') || 'pending';
   const [tab, setTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
-
-  // Form state
-  const [form, setForm] = useState({ title: '', type: 'document' as string, content: '' });
-  const [editTarget, setEditTarget] = useState<any>(null);
-  const [editForm, setEditForm] = useState({ title: '', type: 'document' as string, content: '' });
-
   const fetchData = async () => {
     const [appRes, profRes, roleRes, stepRes] = await Promise.all([
       supabase.from('approvals').select('*').order('created_at', { ascending: false }),
