@@ -12,13 +12,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FileText, Receipt, Briefcase, CalendarDays, CheckCircle2, XCircle, Clock, ChevronRight, Trash2, AlertCircle, Inbox, Send, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Plus, FileText, Receipt, Briefcase, CalendarDays, CheckCircle2, XCircle, Clock, ChevronRight, Trash2, AlertCircle, Inbox, Send, ThumbsUp, ThumbsDown, Paperclip, Eye, X as XIcon, Upload } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
+import { AttachmentViewer, AttachmentEntry, getExt } from '@/components/approvals/AttachmentViewer';
+
+const ALLOWED_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'png', 'jpg', 'jpeg', 'gif', 'webp'];
+const ATTACH_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp';
+
+// Stored as "name||url" inside approvals.attachment_urls (text[])
+function parseAttachments(arr: string[] | null | undefined): AttachmentEntry[] {
+  if (!arr) return [];
+  return arr.map(s => {
+    const [name, ...rest] = s.split('||');
+    const url = rest.join('||');
+    if (!url) return { name: s.split('/').pop() || s, url: s };
+    return { name, url };
+  });
+}
+function serializeAttachments(items: AttachmentEntry[]): string[] {
+  return items.map(i => `${i.name}||${i.url}`);
+}
 
 const typeLabels: Record<string, string> = {
   document: '문서 기안',
