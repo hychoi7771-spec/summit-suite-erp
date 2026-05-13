@@ -45,7 +45,7 @@ const LUNAR_HOLIDAYS: Record<number, { date: string; name: string }[]> = {
     { date: '2026-02-16', name: '설날 연휴' },
     { date: '2026-02-17', name: '설날' },
     { date: '2026-02-18', name: '설날 연휴' },
-    { date: '2026-05-25', name: '어린이날 대체공휴일' },
+    { date: '2026-05-25', name: '부처님 오신날 대체공휴일' },
     { date: '2026-09-24', name: '추석 연휴' },
     { date: '2026-09-25', name: '추석' },
     { date: '2026-09-26', name: '추석 연휴' },
