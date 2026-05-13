@@ -12,13 +12,31 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FileText, Receipt, Briefcase, CalendarDays, CheckCircle2, XCircle, Clock, ChevronRight, Trash2, AlertCircle, Inbox, Send, ThumbsUp, ThumbsDown } from 'lucide-react';
+import { Plus, FileText, Receipt, Briefcase, CalendarDays, CheckCircle2, XCircle, Clock, ChevronRight, Trash2, AlertCircle, Inbox, Send, ThumbsUp, ThumbsDown, Paperclip, Eye, X as XIcon, Upload } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
+import { AttachmentViewer, AttachmentEntry, getExt } from '@/components/approvals/AttachmentViewer';
+
+const ALLOWED_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'png', 'jpg', 'jpeg', 'gif', 'webp'];
+const ATTACH_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp';
+
+// Stored as "name||url" inside approvals.attachment_urls (text[])
+function parseAttachments(arr: string[] | null | undefined): AttachmentEntry[] {
+  if (!arr) return [];
+  return arr.map(s => {
+    const [name, ...rest] = s.split('||');
+    const url = rest.join('||');
+    if (!url) return { name: s.split('/').pop() || s, url: s };
+    return { name, url };
+  });
+}
+function serializeAttachments(items: AttachmentEntry[]): string[] {
+  return items.map(i => `${i.name}||${i.url}`);
+}
 
 const typeLabels: Record<string, string> = {
   document: '문서 기안',
@@ -63,12 +81,6 @@ export default function Approvals() {
   const initialTab = searchParams.get('tab') || 'pending';
   const [tab, setTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
-
-  // Form state
-  const [form, setForm] = useState({ title: '', type: 'document' as string, content: '' });
-  const [editTarget, setEditTarget] = useState<any>(null);
-  const [editForm, setEditForm] = useState({ title: '', type: 'document' as string, content: '' });
-
   const fetchData = async () => {
     const [appRes, profRes, roleRes, stepRes] = await Promise.all([
       supabase.from('approvals').select('*').order('created_at', { ascending: false }),
@@ -81,6 +93,43 @@ export default function Approvals() {
     setRoles(roleRes.data || []);
     setSteps(stepRes.data || []);
     setLoading(false);
+  };
+
+  // Form state
+  const [form, setForm] = useState({ title: '', type: 'document' as string, content: '' });
+  const [createFiles, setCreateFiles] = useState<File[]>([]);
+  const [editTarget, setEditTarget] = useState<any>(null);
+  const [editForm, setEditForm] = useState({ title: '', type: 'document' as string, content: '' });
+  const [editAttachments, setEditAttachments] = useState<AttachmentEntry[]>([]);
+  const [editNewFiles, setEditNewFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+
+  const uploadFiles = async (files: File[]): Promise<AttachmentEntry[]> => {
+    const out: AttachmentEntry[] = [];
+    for (const file of files) {
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      if (!ALLOWED_EXTS.includes(ext)) {
+        toast({ title: '지원하지 않는 파일', description: `${file.name} (허용: pdf, doc(x), xls(x), ppt(x), 이미지)`, variant: 'destructive' });
+        continue;
+      }
+      if (file.size > 25 * 1024 * 1024) {
+        toast({ title: '파일이 너무 큼', description: `${file.name}는 25MB를 초과합니다.`, variant: 'destructive' });
+        continue;
+      }
+      const safeName = file.name.replace(/[^\w.\-가-힣()\s]/g, '_');
+      const path = `${profile?.id || 'anon'}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}-${safeName}`;
+      const { error } = await supabase.storage.from('approval-attachments').upload(path, file, {
+        contentType: file.type || undefined,
+        upsert: false,
+      });
+      if (error) {
+        toast({ title: '업로드 실패', description: `${file.name}: ${error.message}`, variant: 'destructive' });
+        continue;
+      }
+      const { data } = supabase.storage.from('approval-attachments').getPublicUrl(path);
+      out.push({ name: file.name, url: data.publicUrl });
+    }
+    return out;
   };
 
   useEffect(() => {
@@ -130,8 +179,12 @@ export default function Approvals() {
     const chain = buildApprovalChain(profile.id);
     const firstApprover = chain.length > 0 ? chain[0].id : null;
 
-    // 대표(ceo)는 결재 단계 없이 즉시 전결 처리
-    // client UUID 생성으로 .select() 없이 INSERT → RLS SELECT 정책 재귀 회피
+    setUploading(true);
+    let uploaded: AttachmentEntry[] = [];
+    if (createFiles.length > 0) {
+      uploaded = await uploadFiles(createFiles);
+    }
+
     const newApprovalId = crypto.randomUUID();
     const { error } = await supabase.from('approvals').insert({
       id: newApprovalId,
@@ -142,7 +195,9 @@ export default function Approvals() {
       current_approver_id: isCeo ? null : firstApprover,
       status: isCeo ? 'approved' : 'pending',
       approved_at: isCeo ? new Date().toISOString() : null,
+      attachment_urls: serializeAttachments(uploaded),
     });
+    setUploading(false);
 
     if (error) {
       toast({ title: '오류', description: '결재 요청 생성에 실패했습니다: ' + error.message, variant: 'destructive' });
@@ -176,6 +231,7 @@ export default function Approvals() {
 
     setShowCreate(false);
     setForm({ title: '', type: 'document', content: '' });
+    setCreateFiles([]);
     fetchData();
   };
 
@@ -286,6 +342,8 @@ export default function Approvals() {
   const openEdit = (approval: any) => {
     setEditTarget(approval);
     setEditForm({ title: approval.title, type: approval.type, content: approval.content || '' });
+    setEditAttachments(parseAttachments(approval.attachment_urls));
+    setEditNewFiles([]);
   };
 
   const handleSaveEdit = async () => {
@@ -294,14 +352,27 @@ export default function Approvals() {
       toast({ title: '제목을 입력해주세요', variant: 'destructive' });
       return;
     }
+    setUploading(true);
+    let merged = [...editAttachments];
+    if (editNewFiles.length > 0) {
+      const uploaded = await uploadFiles(editNewFiles);
+      merged = [...merged, ...uploaded];
+    }
     const { error } = await supabase
       .from('approvals')
-      .update({ title: editForm.title, type: editForm.type as any, content: editForm.content })
+      .update({
+        title: editForm.title,
+        type: editForm.type as any,
+        content: editForm.content,
+        attachment_urls: serializeAttachments(merged),
+      })
       .eq('id', editTarget.id);
+    setUploading(false);
     if (error) { toast({ title: '수정 실패', description: error.message, variant: 'destructive' }); return; }
     toast({ title: '결재가 수정되었습니다' });
     setEditTarget(null);
     setSelectedApproval(null);
+    setEditNewFiles([]);
     fetchData();
   };
 
@@ -495,6 +566,45 @@ export default function Approvals() {
               <Label>내용</Label>
               <Textarea value={form.content} onChange={e => setForm(f => ({ ...f, content: e.target.value }))} placeholder="상세 내용 입력" rows={5} />
             </div>
+            <div>
+              <Label className="flex items-center gap-1.5"><Paperclip className="h-3.5 w-3.5" /> 첨부파일</Label>
+              <div className="mt-1.5">
+                <label className="flex items-center justify-center gap-2 px-3 py-2 border border-dashed border-border rounded-md cursor-pointer hover:bg-muted/50 transition-colors text-sm text-muted-foreground">
+                  <Upload className="h-4 w-4" />
+                  파일 선택 (PDF, Word, Excel, PowerPoint, 이미지 / 최대 25MB)
+                  <input
+                    type="file"
+                    multiple
+                    accept={ATTACH_ACCEPT}
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setCreateFiles(prev => [...prev, ...files]);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+                {createFiles.length > 0 && (
+                  <ul className="mt-2 space-y-1">
+                    {createFiles.map((f, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 text-xs bg-muted/40 rounded px-2 py-1">
+                        <span className="truncate flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          {f.name} <span className="text-muted-foreground">({Math.round(f.size / 1024)}KB)</span>
+                        </span>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-destructive shrink-0"
+                          onClick={() => setCreateFiles(prev => prev.filter((_, idx) => idx !== i))}
+                        >
+                          <XIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
             {profile && (
               <div className="bg-muted/50 rounded-lg p-3">
                 <p className="text-xs font-medium text-muted-foreground mb-2">결재 라인 (직급 순서 자동)</p>
@@ -512,7 +622,7 @@ export default function Approvals() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>취소</Button>
-            <Button onClick={handleCreate} disabled={!form.title.trim()}>요청 제출</Button>
+            <Button onClick={handleCreate} disabled={!form.title.trim() || uploading}>{uploading ? '업로드 중...' : '요청 제출'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -559,13 +669,71 @@ export default function Approvals() {
               <Label>내용</Label>
               <Textarea value={editForm.content} onChange={e => setEditForm(f => ({ ...f, content: e.target.value }))} rows={5} />
             </div>
+            <div>
+              <Label className="flex items-center gap-1.5"><Paperclip className="h-3.5 w-3.5" /> 첨부파일</Label>
+              <div className="mt-1.5 space-y-2">
+                {editAttachments.length > 0 && (
+                  <ul className="space-y-1">
+                    {editAttachments.map((a, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 text-xs bg-muted/40 rounded px-2 py-1">
+                        <span className="truncate flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                          {a.name}
+                        </span>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-destructive shrink-0"
+                          onClick={() => setEditAttachments(prev => prev.filter((_, idx) => idx !== i))}
+                        >
+                          <XIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {editNewFiles.length > 0 && (
+                  <ul className="space-y-1">
+                    {editNewFiles.map((f, i) => (
+                      <li key={i} className="flex items-center justify-between gap-2 text-xs bg-primary/5 border border-primary/20 rounded px-2 py-1">
+                        <span className="truncate flex items-center gap-1.5">
+                          <Upload className="h-3.5 w-3.5 text-primary shrink-0" />
+                          {f.name} <span className="text-muted-foreground">(신규)</span>
+                        </span>
+                        <button
+                          type="button"
+                          className="text-muted-foreground hover:text-destructive shrink-0"
+                          onClick={() => setEditNewFiles(prev => prev.filter((_, idx) => idx !== i))}
+                        >
+                          <XIcon className="h-3.5 w-3.5" />
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <label className="flex items-center justify-center gap-2 px-3 py-2 border border-dashed border-border rounded-md cursor-pointer hover:bg-muted/50 transition-colors text-sm text-muted-foreground">
+                  <Upload className="h-4 w-4" />
+                  파일 추가
+                  <input
+                    type="file"
+                    multiple
+                    accept={ATTACH_ACCEPT}
+                    className="hidden"
+                    onChange={(e) => {
+                      const files = Array.from(e.target.files || []);
+                      setEditNewFiles(prev => [...prev, ...files]);
+                      e.target.value = '';
+                    }}
+                  />
+                </label>
+              </div>
+            </div>
             <p className="text-xs text-muted-foreground">
               ※ 수정은 결재 승인 전(대기 상태)인 본인 기안에 한해 가능합니다.
             </p>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setEditTarget(null)}>취소</Button>
-            <Button onClick={handleSaveEdit} disabled={!editForm.title.trim()}>저장</Button>
+            <Button onClick={handleSaveEdit} disabled={!editForm.title.trim() || uploading}>{uploading ? '저장 중...' : '저장'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -576,8 +744,10 @@ export default function Approvals() {
 function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, onApprove, onReject, onDelete, onEdit, isAdmin, getProfileName }: any) {
   const [rejectReason, setRejectReason] = useState('');
   const [showReject, setShowReject] = useState(false);
+  const [viewerAttachment, setViewerAttachment] = useState<AttachmentEntry | null>(null);
 
   if (!approval) return null;
+  const attachments = parseAttachments(approval.attachment_urls);
 
   const isCurrentApprover = approval.current_approver_id === currentProfileId && approval.status === 'pending';
   const isOwnerPending = approval.requester_id === currentProfileId && approval.status === 'pending';
@@ -607,6 +777,33 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
             <div className="bg-muted/30 rounded-lg p-3">
               <p className="text-xs font-medium text-muted-foreground mb-1">내용</p>
               <p className="text-sm whitespace-pre-wrap">{approval.content}</p>
+            </div>
+          )}
+
+          {attachments.length > 0 && (
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2 flex items-center gap-1.5">
+                <Paperclip className="h-3.5 w-3.5" /> 첨부파일 ({attachments.length})
+              </p>
+              <ul className="space-y-1.5">
+                {attachments.map((a, i) => {
+                  const ext = getExt(a.name);
+                  return (
+                    <li key={i} className="flex items-center justify-between gap-2 bg-muted/30 hover:bg-muted/60 transition-colors rounded-md px-3 py-2 text-sm">
+                      <div className="flex items-center gap-2 min-w-0 flex-1">
+                        <FileText className="h-4 w-4 text-primary shrink-0" />
+                        <span className="truncate">{a.name}</span>
+                        <Badge variant="outline" className="text-[10px] uppercase shrink-0">{ext || 'file'}</Badge>
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setViewerAttachment(a)}>
+                          <Eye className="h-3.5 w-3.5" /> 보기
+                        </Button>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
             </div>
           )}
 
@@ -719,6 +916,11 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
           )}
         </DialogFooter>
       </DialogContent>
+      <AttachmentViewer
+        attachment={viewerAttachment}
+        open={!!viewerAttachment}
+        onClose={() => setViewerAttachment(null)}
+      />
     </Dialog>
   );
 }
