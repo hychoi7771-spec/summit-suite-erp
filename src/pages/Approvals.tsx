@@ -622,7 +622,7 @@ export default function Approvals() {
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setShowCreate(false)}>취소</Button>
-            <Button onClick={handleCreate} disabled={!form.title.trim()}>요청 제출</Button>
+            <Button onClick={handleCreate} disabled={!form.title.trim() || uploading}>{uploading ? '업로드 중...' : '요청 제출'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
