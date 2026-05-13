@@ -916,6 +916,11 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
           )}
         </DialogFooter>
       </DialogContent>
+      <AttachmentViewer
+        attachment={viewerAttachment}
+        open={!!viewerAttachment}
+        onClose={() => setViewerAttachment(null)}
+      />
     </Dialog>
   );
 }
