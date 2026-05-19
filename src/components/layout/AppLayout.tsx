@@ -26,7 +26,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const avatar = profile?.avatar || displayName.slice(0, 2).toUpperCase();
   const roleLabels: Record<string, string> = {
     ceo: '대표이사',
-    general_director: '총괄이사',
+    general_director: '이사',
     deputy_gm: '차장',
     md: '영업담당',
     designer: '디자이너',
