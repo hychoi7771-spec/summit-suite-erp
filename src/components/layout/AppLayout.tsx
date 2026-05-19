@@ -189,6 +189,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </div>
       <NoticePopupOnLogin />
       <PendingApprovalToast />
+      <CEOPendingApprovalDialog />
     </SidebarProvider>
   );
 }
