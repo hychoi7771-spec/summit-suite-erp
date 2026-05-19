@@ -51,7 +51,7 @@ export function PendingApprovalToast() {
         className: 'border-warning/30',
       });
     })();
-  }, [user?.id, profile?.id, navigate]);
+  }, [user?.id, profile?.id, userRole, navigate]);
 
   return null;
 }
