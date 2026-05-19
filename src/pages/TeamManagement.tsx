@@ -21,7 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Constants } from '@/integrations/supabase/types';
 
 const roleLabels: Record<string, string> = {
-  ceo: '대표이사', general_director: '총괄이사', deputy_gm: '부장',
+  ceo: '대표이사', general_director: '이사', deputy_gm: '부장',
   md: '차장', designer: '대리', staff: '사원',
 };
 

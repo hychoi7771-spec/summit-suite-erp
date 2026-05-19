@@ -11,6 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useNavigate } from 'react-router-dom';
 import { NoticePopupOnLogin } from '@/components/notices/NoticePopupOnLogin';
 import { PendingApprovalToast } from '@/components/approvals/PendingApprovalToast';
+import { CEOPendingApprovalDialog } from '@/components/approvals/CEOPendingApprovalDialog';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -26,7 +27,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const avatar = profile?.avatar || displayName.slice(0, 2).toUpperCase();
   const roleLabels: Record<string, string> = {
     ceo: '대표이사',
-    general_director: '총괄이사',
+    general_director: '이사',
     deputy_gm: '차장',
     md: '영업담당',
     designer: '디자이너',
@@ -188,6 +189,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       </div>
       <NoticePopupOnLogin />
       <PendingApprovalToast />
+      <CEOPendingApprovalDialog />
     </SidebarProvider>
   );
 }

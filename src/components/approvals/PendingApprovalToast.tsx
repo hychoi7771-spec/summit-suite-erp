@@ -12,12 +12,14 @@ const SESSION_KEY = 'pending_approval_toast_shown';
  * 세션당 한 번만 노출.
  */
 export function PendingApprovalToast() {
-  const { user, profile } = useAuth();
+  const { user, profile, userRole } = useAuth();
   const navigate = useNavigate();
   const checked = useRef(false);
 
   useEffect(() => {
     if (!user || !profile || checked.current) return;
+    // 대표는 별도 팝업 다이얼로그(CEOPendingApprovalDialog)로 표시
+    if (userRole === 'ceo') return;
     checked.current = true;
 
     const sessionFlag = `${SESSION_KEY}:${user.id}`;
@@ -49,7 +51,7 @@ export function PendingApprovalToast() {
         className: 'border-warning/30',
       });
     })();
-  }, [user?.id, profile?.id, navigate]);
+  }, [user?.id, profile?.id, userRole, navigate]);
 
   return null;
 }
