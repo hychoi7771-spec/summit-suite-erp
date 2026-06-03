@@ -14,7 +14,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Inter", "Noto Sans KR", "system-ui", "sans-serif"],
+        sans: ["Manrope", "Noto Sans KR", "system-ui", "sans-serif"],
+        display: ["Sora", "Noto Sans KR", "system-ui", "sans-serif"],
       },
       colors: {
         border: "hsl(var(--border))",
