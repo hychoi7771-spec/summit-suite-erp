@@ -87,21 +87,14 @@ export default function DesignRequestDialog({ profiles, onSuccess }: DesignReque
       // Send notification to assignee
       const assignee = profiles.find(p => p.id === form.assignee_id);
       if (assignee) {
-        // Get the user_id from the profile to send notification
-        const { data: assigneeProfile } = await supabase
-          .from('profiles')
-          .select('user_id')
-          .eq('id', form.assignee_id)
-          .single();
-
-        if (assigneeProfile) {
-          await supabase.from('notifications').insert({
-            user_id: assigneeProfile.user_id,
-            title: '새 디자인 의뢰가 도착했습니다',
-            message: `${profile?.name_kr || ''}님이 "${form.project_name}" 디자인을 의뢰했습니다.`,
-            type: 'task',
-          });
-        }
+        // Send notification via secure RPC
+        const { notifyUser } = await import('@/lib/notifications');
+        await notifyUser(
+          form.assignee_id,
+          '새 디자인 의뢰가 도착했습니다',
+          `${profile?.name_kr || ''}님이 "${form.project_name}" 디자인을 의뢰했습니다.`,
+          'task',
+        );
       }
 
       toast({ title: '디자인 의뢰가 등록되었습니다' });
