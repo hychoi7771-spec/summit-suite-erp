@@ -1830,6 +1830,16 @@ export type Database = {
       }
       profile_is_director: { Args: { _profile_id: string }; Returns: boolean }
       run_monthly_leave_grant: { Args: never; Returns: number }
+      send_notifications: {
+        Args: {
+          _message: string
+          _related_id?: string
+          _title: string
+          _type?: string
+          _user_ids: string[]
+        }
+        Returns: undefined
+      }
     }
     Enums: {
       app_role:
