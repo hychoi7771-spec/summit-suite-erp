@@ -52,8 +52,8 @@
     --sidebar-foreground: 215 25% 27%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 91% 95%;
-    --sidebar-accent-foreground: 217 91% 35%;
+    --sidebar-accent: 217 70% 94%;
+    --sidebar-accent-foreground: 217 80% 32%;
     --sidebar-border: 214 32% 91%;
     --sidebar-ring: 217 91% 60%;
     --sidebar-muted: 215 16% 55%;
@@ -115,11 +115,11 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/60 shadow-sm;
+    @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded-xl shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)];
   }
 
   .stat-card {
-    @apply bg-card rounded-xl border border-border/70 p-5 shadow-sm transition-all duration-200 hover:shadow-md hover:border-primary/30;
+    @apply bg-card rounded-xl border border-border/60 p-5 shadow-[0_2px_8px_-4px_rgba(0,0,0,0.04)] transition-all duration-200 hover:shadow-[0_4px_14px_-4px_rgba(0,0,0,0.06)] hover:border-primary/25;
   }
 
   .nav-badge {

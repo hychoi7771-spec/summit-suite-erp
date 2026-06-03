@@ -128,22 +128,23 @@ export function AppSidebar() {
     <SidebarMenu>
       {items.map((item) => {
         const isAccent = 'accent' in item && (item as any).accent;
+        const isActive = location.pathname === item.url;
         return (
           <SidebarMenuItem key={item.title}>
             <SidebarMenuButton
               asChild
-              isActive={location.pathname === item.url}
+              isActive={isActive}
               tooltip={item.title}
             >
               <NavLink
                 to={item.url}
                 end={item.url === '/'}
-                className="hover:bg-sidebar-accent/50"
+                className="hover:bg-sidebar-accent/50 relative"
                 activeClassName="bg-sidebar-accent text-sidebar-accent-foreground font-medium"
               >
-                <item.icon className={`h-4 w-4 ${isAccent ? 'text-emerald-500' : ''}`} />
+                <item.icon className={`h-4 w-4 ${isActive ? 'text-primary' : ''} ${isAccent ? 'text-emerald-500' : ''}`} />
                 {!collapsed && (
-                  <span className={isAccent && location.pathname !== item.url ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>
+                  <span className={isActive ? 'text-sidebar-accent-foreground' : isAccent ? 'text-emerald-600 dark:text-emerald-400 font-medium' : ''}>
                     {item.title}
                   </span>
                 )}
