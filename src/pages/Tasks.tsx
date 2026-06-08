@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Calendar, FileText, Palette, Pencil, Trash2, AlertTriangle, ChevronLeft, ChevronRight, FolderKanban, GanttChartSquare } from 'lucide-react';
+import { Plus, Calendar, FileText, Palette, Pencil, Trash2, AlertTriangle, ChevronLeft, ChevronRight, FolderKanban, GanttChartSquare, LayoutList, CalendarDays } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -19,6 +19,8 @@ import DesignRequestDialog from '@/components/tasks/DesignRequestDialog';
 import DesignRequestDetail from '@/components/tasks/DesignRequestDetail';
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog';
 import GanttChart from '@/components/tasks/GanttChart';
+import TaskCalendarView from '@/components/tasks/TaskCalendarView';
+import TaskListView from '@/components/tasks/TaskListView';
 import CategoryBar, { TaskCategory } from '@/components/tasks/CategoryBar';
 import TaskFilterToolbar, { BoardToggles } from '@/components/tasks/TaskFilterToolbar';
 import CategoryManageDialog from '@/components/tasks/CategoryManageDialog';
@@ -385,7 +387,9 @@ export default function Tasks() {
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
-          <TabsTrigger value="board">칸반 보드</TabsTrigger>
+          <TabsTrigger value="board" className="gap-1.5"><FolderKanban className="h-3.5 w-3.5" />칸반</TabsTrigger>
+          <TabsTrigger value="list" className="gap-1.5"><LayoutList className="h-3.5 w-3.5" />리스트</TabsTrigger>
+          <TabsTrigger value="calendar" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" />캘린더</TabsTrigger>
           <TabsTrigger value="gantt" className="gap-1.5"><GanttChartSquare className="h-3.5 w-3.5" />간트차트</TabsTrigger>
         </TabsList>
 
@@ -866,6 +870,25 @@ export default function Tasks() {
               </div>
             </div>
           </DragDropContext>
+        </TabsContent>
+
+        <TabsContent value="list" className="mt-4">
+          <TaskListView
+            tasks={taskList}
+            profiles={profiles}
+            selectedProject={selectedProject}
+            selectedCategory={selectedCategory}
+            onTaskClick={(task) => task.is_design_request ? setSelectedDesignTask(task) : setSelectedTask(task)}
+          />
+        </TabsContent>
+
+        <TabsContent value="calendar" className="mt-4">
+          <TaskCalendarView
+            tasks={taskList}
+            selectedProject={selectedProject}
+            selectedCategory={selectedCategory}
+            onTaskClick={(task) => task.is_design_request ? setSelectedDesignTask(task) : setSelectedTask(task)}
+          />
         </TabsContent>
 
         <TabsContent value="gantt" className="mt-4">
