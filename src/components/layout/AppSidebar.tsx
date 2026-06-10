@@ -111,6 +111,9 @@ export function AppSidebar() {
   const [personalOpen, setPersonalOpen] = useState(() => {
     return personalNavItems.some(item => location.pathname === item.url);
   });
+  const [approvalOpen, setApprovalOpen] = useState(() => {
+    return location.pathname.startsWith('/approvals') || location.pathname.startsWith('/expenses');
+  });
 
   const roleOrder: Record<string, number> = {
     ceo: 0, general_director: 1, deputy_gm: 2, md: 3, designer: 4, staff: 5,
