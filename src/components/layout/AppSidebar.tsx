@@ -231,6 +231,30 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
+        {/* 전자결재 (통합) */}
+        {!collapsed ? (
+          <SidebarGroup>
+            <Collapsible open={approvalOpen} onOpenChange={setApprovalOpen}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-xs font-medium text-sidebar-muted uppercase tracking-wider hover:text-sidebar-foreground transition-colors">
+                <div className="flex items-center gap-2">
+                  <Stamp className="h-3.5 w-3.5" />
+                  <span>전자결재</span>
+                </div>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${approvalOpen ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  {renderApprovalItems()}
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+        ) : (
+          <SidebarGroup>
+            <SidebarGroupContent>{renderApprovalItems()}</SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         {/* Personal Section (더보기 style) */}
         {!collapsed && (
           <SidebarGroup>
