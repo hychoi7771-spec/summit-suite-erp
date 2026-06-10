@@ -200,12 +200,13 @@ export default function Approvals() {
       title: form.title,
       type: form.type as any,
       content: form.content,
+      subcategory: form.subcategory || null,
       requester_id: profile.id,
       current_approver_id: isCeo ? null : firstApprover,
       status: isCeo ? 'approved' : 'pending',
       approved_at: isCeo ? new Date().toISOString() : null,
       attachment_urls: serializeAttachments(uploaded),
-    });
+    } as any);
     setUploading(false);
 
     if (error) {
