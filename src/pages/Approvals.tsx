@@ -386,7 +386,12 @@ export default function Approvals() {
     fetchData();
   };
 
-  const filtered = approvals.filter(a => {
+  // 카테고리 필터: 하위 메뉴에서 진입 시 subcategory(또는 type)로 좁힘
+  const categoryFiltered = activeCategory
+    ? approvals.filter(a => a.subcategory === activeCategory.key || (!a.subcategory && a.type === activeCategory.type && activeCategory.key === 'general_document'))
+    : approvals;
+
+  const filtered = categoryFiltered.filter(a => {
     if (tab === 'my') return a.requester_id === profile?.id;
     if (tab === 'pending') return a.current_approver_id === profile?.id && a.status === 'pending';
     if (tab === 'approved') return a.status === 'approved';
@@ -402,7 +407,26 @@ export default function Approvals() {
 
   const handleTabChange = (v: string) => {
     setTab(v);
-    setSearchParams(v === 'all' ? {} : { tab: v }, { replace: true });
+    const next: Record<string, string> = {};
+    if (v !== 'all') next.tab = v;
+    if (categoryParam) next.category = categoryParam;
+    setSearchParams(next, { replace: true });
+  };
+
+  // 카테고리별 새 결재 버튼: 템플릿 미리 채워 다이얼로그 오픈
+  const openCreateWithCategory = (catKey?: ApprovalCategoryKey) => {
+    const cat = catKey ? getCategoryByKey(catKey) : activeCategory;
+    if (cat && cat.type !== 'leave' && cat.type !== 'expense') {
+      setForm({
+        title: '',
+        type: cat.type,
+        content: cat.template || '',
+        subcategory: cat.key,
+      });
+    } else {
+      setForm({ title: '', type: 'document', content: '', subcategory: '' });
+    }
+    setShowCreate(true);
   };
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
