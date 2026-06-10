@@ -240,7 +240,7 @@ export default function Approvals() {
     }
 
     setShowCreate(false);
-    setForm({ title: '', type: 'document', content: '' });
+    setForm({ title: '', type: 'document', content: '', subcategory: '' });
     setCreateFiles([]);
     fetchData();
   };
