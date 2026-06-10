@@ -81,6 +81,8 @@ export default function Approvals() {
   const [selectedApproval, setSelectedApproval] = useState<any>(null);
   const initialTab = searchParams.get('tab') || 'pending';
   const [tab, setTab] = useState(initialTab);
+  const categoryParam = (searchParams.get('category') as ApprovalCategoryKey | null) || null;
+  const activeCategory = getCategoryByKey(categoryParam);
   const [loading, setLoading] = useState(true);
   const fetchData = async () => {
     const [appRes, profRes, roleRes, stepRes] = await Promise.all([
@@ -97,7 +99,7 @@ export default function Approvals() {
   };
 
   // Form state
-  const [form, setForm] = useState({ title: '', type: 'document' as string, content: '' });
+  const [form, setForm] = useState({ title: '', type: 'document' as string, content: '', subcategory: '' as string });
   const [createFiles, setCreateFiles] = useState<File[]>([]);
   const [editTarget, setEditTarget] = useState<any>(null);
   const [editForm, setEditForm] = useState({ title: '', type: 'document' as string, content: '' });
