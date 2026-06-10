@@ -58,11 +58,21 @@ const mainNavItems = [
   { title: '회의록', url: '/meetings', icon: ClipboardList },
   { title: '일정', url: '/calendar', icon: CalendarDays },
   { title: '근태관리', url: '/attendance', icon: CalendarClock },
-  { title: '경비관리', url: '/expenses', icon: Receipt },
-  { title: '전자결재', url: '/approvals', icon: Stamp },
   { title: '공지 게시판', url: '/notices-board', icon: Megaphone },
   { title: '설문/투표', url: '/surveys', icon: Vote },
   { title: '파일', url: '/library', icon: FolderArchive },
+];
+
+// 전자결재 통합 하위 메뉴
+const approvalNavItems = [
+  { title: '결재함', url: '/approvals', icon: Inbox },
+  { title: '기획안 품의', url: '/approvals?category=planning_proposal', icon: Lightbulb },
+  { title: '행사안 품의', url: '/approvals?category=event_proposal', icon: PartyPopper },
+  { title: '구매 품의', url: '/approvals?category=purchase_request', icon: ShoppingCart },
+  { title: '계약 품의', url: '/approvals?category=contract_request', icon: FileSignature },
+  { title: '출장 품의', url: '/approvals?category=business_trip', icon: Building2 },
+  { title: '일반 기안', url: '/approvals?category=general_document', icon: FileText },
+  { title: '경비 결재', url: '/expenses', icon: Receipt },
 ];
 
 const personalNavItems = [
