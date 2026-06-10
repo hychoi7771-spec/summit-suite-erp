@@ -79,10 +79,10 @@ export default function Approvals() {
   const [steps, setSteps] = useState<any[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedApproval, setSelectedApproval] = useState<any>(null);
-  const initialTab = searchParams.get('tab') || 'pending';
-  const [tab, setTab] = useState(initialTab);
   const categoryParam = (searchParams.get('category') as ApprovalCategoryKey | null) || null;
   const activeCategory = getCategoryByKey(categoryParam);
+  const initialTab = searchParams.get('tab') || (categoryParam ? 'all' : 'pending');
+  const [tab, setTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
   const fetchData = async () => {
     const [appRes, profRes, roleRes, stepRes] = await Promise.all([
