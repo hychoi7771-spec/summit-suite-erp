@@ -74,6 +74,7 @@ export type Database = {
           rejected_reason: string | null
           requester_id: string
           status: Database["public"]["Enums"]["approval_status"]
+          subcategory: string | null
           title: string
           type: Database["public"]["Enums"]["approval_type"]
           updated_at: string
@@ -89,6 +90,7 @@ export type Database = {
           rejected_reason?: string | null
           requester_id: string
           status?: Database["public"]["Enums"]["approval_status"]
+          subcategory?: string | null
           title: string
           type: Database["public"]["Enums"]["approval_type"]
           updated_at?: string
@@ -104,6 +106,7 @@ export type Database = {
           rejected_reason?: string | null
           requester_id?: string
           status?: Database["public"]["Enums"]["approval_status"]
+          subcategory?: string | null
           title?: string
           type?: Database["public"]["Enums"]["approval_type"]
           updated_at?: string
