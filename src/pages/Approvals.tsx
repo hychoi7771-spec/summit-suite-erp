@@ -150,6 +150,12 @@ export default function Approvals() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  // 사이드바에서 카테고리 전환 시 탭을 '전체'로 자동 변경하여 결과가 보이도록
+  useEffect(() => {
+    if (categoryParam) setTab(searchParams.get('tab') || 'all');
+  }, [categoryParam]);
+
+
   const getProfileName = (id: string) => profiles.find(p => p.id === id)?.name || '—';
   const getProfileRole = (profileId: string) => {
     const p = profiles.find(pr => pr.id === profileId);
