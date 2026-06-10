@@ -150,6 +150,21 @@ export default function Attendance() {
     fetchData();
   };
 
+  const updateUsedDays = async (userId: string, used: number) => {
+    const existing = balanceFor(userId);
+    if (existing) {
+      const { error } = await supabase.from('leave_balances')
+        .update({ used_days: used }).eq('id', existing.id);
+      if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
+    } else {
+      const { error } = await supabase.from('leave_balances')
+        .insert({ user_id: userId, year, total_days: 0, used_days: used });
+      if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
+    }
+    toast({ title: '사용일수가 업데이트되었습니다' });
+    fetchData();
+  };
+
   const cancelMyRequest = async (id: string) => {
     // 휴가 신청 정보 가져오기 (연결된 결재/캘린더 함께 정리하기 위함)
     const { data: req } = await supabase.from('leave_requests')
@@ -376,15 +391,8 @@ export default function Attendance() {
                     const bal = balanceFor(p.id);
                     const annual = Number(bal?.total_days ?? 0);
                     const monthly = Number(bal?.monthly_total_days ?? 0);
-                    // 누적 사용량 (입사 이래 전체 승인된 휴가)
-                    const allMyReqs = requests.filter(r => r.user_id === p.id && r.status === 'approved');
-                    const usedAnnual = allMyReqs
-                      .filter(r => ['annual', 'half_day', 'sick'].includes(r.leave_type))
-                      .reduce((s, r) => s + Number(r.days), 0);
-                    const usedMonthly = allMyReqs
-                      .filter(r => r.leave_type === 'monthly')
-                      .reduce((s, r) => s + Number(r.days), 0);
-                    const used = usedAnnual + usedMonthly;
+                    // 사용일: leave_balances.used_days (트리거가 연도별 정확히 관리)
+                    const used = Number(bal?.used_days ?? 0);
                     const total = annual + monthly;
                     const remaining = total - used;
                     return (
@@ -420,7 +428,18 @@ export default function Attendance() {
                           ) : `${annual}일`}
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">{monthly > 0 ? `${monthly}일` : '-'}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">{used}일</TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {isAdmin ? (
+                            <Input
+                              type="number" step="0.5" defaultValue={used}
+                              className="w-20 h-8 text-right ml-auto"
+                              onBlur={e => {
+                                const v = parseFloat(e.target.value);
+                                if (!isNaN(v) && v !== used) updateUsedDays(p.id, v);
+                              }}
+                            />
+                          ) : `${used}일`}
+                        </TableCell>
                         <TableCell className="text-right">
                           <span className={`font-semibold ${remaining < 3 ? 'text-destructive' : 'text-foreground'}`}>{remaining}일</span>
                         </TableCell>
@@ -434,7 +453,7 @@ export default function Attendance() {
               </Table>
               {isAdmin && (
                 <p className="text-xs text-muted-foreground mt-3">
-                  💡 입사일/연차 적립 칸을 클릭해 수정. '자동 재계산'으로 입사일 기준 월차(1년 미만)/연차(1년 이상)를 일괄 갱신합니다.
+                  💡 입사일/연차 적립/사용일 칸을 클릭해 수정. '자동 재계산'으로 입사일 기준 월차(1년 미만)/연차(1년 이상)를 일괄 갱신합니다.
                 </p>
               )}
             </CardContent>
