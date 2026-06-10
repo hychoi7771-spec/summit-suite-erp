@@ -20,6 +20,7 @@ import {
 import { format } from 'date-fns';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
 import { AttachmentViewer, AttachmentEntry, getExt } from '@/components/approvals/AttachmentViewer';
+import { APPROVAL_CATEGORIES, getCategoryByKey, type ApprovalCategoryKey } from '@/lib/approvalCategories';
 
 const ALLOWED_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'png', 'jpg', 'jpeg', 'gif', 'webp'];
 const ATTACH_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp';
