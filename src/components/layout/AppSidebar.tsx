@@ -23,6 +23,12 @@ import {
   FolderOpen,
   CalendarClock,
   CalendarOff,
+  Lightbulb,
+  PartyPopper,
+  ShoppingCart,
+  FileSignature,
+  Building2,
+  Inbox,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -52,11 +58,21 @@ const mainNavItems = [
   { title: '회의록', url: '/meetings', icon: ClipboardList },
   { title: '일정', url: '/calendar', icon: CalendarDays },
   { title: '근태관리', url: '/attendance', icon: CalendarClock },
-  { title: '경비관리', url: '/expenses', icon: Receipt },
-  { title: '전자결재', url: '/approvals', icon: Stamp },
   { title: '공지 게시판', url: '/notices-board', icon: Megaphone },
   { title: '설문/투표', url: '/surveys', icon: Vote },
   { title: '파일', url: '/library', icon: FolderArchive },
+];
+
+// 전자결재 통합 하위 메뉴
+const approvalNavItems = [
+  { title: '결재함', url: '/approvals', icon: Inbox },
+  { title: '기획안 품의', url: '/approvals?category=planning_proposal', icon: Lightbulb },
+  { title: '행사안 품의', url: '/approvals?category=event_proposal', icon: PartyPopper },
+  { title: '구매 품의', url: '/approvals?category=purchase_request', icon: ShoppingCart },
+  { title: '계약 품의', url: '/approvals?category=contract_request', icon: FileSignature },
+  { title: '출장 품의', url: '/approvals?category=business_trip', icon: Building2 },
+  { title: '일반 기안', url: '/approvals?category=general_document', icon: FileText },
+  { title: '경비 결재', url: '/expenses', icon: Receipt },
 ];
 
 const personalNavItems = [
@@ -94,6 +110,9 @@ export function AppSidebar() {
   });
   const [personalOpen, setPersonalOpen] = useState(() => {
     return personalNavItems.some(item => location.pathname === item.url);
+  });
+  const [approvalOpen, setApprovalOpen] = useState(() => {
+    return location.pathname.startsWith('/approvals') || location.pathname.startsWith('/expenses');
   });
 
   const roleOrder: Record<string, number> = {
@@ -156,6 +175,40 @@ export function AppSidebar() {
     </SidebarMenu>
   );
 
+  // 전자결재 하위 메뉴 — query string까지 비교해 활성 항목 정확히 표시
+  const renderApprovalItems = () => {
+    const currentCategory = new URLSearchParams(location.search).get('category');
+    return (
+      <SidebarMenu>
+        {approvalNavItems.map((item) => {
+          const [path, query] = item.url.split('?');
+          const itemCategory = query ? new URLSearchParams(query).get('category') : null;
+          let isActive = false;
+          if (location.pathname === path) {
+            if (path === '/approvals') {
+              isActive = (currentCategory || null) === (itemCategory || null);
+            } else {
+              isActive = true;
+            }
+          }
+          return (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
+                <NavLink
+                  to={item.url}
+                  className={`hover:bg-sidebar-accent/50 relative ${isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : ''}`}
+                >
+                  <item.icon className={`h-4 w-4 ${isActive ? 'text-primary' : ''}`} />
+                  {!collapsed && <span>{item.title}</span>}
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        })}
+      </SidebarMenu>
+    );
+  };
+
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="p-4">
@@ -177,6 +230,30 @@ export function AppSidebar() {
             {renderNavItems(mainNavItems)}
           </SidebarGroupContent>
         </SidebarGroup>
+
+        {/* 전자결재 (통합) */}
+        {!collapsed ? (
+          <SidebarGroup>
+            <Collapsible open={approvalOpen} onOpenChange={setApprovalOpen}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-xs font-medium text-sidebar-muted uppercase tracking-wider hover:text-sidebar-foreground transition-colors">
+                <div className="flex items-center gap-2">
+                  <Stamp className="h-3.5 w-3.5" />
+                  <span>전자결재</span>
+                </div>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${approvalOpen ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  {renderApprovalItems()}
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+        ) : (
+          <SidebarGroup>
+            <SidebarGroupContent>{renderApprovalItems()}</SidebarGroupContent>
+          </SidebarGroup>
+        )}
 
         {/* Personal Section (더보기 style) */}
         {!collapsed && (

@@ -20,6 +20,7 @@ import {
 import { format } from 'date-fns';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
 import { AttachmentViewer, AttachmentEntry, getExt } from '@/components/approvals/AttachmentViewer';
+import { APPROVAL_CATEGORIES, getCategoryByKey, type ApprovalCategoryKey } from '@/lib/approvalCategories';
 
 const ALLOWED_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'png', 'jpg', 'jpeg', 'gif', 'webp'];
 const ATTACH_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp';
@@ -78,7 +79,9 @@ export default function Approvals() {
   const [steps, setSteps] = useState<any[]>([]);
   const [showCreate, setShowCreate] = useState(false);
   const [selectedApproval, setSelectedApproval] = useState<any>(null);
-  const initialTab = searchParams.get('tab') || 'pending';
+  const categoryParam = (searchParams.get('category') as ApprovalCategoryKey | null) || null;
+  const activeCategory = getCategoryByKey(categoryParam);
+  const initialTab = searchParams.get('tab') || (categoryParam ? 'all' : 'pending');
   const [tab, setTab] = useState(initialTab);
   const [loading, setLoading] = useState(true);
   const fetchData = async () => {
@@ -96,7 +99,7 @@ export default function Approvals() {
   };
 
   // Form state
-  const [form, setForm] = useState({ title: '', type: 'document' as string, content: '' });
+  const [form, setForm] = useState({ title: '', type: 'document' as string, content: '', subcategory: '' as string });
   const [createFiles, setCreateFiles] = useState<File[]>([]);
   const [editTarget, setEditTarget] = useState<any>(null);
   const [editForm, setEditForm] = useState({ title: '', type: 'document' as string, content: '' });
@@ -146,6 +149,12 @@ export default function Approvals() {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, []);
+
+  // 사이드바에서 카테고리 전환 시 탭을 '전체'로 자동 변경하여 결과가 보이도록
+  useEffect(() => {
+    if (categoryParam) setTab(searchParams.get('tab') || 'all');
+  }, [categoryParam]);
+
 
   const getProfileName = (id: string) => profiles.find(p => p.id === id)?.name || '—';
   const getProfileRole = (profileId: string) => {
@@ -197,12 +206,13 @@ export default function Approvals() {
       title: form.title,
       type: form.type as any,
       content: form.content,
+      subcategory: form.subcategory || null,
       requester_id: profile.id,
       current_approver_id: isCeo ? null : firstApprover,
       status: isCeo ? 'approved' : 'pending',
       approved_at: isCeo ? new Date().toISOString() : null,
       attachment_urls: serializeAttachments(uploaded),
-    });
+    } as any);
     setUploading(false);
 
     if (error) {
@@ -236,7 +246,7 @@ export default function Approvals() {
     }
 
     setShowCreate(false);
-    setForm({ title: '', type: 'document', content: '' });
+    setForm({ title: '', type: 'document', content: '', subcategory: '' });
     setCreateFiles([]);
     fetchData();
   };
@@ -382,7 +392,12 @@ export default function Approvals() {
     fetchData();
   };
 
-  const filtered = approvals.filter(a => {
+  // 카테고리 필터: 하위 메뉴에서 진입 시 subcategory(또는 type)로 좁힘
+  const categoryFiltered = activeCategory
+    ? approvals.filter(a => a.subcategory === activeCategory.key || (!a.subcategory && a.type === activeCategory.type && activeCategory.key === 'general_document'))
+    : approvals;
+
+  const filtered = categoryFiltered.filter(a => {
     if (tab === 'my') return a.requester_id === profile?.id;
     if (tab === 'pending') return a.current_approver_id === profile?.id && a.status === 'pending';
     if (tab === 'approved') return a.status === 'approved';
@@ -398,7 +413,26 @@ export default function Approvals() {
 
   const handleTabChange = (v: string) => {
     setTab(v);
-    setSearchParams(v === 'all' ? {} : { tab: v }, { replace: true });
+    const next: Record<string, string> = {};
+    if (v !== 'all') next.tab = v;
+    if (categoryParam) next.category = categoryParam;
+    setSearchParams(next, { replace: true });
+  };
+
+  // 카테고리별 새 결재 버튼: 템플릿 미리 채워 다이얼로그 오픈
+  const openCreateWithCategory = (catKey?: ApprovalCategoryKey) => {
+    const cat = catKey ? getCategoryByKey(catKey) : activeCategory;
+    if (cat && cat.type !== 'leave' && cat.type !== 'expense') {
+      setForm({
+        title: '',
+        type: cat.type,
+        content: cat.template || '',
+        subcategory: cat.key,
+      });
+    } else {
+      setForm({ title: '', type: 'document', content: '', subcategory: '' });
+    }
+    setShowCreate(true);
   };
 
   if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
@@ -407,11 +441,25 @@ export default function Approvals() {
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-foreground">전자결재</h1>
-          <p className="text-sm text-muted-foreground">문서 기안, 경비 결재, 프로젝트 제출, 휴가/근태 신청</p>
+          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
+            {activeCategory ? (
+              <>
+                <activeCategory.icon className="h-6 w-6 text-primary" />
+                {activeCategory.label}
+              </>
+            ) : (
+              '전자결재'
+            )}
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            {activeCategory
+              ? `${activeCategory.label} 결재 요청 및 진행 현황`
+              : '문서 기안, 경비 결재, 프로젝트 제출, 휴가/근태 신청'}
+          </p>
         </div>
-        <Button onClick={() => setShowCreate(true)} size="lg" className="shadow-sm">
-          <Plus className="h-4 w-4 mr-2" />새 결재 요청
+        <Button onClick={() => openCreateWithCategory()} size="lg" className="shadow-sm">
+          <Plus className="h-4 w-4 mr-2" />
+          {activeCategory ? `${activeCategory.label} 작성` : '새 결재 요청'}
         </Button>
       </div>
 
