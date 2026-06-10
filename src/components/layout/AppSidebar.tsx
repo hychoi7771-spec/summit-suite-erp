@@ -175,6 +175,40 @@ export function AppSidebar() {
     </SidebarMenu>
   );
 
+  // 전자결재 하위 메뉴 — query string까지 비교해 활성 항목 정확히 표시
+  const renderApprovalItems = () => {
+    const currentCategory = new URLSearchParams(location.search).get('category');
+    return (
+      <SidebarMenu>
+        {approvalNavItems.map((item) => {
+          const [path, query] = item.url.split('?');
+          const itemCategory = query ? new URLSearchParams(query).get('category') : null;
+          let isActive = false;
+          if (location.pathname === path) {
+            if (path === '/approvals') {
+              isActive = (currentCategory || null) === (itemCategory || null);
+            } else {
+              isActive = true;
+            }
+          }
+          return (
+            <SidebarMenuItem key={item.title}>
+              <SidebarMenuButton asChild isActive={isActive} tooltip={item.title}>
+                <NavLink
+                  to={item.url}
+                  className={`hover:bg-sidebar-accent/50 relative ${isActive ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium' : ''}`}
+                >
+                  <item.icon className={`h-4 w-4 ${isActive ? 'text-primary' : ''}`} />
+                  {!collapsed && <span>{item.title}</span>}
+                </NavLink>
+              </SidebarMenuButton>
+            </SidebarMenuItem>
+          );
+        })}
+      </SidebarMenu>
+    );
+  };
+
   return (
     <Sidebar collapsible="icon" className="border-r-0">
       <SidebarHeader className="p-4">
