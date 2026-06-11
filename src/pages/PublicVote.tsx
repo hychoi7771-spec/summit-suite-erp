@@ -47,33 +47,18 @@ export default function PublicVote() {
         return;
       }
 
-      const { data: surveyData } = await supabase
-        .from('surveys')
-        .select('*')
-        .eq('share_token', token)
-        .eq('is_active', true)
-        .single();
+      const { data: rpcData } = await supabase.rpc('get_public_survey', { _token: token });
 
-      if (!surveyData) {
+      const payload = rpcData as { survey: any; options: any[] } | null;
+      if (!payload || !payload.survey) {
         setError('존재하지 않거나 마감된 설문입니다');
         setLoading(false);
         return;
       }
 
-      if (surveyData.expires_at && new Date(surveyData.expires_at) < new Date()) {
-        setError('마감된 설문입니다');
-        setLoading(false);
-        return;
-      }
-
+      const surveyData = payload.survey;
       setSurvey(surveyData);
-
-      const { data: opts } = await supabase
-        .from('survey_options')
-        .select('*')
-        .eq('survey_id', surveyData.id)
-        .order('sort_order');
-      setOptions(opts || []);
+      setOptions(payload.options || []);
 
       const voterToken = getVoterToken(user?.id);
       const { data: existing } = await supabase
