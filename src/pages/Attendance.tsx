@@ -150,15 +150,31 @@ export default function Attendance() {
     fetchData();
   };
 
+  const isSubYear = (profileId: string) => {
+    const p = profiles.find(x => x.id === profileId);
+    if (!p?.hire_date) return false;
+    const anniv = new Date(p.hire_date);
+    anniv.setFullYear(anniv.getFullYear() + 1);
+    return new Date() < anniv;
+  };
+
+  const recalcUser = async (profileId: string) => {
+    await supabase.rpc('calculate_leave_grant', {
+      _profile_id: profileId,
+      _today: format(new Date(), 'yyyy-MM-dd'),
+    });
+  };
+
   const updateUsedDays = async (userId: string, used: number) => {
     const existing = balanceFor(userId);
+    const subYear = isSubYear(userId);
+    const patch = subYear ? { monthly_used_days: used } : { used_days: used };
     if (existing) {
-      const { error } = await supabase.from('leave_balances')
-        .update({ used_days: used }).eq('id', existing.id);
+      const { error } = await supabase.from('leave_balances').update(patch).eq('id', existing.id);
       if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
     } else {
-      const { error } = await supabase.from('leave_balances')
-        .insert({ user_id: userId, year, total_days: 0, used_days: used });
+      const base: any = { user_id: userId, year, total_days: 0, used_days: 0 };
+      const { error } = await supabase.from('leave_balances').insert({ ...base, ...patch });
       if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
     }
     toast({ title: '사용일수가 업데이트되었습니다' });
