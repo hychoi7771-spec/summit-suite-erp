@@ -204,6 +204,7 @@ export default function Attendance() {
         .eq('approval_id', req.approval_id)
         .eq('status', 'pending');
     }
+    if (req?.user_id) await recalcUser(req.user_id);
     toast({ title: '신청이 취소되었습니다' });
     fetchData();
   };
