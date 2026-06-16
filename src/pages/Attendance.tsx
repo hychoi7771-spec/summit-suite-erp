@@ -156,18 +156,19 @@ export default function Attendance() {
   const balanceFor = (userId: string) => balances.find(b => b.user_id === userId);
 
   const updateBalance = async (userId: string, total: number) => {
-    const existing = balanceFor(userId);
-    if (existing) {
-      const { error } = await supabase.from('leave_balances')
-        .update({ total_days: total }).eq('id', existing.id);
-      if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
-    } else {
-      const { error } = await supabase.from('leave_balances')
-        .insert({ user_id: userId, year, total_days: total, used_days: 0 });
-      if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
-    }
-    toast({ title: '연차 적립일수가 업데이트되었습니다' });
-    fetchData();
+    await withRecalc(async () => {
+      const existing = balanceFor(userId);
+      if (existing) {
+        const { error } = await supabase.from('leave_balances')
+          .update({ total_days: total }).eq('id', existing.id);
+        if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
+      } else {
+        const { error } = await supabase.from('leave_balances')
+          .insert({ user_id: userId, year, total_days: total, used_days: 0 });
+        if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
+      }
+      toast({ title: '연차 적립일수가 업데이트되었습니다' });
+    });
   };
 
   const isSubYear = (profileId: string) => {
@@ -186,19 +187,20 @@ export default function Attendance() {
   };
 
   const updateUsedDays = async (userId: string, used: number) => {
-    const existing = balanceFor(userId);
-    const subYear = isSubYear(userId);
-    const patch = subYear ? { monthly_used_days: used } : { used_days: used };
-    if (existing) {
-      const { error } = await supabase.from('leave_balances').update(patch).eq('id', existing.id);
-      if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
-    } else {
-      const base: any = { user_id: userId, year, total_days: 0, used_days: 0 };
-      const { error } = await supabase.from('leave_balances').insert({ ...base, ...patch });
-      if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
-    }
-    toast({ title: '사용일수가 업데이트되었습니다' });
-    fetchData();
+    await withRecalc(async () => {
+      const existing = balanceFor(userId);
+      const subYear = isSubYear(userId);
+      const patch = subYear ? { monthly_used_days: used } : { used_days: used };
+      if (existing) {
+        const { error } = await supabase.from('leave_balances').update(patch).eq('id', existing.id);
+        if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
+      } else {
+        const base: any = { user_id: userId, year, total_days: 0, used_days: 0 };
+        const { error } = await supabase.from('leave_balances').insert({ ...base, ...patch });
+        if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
+      }
+      toast({ title: '사용일수가 업데이트되었습니다' });
+    });
   };
 
   const cancelMyRequest = async (id: string) => {
