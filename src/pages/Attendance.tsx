@@ -101,8 +101,12 @@ export default function Attendance() {
     fetchData();
     const channel = supabase
       .channel('attendance-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, async () => {
+        await supabase.rpc('run_monthly_leave_grant');
+        fetchData();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_balances' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'approvals' }, fetchData)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [year]);
