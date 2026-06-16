@@ -40,8 +40,19 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
   const { profile, userRole } = useAuth();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+
+  // 입사 1년 미만 직원 판별 (대표는 항상 전체 옵션)
+  const isSubYear = (() => {
+    if (!profile?.hire_date || userRole === 'ceo') return false;
+    const anniv = new Date(profile.hire_date);
+    anniv.setFullYear(anniv.getFullYear() + 1);
+    return new Date() < anniv;
+  })();
+  const LEAVE_TYPES = isSubYear ? LEAVE_TYPES_SUB_YEAR : LEAVE_TYPES_FULL;
+  const defaultType = isSubYear ? 'monthly' : 'annual';
+
   const [form, setForm] = useState({
-    leave_type: 'annual',
+    leave_type: defaultType,
     start_date: new Date().toISOString().slice(0, 10),
     end_date: new Date().toISOString().slice(0, 10),
     reason: '',
@@ -50,10 +61,11 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
   useEffect(() => {
     if (open) {
       const today = new Date().toISOString().slice(0, 10);
-      setForm({ leave_type: 'annual', start_date: today, end_date: today, reason: '' });
+      setForm({ leave_type: defaultType, start_date: today, end_date: today, reason: '' });
       loadCompanyHolidays();
     }
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultType]);
 
   const computeDays = () => {
     if (form.leave_type === 'half_day') return 0.5;
