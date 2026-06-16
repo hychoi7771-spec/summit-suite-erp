@@ -94,18 +94,20 @@ export default function Attendance() {
   };
 
   const recalculateAll = async () => {
-    const { error } = await supabase.rpc('run_monthly_leave_grant');
-    if (error) { toast({ title: '재계산 실패', description: error.message, variant: 'destructive' }); return; }
-    toast({ title: '휴가 적립 자동 재계산 완료' });
-    fetchData();
+    await withRecalc(async () => {
+      const { error } = await supabase.rpc('run_monthly_leave_grant');
+      if (error) { toast({ title: '재계산 실패', description: error.message, variant: 'destructive' }); return; }
+      toast({ title: '휴가 적립 자동 재계산 완료' });
+    });
   };
 
   const updateHireDate = async (profileId: string, date: string) => {
-    const { error } = await supabase.from('profiles').update({ hire_date: date || null }).eq('id', profileId);
-    if (error) { toast({ title: '입사일 저장 실패', description: error.message, variant: 'destructive' }); return; }
-    await supabase.rpc('calculate_leave_grant', { _profile_id: profileId, _today: format(new Date(), 'yyyy-MM-dd') });
-    toast({ title: '입사일 업데이트 및 휴가 재계산 완료' });
-    fetchData();
+    await withRecalc(async () => {
+      const { error } = await supabase.from('profiles').update({ hire_date: date || null }).eq('id', profileId);
+      if (error) { toast({ title: '입사일 저장 실패', description: error.message, variant: 'destructive' }); return; }
+      await supabase.rpc('calculate_leave_grant', { _profile_id: profileId, _today: format(new Date(), 'yyyy-MM-dd') });
+      toast({ title: '입사일 업데이트 및 휴가 재계산 완료' });
+    });
   };
 
   useEffect(() => {
@@ -113,8 +115,11 @@ export default function Attendance() {
     const channel = supabase
       .channel('attendance-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, async () => {
-        await supabase.rpc('run_monthly_leave_grant');
-        fetchData();
+        setRecalculating(true);
+        try {
+          await supabase.rpc('run_monthly_leave_grant');
+          await fetchData();
+        } finally { setRecalculating(false); }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_balances' }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'approvals' }, fetchData)
