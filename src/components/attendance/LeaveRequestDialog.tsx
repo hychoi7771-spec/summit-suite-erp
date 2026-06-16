@@ -19,12 +19,20 @@ interface LeaveRequestDialogProps {
   onCreated: () => void;
 }
 
-const LEAVE_TYPES = [
+const LEAVE_TYPES_FULL = [
   { value: 'annual', label: '연차' },
   { value: 'half_day', label: '반차' },
   { value: 'summer', label: '여름휴가' },
   { value: 'family_event', label: '경조사' },
   { value: 'sick', label: '병가 (연차 차감)' },
+  { value: 'other', label: '기타' },
+];
+
+// 입사 1년 미만 직원용 (연차/반차/병가 제외, 월차 사용)
+const LEAVE_TYPES_SUB_YEAR = [
+  { value: 'monthly', label: '월차' },
+  { value: 'summer', label: '여름휴가' },
+  { value: 'family_event', label: '경조사' },
   { value: 'other', label: '기타' },
 ];
 
