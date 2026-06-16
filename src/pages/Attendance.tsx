@@ -219,6 +219,7 @@ export default function Attendance() {
     }
     const { error } = await supabase.from('leave_requests').delete().eq('id', req.id);
     if (error) { toast({ title: '삭제 실패', description: error.message, variant: 'destructive' }); return; }
+    await recalcUser(req.user_id);
     toast({ title: '휴가 신청이 삭제되었습니다' });
     fetchData();
   };
