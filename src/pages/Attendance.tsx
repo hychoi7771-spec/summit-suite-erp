@@ -403,10 +403,21 @@ export default function Attendance() {
         <TabsContent value="balances" className="space-y-4 mt-4">
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-base">{year}년 휴가 대시보드</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base">{year}년 휴가 대시보드</CardTitle>
+                {recalculating && (
+                  <Badge variant="outline" className="gap-1.5 bg-primary/10 text-primary border-primary/30">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    재계산 중…
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 {isAdmin && (
-                  <Button size="sm" variant="outline" onClick={recalculateAll}>자동 재계산</Button>
+                  <Button size="sm" variant="outline" onClick={recalculateAll} disabled={recalculating}>
+                    {recalculating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                    자동 재계산
+                  </Button>
                 )}
                 <Button size="icon" variant="outline" onClick={() => setYear(y => y - 1)}><ChevronLeft className="h-4 w-4" /></Button>
                 <span className="text-sm font-medium w-16 text-center">{year}년</span>
