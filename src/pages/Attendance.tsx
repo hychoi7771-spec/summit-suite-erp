@@ -391,8 +391,10 @@ export default function Attendance() {
                     const bal = balanceFor(p.id);
                     const annual = Number(bal?.total_days ?? 0);
                     const monthly = Number(bal?.monthly_total_days ?? 0);
-                    // 사용일: leave_balances.used_days (트리거가 연도별 정확히 관리)
-                    const used = Number(bal?.used_days ?? 0);
+                    // 사용일: 연차 사용 + 월차 사용 합산
+                    const usedAnnual = Number(bal?.used_days ?? 0);
+                    const usedMonthly = Number(bal?.monthly_used_days ?? 0);
+                    const used = usedAnnual + usedMonthly;
                     const total = annual + monthly;
                     const remaining = total - used;
                     return (
