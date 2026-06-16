@@ -58,6 +58,17 @@ export default function Attendance() {
   const [showRequest, setShowRequest] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [year, setYear] = useState(new Date().getFullYear());
+  const [recalculating, setRecalculating] = useState(false);
+
+  const withRecalc = async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
+    setRecalculating(true);
+    try {
+      return await fn();
+    } finally {
+      await fetchData();
+      setRecalculating(false);
+    }
+  };
 
   const ROLE_ORDER: Record<string, number> = {
     ceo: 0, general_director: 1, deputy_gm: 2, md: 3, designer: 4, staff: 5,
