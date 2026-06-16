@@ -101,8 +101,12 @@ export default function Attendance() {
     fetchData();
     const channel = supabase
       .channel('attendance-realtime')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, async () => {
+        await supabase.rpc('run_monthly_leave_grant');
+        fetchData();
+      })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_balances' }, fetchData)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'approvals' }, fetchData)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [year]);
@@ -150,15 +154,31 @@ export default function Attendance() {
     fetchData();
   };
 
+  const isSubYear = (profileId: string) => {
+    const p = profiles.find(x => x.id === profileId);
+    if (!p?.hire_date) return false;
+    const anniv = new Date(p.hire_date);
+    anniv.setFullYear(anniv.getFullYear() + 1);
+    return new Date() < anniv;
+  };
+
+  const recalcUser = async (profileId: string) => {
+    await supabase.rpc('calculate_leave_grant', {
+      _profile_id: profileId,
+      _today: format(new Date(), 'yyyy-MM-dd'),
+    });
+  };
+
   const updateUsedDays = async (userId: string, used: number) => {
     const existing = balanceFor(userId);
+    const subYear = isSubYear(userId);
+    const patch = subYear ? { monthly_used_days: used } : { used_days: used };
     if (existing) {
-      const { error } = await supabase.from('leave_balances')
-        .update({ used_days: used }).eq('id', existing.id);
+      const { error } = await supabase.from('leave_balances').update(patch).eq('id', existing.id);
       if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
     } else {
-      const { error } = await supabase.from('leave_balances')
-        .insert({ user_id: userId, year, total_days: 0, used_days: used });
+      const base: any = { user_id: userId, year, total_days: 0, used_days: 0 };
+      const { error } = await supabase.from('leave_balances').insert({ ...base, ...patch });
       if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
     }
     toast({ title: '사용일수가 업데이트되었습니다' });
@@ -168,7 +188,7 @@ export default function Attendance() {
   const cancelMyRequest = async (id: string) => {
     // 휴가 신청 정보 가져오기 (연결된 결재/캘린더 함께 정리하기 위함)
     const { data: req } = await supabase.from('leave_requests')
-      .select('id, approval_id, calendar_event_id, status').eq('id', id).maybeSingle();
+      .select('id, user_id, approval_id, calendar_event_id, status').eq('id', id).maybeSingle();
 
     const { error } = await supabase.from('leave_requests')
       .update({ status: 'cancelled' }).eq('id', id);
@@ -184,6 +204,7 @@ export default function Attendance() {
         .eq('approval_id', req.approval_id)
         .eq('status', 'pending');
     }
+    if (req?.user_id) await recalcUser(req.user_id);
     toast({ title: '신청이 취소되었습니다' });
     fetchData();
   };
@@ -199,6 +220,7 @@ export default function Attendance() {
     }
     const { error } = await supabase.from('leave_requests').delete().eq('id', req.id);
     if (error) { toast({ title: '삭제 실패', description: error.message, variant: 'destructive' }); return; }
+    await recalcUser(req.user_id);
     toast({ title: '휴가 신청이 삭제되었습니다' });
     fetchData();
   };
