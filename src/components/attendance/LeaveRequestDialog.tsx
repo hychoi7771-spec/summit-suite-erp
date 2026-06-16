@@ -19,7 +19,7 @@ interface LeaveRequestDialogProps {
   onCreated: () => void;
 }
 
-const LEAVE_TYPES = [
+const LEAVE_TYPES_FULL = [
   { value: 'annual', label: '연차' },
   { value: 'half_day', label: '반차' },
   { value: 'summer', label: '여름휴가' },
@@ -28,12 +28,31 @@ const LEAVE_TYPES = [
   { value: 'other', label: '기타' },
 ];
 
+// 입사 1년 미만 직원용 (연차/반차/병가 제외, 월차 사용)
+const LEAVE_TYPES_SUB_YEAR = [
+  { value: 'monthly', label: '월차' },
+  { value: 'summer', label: '여름휴가' },
+  { value: 'family_event', label: '경조사' },
+  { value: 'other', label: '기타' },
+];
+
 export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveRequestDialogProps) {
   const { profile, userRole } = useAuth();
   const { toast } = useToast();
   const [submitting, setSubmitting] = useState(false);
+
+  // 입사 1년 미만 직원 판별 (대표는 항상 전체 옵션)
+  const isSubYear = (() => {
+    if (!profile?.hire_date || userRole === 'ceo') return false;
+    const anniv = new Date(profile.hire_date);
+    anniv.setFullYear(anniv.getFullYear() + 1);
+    return new Date() < anniv;
+  })();
+  const LEAVE_TYPES = isSubYear ? LEAVE_TYPES_SUB_YEAR : LEAVE_TYPES_FULL;
+  const defaultType = isSubYear ? 'monthly' : 'annual';
+
   const [form, setForm] = useState({
-    leave_type: 'annual',
+    leave_type: defaultType,
     start_date: new Date().toISOString().slice(0, 10),
     end_date: new Date().toISOString().slice(0, 10),
     reason: '',
@@ -42,10 +61,11 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
   useEffect(() => {
     if (open) {
       const today = new Date().toISOString().slice(0, 10);
-      setForm({ leave_type: 'annual', start_date: today, end_date: today, reason: '' });
+      setForm({ leave_type: defaultType, start_date: today, end_date: today, reason: '' });
       loadCompanyHolidays();
     }
-  }, [open]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [open, defaultType]);
 
   const computeDays = () => {
     if (form.leave_type === 'half_day') return 0.5;
@@ -301,6 +321,12 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
             총 사용일수: <span className="font-semibold text-foreground">{days}일</span>
             {(form.leave_type === 'annual' || form.leave_type === 'half_day' || form.leave_type === 'sick') && (
               <span className="text-xs text-muted-foreground ml-2">(연차에서 차감)</span>
+            )}
+            {form.leave_type === 'monthly' && (
+              <span className="text-xs text-muted-foreground ml-2">(월차에서 차감)</span>
+            )}
+            {isSubYear && (
+              <div className="text-xs text-muted-foreground mt-1">입사 1년 미만은 월차만 사용 가능합니다.</div>
             )}
           </div>
           <div className="space-y-2">
