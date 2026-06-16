@@ -322,6 +322,12 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
             {(form.leave_type === 'annual' || form.leave_type === 'half_day' || form.leave_type === 'sick') && (
               <span className="text-xs text-muted-foreground ml-2">(연차에서 차감)</span>
             )}
+            {form.leave_type === 'monthly' && (
+              <span className="text-xs text-muted-foreground ml-2">(월차에서 차감)</span>
+            )}
+            {isSubYear && (
+              <div className="text-xs text-muted-foreground mt-1">입사 1년 미만은 월차만 사용 가능합니다.</div>
+            )}
           </div>
           <div className="space-y-2">
             <Label>사유</Label>
