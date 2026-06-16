@@ -188,7 +188,7 @@ export default function Attendance() {
   const cancelMyRequest = async (id: string) => {
     // 휴가 신청 정보 가져오기 (연결된 결재/캘린더 함께 정리하기 위함)
     const { data: req } = await supabase.from('leave_requests')
-      .select('id, approval_id, calendar_event_id, status').eq('id', id).maybeSingle();
+      .select('id, user_id, approval_id, calendar_event_id, status').eq('id', id).maybeSingle();
 
     const { error } = await supabase.from('leave_requests')
       .update({ status: 'cancelled' }).eq('id', id);
