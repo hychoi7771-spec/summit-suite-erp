@@ -9,7 +9,7 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Users, Clock, CheckCircle2, XCircle, Trash2 } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Users, Clock, CheckCircle2, XCircle, Trash2, Loader2 } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -58,6 +58,17 @@ export default function Attendance() {
   const [showRequest, setShowRequest] = useState(false);
   const [currentMonth, setCurrentMonth] = useState(new Date());
   const [year, setYear] = useState(new Date().getFullYear());
+  const [recalculating, setRecalculating] = useState(false);
+
+  const withRecalc = async <T,>(fn: () => Promise<T>): Promise<T | undefined> => {
+    setRecalculating(true);
+    try {
+      return await fn();
+    } finally {
+      await fetchData();
+      setRecalculating(false);
+    }
+  };
 
   const ROLE_ORDER: Record<string, number> = {
     ceo: 0, general_director: 1, deputy_gm: 2, md: 3, designer: 4, staff: 5,
@@ -83,18 +94,20 @@ export default function Attendance() {
   };
 
   const recalculateAll = async () => {
-    const { error } = await supabase.rpc('run_monthly_leave_grant');
-    if (error) { toast({ title: '재계산 실패', description: error.message, variant: 'destructive' }); return; }
-    toast({ title: '휴가 적립 자동 재계산 완료' });
-    fetchData();
+    await withRecalc(async () => {
+      const { error } = await supabase.rpc('run_monthly_leave_grant');
+      if (error) { toast({ title: '재계산 실패', description: error.message, variant: 'destructive' }); return; }
+      toast({ title: '휴가 적립 자동 재계산 완료' });
+    });
   };
 
   const updateHireDate = async (profileId: string, date: string) => {
-    const { error } = await supabase.from('profiles').update({ hire_date: date || null }).eq('id', profileId);
-    if (error) { toast({ title: '입사일 저장 실패', description: error.message, variant: 'destructive' }); return; }
-    await supabase.rpc('calculate_leave_grant', { _profile_id: profileId, _today: format(new Date(), 'yyyy-MM-dd') });
-    toast({ title: '입사일 업데이트 및 휴가 재계산 완료' });
-    fetchData();
+    await withRecalc(async () => {
+      const { error } = await supabase.from('profiles').update({ hire_date: date || null }).eq('id', profileId);
+      if (error) { toast({ title: '입사일 저장 실패', description: error.message, variant: 'destructive' }); return; }
+      await supabase.rpc('calculate_leave_grant', { _profile_id: profileId, _today: format(new Date(), 'yyyy-MM-dd') });
+      toast({ title: '입사일 업데이트 및 휴가 재계산 완료' });
+    });
   };
 
   useEffect(() => {
@@ -102,8 +115,11 @@ export default function Attendance() {
     const channel = supabase
       .channel('attendance-realtime')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, async () => {
-        await supabase.rpc('run_monthly_leave_grant');
-        fetchData();
+        setRecalculating(true);
+        try {
+          await supabase.rpc('run_monthly_leave_grant');
+          await fetchData();
+        } finally { setRecalculating(false); }
       })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_balances' }, fetchData)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'approvals' }, fetchData)
@@ -140,18 +156,19 @@ export default function Attendance() {
   const balanceFor = (userId: string) => balances.find(b => b.user_id === userId);
 
   const updateBalance = async (userId: string, total: number) => {
-    const existing = balanceFor(userId);
-    if (existing) {
-      const { error } = await supabase.from('leave_balances')
-        .update({ total_days: total }).eq('id', existing.id);
-      if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
-    } else {
-      const { error } = await supabase.from('leave_balances')
-        .insert({ user_id: userId, year, total_days: total, used_days: 0 });
-      if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
-    }
-    toast({ title: '연차 적립일수가 업데이트되었습니다' });
-    fetchData();
+    await withRecalc(async () => {
+      const existing = balanceFor(userId);
+      if (existing) {
+        const { error } = await supabase.from('leave_balances')
+          .update({ total_days: total }).eq('id', existing.id);
+        if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
+      } else {
+        const { error } = await supabase.from('leave_balances')
+          .insert({ user_id: userId, year, total_days: total, used_days: 0 });
+        if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
+      }
+      toast({ title: '연차 적립일수가 업데이트되었습니다' });
+    });
   };
 
   const isSubYear = (profileId: string) => {
@@ -170,19 +187,20 @@ export default function Attendance() {
   };
 
   const updateUsedDays = async (userId: string, used: number) => {
-    const existing = balanceFor(userId);
-    const subYear = isSubYear(userId);
-    const patch = subYear ? { monthly_used_days: used } : { used_days: used };
-    if (existing) {
-      const { error } = await supabase.from('leave_balances').update(patch).eq('id', existing.id);
-      if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
-    } else {
-      const base: any = { user_id: userId, year, total_days: 0, used_days: 0 };
-      const { error } = await supabase.from('leave_balances').insert({ ...base, ...patch });
-      if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
-    }
-    toast({ title: '사용일수가 업데이트되었습니다' });
-    fetchData();
+    await withRecalc(async () => {
+      const existing = balanceFor(userId);
+      const subYear = isSubYear(userId);
+      const patch = subYear ? { monthly_used_days: used } : { used_days: used };
+      if (existing) {
+        const { error } = await supabase.from('leave_balances').update(patch).eq('id', existing.id);
+        if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
+      } else {
+        const base: any = { user_id: userId, year, total_days: 0, used_days: 0 };
+        const { error } = await supabase.from('leave_balances').insert({ ...base, ...patch });
+        if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
+      }
+      toast({ title: '사용일수가 업데이트되었습니다' });
+    });
   };
 
   const cancelMyRequest = async (id: string) => {
@@ -385,10 +403,21 @@ export default function Attendance() {
         <TabsContent value="balances" className="space-y-4 mt-4">
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-base">{year}년 휴가 대시보드</CardTitle>
+              <div className="flex items-center gap-2">
+                <CardTitle className="text-base">{year}년 휴가 대시보드</CardTitle>
+                {recalculating && (
+                  <Badge variant="outline" className="gap-1.5 bg-primary/10 text-primary border-primary/30">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    재계산 중…
+                  </Badge>
+                )}
+              </div>
               <div className="flex items-center gap-2">
                 {isAdmin && (
-                  <Button size="sm" variant="outline" onClick={recalculateAll}>자동 재계산</Button>
+                  <Button size="sm" variant="outline" onClick={recalculateAll} disabled={recalculating}>
+                    {recalculating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
+                    자동 재계산
+                  </Button>
                 )}
                 <Button size="icon" variant="outline" onClick={() => setYear(y => y - 1)}><ChevronLeft className="h-4 w-4" /></Button>
                 <span className="text-sm font-medium w-16 text-center">{year}년</span>
