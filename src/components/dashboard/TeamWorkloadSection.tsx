@@ -6,8 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, Users, Search, AlertTriangle, Flame, Leaf, Activity } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Users, Search, AlertTriangle, Flame, Leaf, Activity, UserPlus2, Loader2 } from 'lucide-react';
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const roleLabels: Record<string, string> = {
   ceo: '대표이사', general_director: '이사', deputy_gm: '부장',
