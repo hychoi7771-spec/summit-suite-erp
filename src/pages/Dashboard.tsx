@@ -113,12 +113,12 @@ export default function Dashboard() {
   ];
 
   const roleLabels: Record<string, string> = {
-    ceo: '대표이사', general_director: '이사', deputy_gm: '부장',
-    md: '차장', designer: '대리', staff: '사원',
+    ceo: '대표이사', general_director: '이사', managing_director: '실장', deputy_gm: '부장',
+    md: '차장', designer: '대리', assistant_manager: '주임', staff: '사원',
   };
 
   const roleOrder: Record<string, number> = {
-    ceo: 0, general_director: 1, deputy_gm: 2, md: 3, designer: 4, staff: 5,
+    ceo: 0, general_director: 1, managing_director: 2, deputy_gm: 3, md: 4, designer: 5, assistant_manager: 6, staff: 7,
   };
 
   const sortedProfiles = [...profiles].sort((a, b) => {
