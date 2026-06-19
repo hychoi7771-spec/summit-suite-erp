@@ -29,6 +29,10 @@ import {
   FileSignature,
   Building2,
   Inbox,
+  Archive,
+  ListChecks,
+  NotebookPen,
+  FileCheck2,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -82,6 +86,12 @@ const personalNavItems = [
   { title: '임시저장', url: '/drafts', icon: FileEdit },
 ];
 
+const assetNavItems = [
+  { title: '업무 자산함', url: '/assets/tasks', icon: ListChecks },
+  { title: '일일보고 자산함', url: '/assets/daily-reports', icon: NotebookPen },
+  { title: '결재문서 자산함', url: '/assets/approvals', icon: FileCheck2 },
+];
+
 const adminNavItems = [
   { title: '매출/KPI', url: '/sales', icon: BarChart3 },
   { title: '팀원관리', url: '/team', icon: UserCog, managerOnly: true },
@@ -113,6 +123,9 @@ export function AppSidebar() {
   });
   const [approvalOpen, setApprovalOpen] = useState(() => {
     return location.pathname.startsWith('/approvals') || location.pathname.startsWith('/expenses');
+  });
+  const [assetsOpen, setAssetsOpen] = useState(() => {
+    return location.pathname.startsWith('/assets');
   });
 
   const roleOrder: Record<string, number> = {

@@ -27,6 +27,9 @@ import Mentions from "./pages/Mentions";
 import Drafts from "./pages/Drafts";
 import ProjectFolders from "./pages/ProjectFolders";
 import Auth from "./pages/Auth";
+import AssetsTasks from "./pages/AssetsTasks";
+import AssetsDailyReports from "./pages/AssetsDailyReports";
+import AssetsApprovals from "./pages/AssetsApprovals";
 
 import Attendance from "./pages/Attendance";
 import AccountSettings from "./pages/AccountSettings";
@@ -99,6 +102,9 @@ function AppRoutes() {
                 <Route path="/attendance" element={<Attendance />} />
                 <Route path="/account" element={<AccountSettings />} />
                 <Route path="/company-holidays" element={<CompanyHolidays />} />
+                <Route path="/assets/tasks" element={<AssetsTasks />} />
+                <Route path="/assets/daily-reports" element={<AssetsDailyReports />} />
+                <Route path="/assets/approvals" element={<AssetsApprovals />} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppLayout>
