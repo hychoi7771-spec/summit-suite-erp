@@ -288,6 +288,31 @@ export function AppSidebar() {
           </SidebarGroup>
         )}
 
+        {/* 업무 자산함 */}
+        {!collapsed ? (
+          <SidebarGroup>
+            <Collapsible open={assetsOpen} onOpenChange={setAssetsOpen}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-xs font-medium text-sidebar-muted uppercase tracking-wider hover:text-sidebar-foreground transition-colors">
+                <div className="flex items-center gap-2">
+                  <Archive className="h-3.5 w-3.5" />
+                  <span>업무 자산함</span>
+                </div>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${assetsOpen ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  {renderNavItems(assetNavItems)}
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+        ) : (
+          <SidebarGroup>
+            <SidebarGroupContent>{renderNavItems(assetNavItems)}</SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
+
         {/* Admin / Management Section */}
         {!collapsed && (
           <SidebarGroup>
