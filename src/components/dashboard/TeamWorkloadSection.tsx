@@ -32,9 +32,46 @@ interface Props {
 }
 
 export default function TeamWorkloadSection({ profiles, roles, tasks, reportedTodayIds, onLeaveIds }: Props) {
+  const { profile } = useAuth();
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [reassigningId, setReassigningId] = useState<string | null>(null);
   const today = startOfDay(new Date());
+
+  const reassign = async (task: any, newAssigneeId: string, newAssigneeName: string) => {
+    if (!profile?.id) { toast.error('로그인이 필요합니다'); return; }
+    if (task.assignee_id === newAssigneeId) { toast.info('이미 해당 담당자입니다'); return; }
+    setReassigningId(task.id);
+    const oldId = task.assignee_id || null;
+    const { error } = await supabase.from('tasks').update({ assignee_id: newAssigneeId }).eq('id', task.id);
+    if (error) {
+      toast.error('재배치 실패: ' + error.message);
+      setReassigningId(null);
+      return;
+    }
+    await supabase.from('task_history').insert({
+      task_id: task.id,
+      user_id: profile.id,
+      field_name: 'assignee_id',
+      old_value: oldId,
+      new_value: newAssigneeId,
+    });
+    if (newAssigneeId && newAssigneeId !== profile.id) {
+      const targetUserId = profiles.find(p => p.id === newAssigneeId)?.user_id;
+      if (targetUserId) {
+        await supabase.from('notifications').insert({
+          user_id: targetUserId,
+          type: 'task',
+          title: '업무가 재배치되었습니다',
+          message: `「${task.title}」 업무가 회원님께 배정되었습니다`,
+          related_id: task.id,
+        });
+      }
+    }
+    toast.success(`「${task.title}」 → ${newAssigneeName}`);
+    setReassigningId(null);
+  };
+
 
   const { cards, avgLoad } = useMemo(() => {
     const base = profiles.map(p => {
