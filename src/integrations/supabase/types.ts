@@ -1853,6 +1853,8 @@ export type Database = {
         | "md"
         | "designer"
         | "staff"
+        | "assistant_manager"
+        | "managing_director"
       approval_status: "pending" | "approved" | "rejected"
       approval_type: "document" | "expense" | "project" | "leave"
       expense_category: "샘플링" | "마케팅" | "일반" | "출장" | "장비"
@@ -2019,6 +2021,8 @@ export const Constants = {
         "md",
         "designer",
         "staff",
+        "assistant_manager",
+        "managing_director",
       ],
       approval_status: ["pending", "approved", "rejected"],
       approval_type: ["document", "expense", "project", "leave"],
