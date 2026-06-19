@@ -22,9 +22,11 @@ interface Props {
   profiles: any[];
   roles: any[];
   tasks: any[];
+  reportedTodayIds?: Set<string>;
+  onLeaveIds?: Set<string>;
 }
 
-export default function TeamWorkloadSection({ profiles, roles, tasks }: Props) {
+export default function TeamWorkloadSection({ profiles, roles, tasks, reportedTodayIds, onLeaveIds }: Props) {
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const today = startOfDay(new Date());
