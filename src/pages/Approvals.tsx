@@ -26,6 +26,7 @@ const ALLOWED_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'png',
 const ATTACH_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp';
 
 // Stored as "name||url" inside approvals.attachment_urls (text[])
+// `url` can be either a storage path (preferred, private bucket) or a legacy public URL.
 function parseAttachments(arr: string[] | null | undefined): AttachmentEntry[] {
   if (!arr) return [];
   return arr.map(s => {
@@ -37,6 +38,23 @@ function parseAttachments(arr: string[] | null | undefined): AttachmentEntry[] {
 }
 function serializeAttachments(items: AttachmentEntry[]): string[] {
   return items.map(i => `${i.name}||${i.url}`);
+}
+
+// Extract storage path from either a legacy public URL or a raw path.
+function extractStoragePath(stored: string): string {
+  const marker = '/approval-attachments/';
+  const idx = stored.indexOf(marker);
+  if (idx >= 0) return stored.slice(idx + marker.length).split('?')[0];
+  return stored;
+}
+
+async function resolveAttachment(a: AttachmentEntry): Promise<AttachmentEntry> {
+  const path = extractStoragePath(a.url);
+  const { data, error } = await supabase
+    .storage.from('approval-attachments')
+    .createSignedUrl(path, 60 * 10);
+  if (error || !data?.signedUrl) return a;
+  return { name: a.name, url: data.signedUrl };
 }
 
 const typeLabels: Record<string, string> = {
@@ -135,8 +153,8 @@ export default function Approvals() {
         toast({ title: '업로드 실패', description: `${file.name}: ${error.message}`, variant: 'destructive' });
         continue;
       }
-      const { data } = supabase.storage.from('approval-attachments').getPublicUrl(path);
-      out.push({ name: file.name, url: data.publicUrl });
+      // Store the storage path (private bucket); resolve to signed URL on view.
+      out.push({ name: file.name, url: path });
     }
     return out;
   };
@@ -850,7 +868,7 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
                         <Badge variant="outline" className="text-[10px] uppercase shrink-0">{ext || 'file'}</Badge>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setViewerAttachment(a)}>
+                        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={async () => setViewerAttachment(await resolveAttachment(a))}>
                           <Eye className="h-3.5 w-3.5" /> 보기
                         </Button>
                       </div>
