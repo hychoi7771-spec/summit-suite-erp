@@ -153,8 +153,8 @@ export default function Approvals() {
         toast({ title: '업로드 실패', description: `${file.name}: ${error.message}`, variant: 'destructive' });
         continue;
       }
-      const { data } = supabase.storage.from('approval-attachments').getPublicUrl(path);
-      out.push({ name: file.name, url: data.publicUrl });
+      // Store the storage path (private bucket); resolve to signed URL on view.
+      out.push({ name: file.name, url: path });
     }
     return out;
   };
