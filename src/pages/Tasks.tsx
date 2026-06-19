@@ -94,6 +94,13 @@ export default function Tasks() {
 
   useEffect(() => { fetchData(); }, []);
 
+  // URL ?assignee=<id> 딥링크 → 필터 동기화
+  useEffect(() => {
+    const a = searchParams.get('assignee');
+    if (a && a !== selectedAssignee) setSelectedAssignee(a);
+  }, [searchParams]);
+
+
   // 본인 프로필 로드 시 폼 기본 담당자를 본인으로 설정
   useEffect(() => {
     if (profile?.id) {
