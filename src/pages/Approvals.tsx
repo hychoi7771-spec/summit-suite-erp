@@ -868,7 +868,7 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
                         <Badge variant="outline" className="text-[10px] uppercase shrink-0">{ext || 'file'}</Badge>
                       </div>
                       <div className="flex items-center gap-1 shrink-0">
-                        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={() => setViewerAttachment(a)}>
+                        <Button size="sm" variant="outline" className="h-7 gap-1 text-xs" onClick={async () => setViewerAttachment(await resolveAttachment(a))}>
                           <Eye className="h-3.5 w-3.5" /> 보기
                         </Button>
                       </div>
