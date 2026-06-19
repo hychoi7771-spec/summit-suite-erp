@@ -72,6 +72,8 @@ export default function Dashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'expenses' }, () => fetchAll())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'sales_data' }, () => fetchAll())
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'daily_logs' }, () => fetchAll())
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'leave_requests' }, () => fetchAll())
       .subscribe();
 
     return () => {
