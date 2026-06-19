@@ -232,6 +232,47 @@ export default function TeamWorkloadSection({ profiles, roles, tasks, reportedTo
                               {dday < 0 ? `D+${Math.abs(dday)}` : dday === 0 ? 'D-Day' : `D-${dday}`}
                             </span>
                           )}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-5 w-5 shrink-0"
+                                title="재배치"
+                                disabled={reassigningId === t.id}
+                              >
+                                {reassigningId === t.id
+                                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                                  : <UserPlus2 className="h-3 w-3" />}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-56 p-1" align="end">
+                              <p className="text-[10px] text-muted-foreground px-2 py-1.5">다른 담당자에게 재배치</p>
+                              <div className="max-h-64 overflow-y-auto">
+                                {profiles
+                                  .filter(p => p.id !== c.profile.id)
+                                  .map(p => {
+                                    const load = tasks.filter((x: any) => x.assignee_id === p.id && x.status !== 'done').length;
+                                    const isLeave = !!onLeaveIds?.has(p.id);
+                                    return (
+                                      <button
+                                        key={p.id}
+                                        onClick={() => reassign(t, p.id, p.name_kr)}
+                                        className="w-full flex items-center justify-between gap-2 px-2 py-1.5 text-xs rounded hover:bg-muted text-left disabled:opacity-50"
+                                        disabled={reassigningId === t.id}
+                                      >
+                                        <span className="flex items-center gap-1.5 min-w-0">
+                                          <Avatar className="h-5 w-5 bg-primary"><AvatarFallback className="bg-primary text-primary-foreground text-[9px]">{p.avatar}</AvatarFallback></Avatar>
+                                          <span className="truncate">{p.name_kr}</span>
+                                          {isLeave && <span className="text-[9px] text-orange-600">휴가</span>}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">활성 {load}</span>
+                                      </button>
+                                    );
+                                  })}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         </li>
                       );
                     })}
