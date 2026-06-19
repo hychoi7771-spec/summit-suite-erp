@@ -203,8 +203,64 @@ export default function Dashboard() {
         );
       })()}
 
+      {/* 오늘 일일업무보고 현황 (관리자 전용) */}
+      {isAdmin && (() => {
+        const reportedIds = new Set(todayLogs.map((l: any) => l.user_id));
+        const onLeaveIds = new Set(todayLeaves.map((l: any) => l.user_id));
+        const eligible = sortedProfiles.filter(p => !onLeaveIds.has(p.id));
+        const missing = eligible.filter(p => !reportedIds.has(p.id));
+        const done = eligible.length - missing.length;
+        return (
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ListTodo className="h-4 w-4" />
+                오늘 일일업무보고
+                <span className="text-xs font-normal text-muted-foreground">
+                  전체 {sortedProfiles.length}명 · 작성완료 {done} · 미작성 {missing.length} · 휴가 {onLeaveIds.size}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {missing.length === 0 ? (
+                <p className="text-sm text-muted-foreground">모두 작성을 완료했습니다 ✨</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {missing.map(p => {
+                    const role = roles.find(r => r.user_id === p.user_id);
+                    return (
+                      <Link
+                        key={p.id}
+                        to={`/tasks?assignee=${p.id}`}
+                        className="flex items-center gap-2 px-2.5 py-1.5 rounded-md border border-border bg-muted/30 hover:border-primary/40 transition-colors"
+                      >
+                        <Avatar className="h-6 w-6 bg-primary">
+                          <AvatarFallback className="bg-primary text-primary-foreground text-[10px]">{p.avatar}</AvatarFallback>
+                        </Avatar>
+                        <div className="leading-tight">
+                          <p className="text-xs font-medium">{p.name_kr}</p>
+                          <p className="text-[10px] text-muted-foreground">{role ? roleLabels[role.role] || role.role : '사원'}</p>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* 담당자별 업무 현황 (관리자 전용) */}
-      {isAdmin && <TeamWorkloadSection profiles={sortedProfiles} roles={roles} tasks={tasks} />}
+      {isAdmin && (
+        <TeamWorkloadSection
+          profiles={sortedProfiles}
+          roles={roles}
+          tasks={tasks}
+          reportedTodayIds={new Set(todayLogs.map((l: any) => l.user_id))}
+          onLeaveIds={new Set(todayLeaves.map((l: any) => l.user_id))}
+        />
+      )}
 
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
