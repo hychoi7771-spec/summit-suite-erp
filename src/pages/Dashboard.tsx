@@ -34,16 +34,22 @@ export default function Dashboard() {
   const [salesData, setSalesData] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
   const [roles, setRoles] = useState<any[]>([]);
+  const [todayLogs, setTodayLogs] = useState<any[]>([]);
+  const [todayLeaves, setTodayLeaves] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchAll = async () => {
-    const [prodRes, taskRes, expRes, salesRes, profRes, roleRes] = await Promise.all([
+    const todayStr = new Date().toISOString().slice(0, 10);
+    const [prodRes, taskRes, expRes, salesRes, profRes, roleRes, logRes, leaveRes] = await Promise.all([
       supabase.from('products').select('*'),
       supabase.from('tasks').select('*'),
       supabase.from('expenses').select('*'),
       supabase.from('sales_data').select('*'),
       supabase.from('profiles').select('*'),
       supabase.from('user_roles').select('*'),
+      supabase.from('daily_logs').select('id,user_id,date').eq('date', todayStr),
+      supabase.from('leave_requests').select('user_id,status,start_date,end_date')
+        .eq('status', 'approved').lte('start_date', todayStr).gte('end_date', todayStr),
     ]);
     setProducts(prodRes.data || []);
     setTasks(taskRes.data || []);
@@ -51,6 +57,8 @@ export default function Dashboard() {
     setSalesData(salesRes.data || []);
     setProfiles(profRes.data || []);
     setRoles(roleRes.data || []);
+    setTodayLogs(logRes.data || []);
+    setTodayLeaves(leaveRes.data || []);
     setLoading(false);
   };
 
