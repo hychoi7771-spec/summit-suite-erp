@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Package, ListTodo, Receipt, DollarSign, Users, ArrowUpRight, ArrowDownRight, Circle } from 'lucide-react';
+import { TrendingUp, Package, ListTodo, Receipt, DollarSign, Users, ArrowUpRight, ArrowDownRight, Circle, AlertTriangle, CalendarClock, CalendarRange, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -8,6 +8,9 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
+import TeamWorkloadSection from '@/components/dashboard/TeamWorkloadSection';
+import { differenceInDays, parseISO, startOfDay } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 12 },
@@ -23,7 +26,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const { userRole } = useAuth();
+  const { userRole, profile } = useAuth();
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
   const [products, setProducts] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
@@ -145,6 +148,54 @@ export default function Dashboard() {
           </motion.div>
         ))}
       </div>
+
+      {/* 업무 현황 KPI (관리자: 전사 / 그 외: 본인) */}
+      {(() => {
+        const today = startOfDay(new Date());
+        const scope = isAdmin ? tasks : tasks.filter((t: any) => t.assignee_id === profile?.id);
+        const active = scope.filter((t: any) => t.status !== 'done');
+        const overdue = active.filter((t: any) => {
+          if (!t.due_date) return false;
+          try { return differenceInDays(parseISO(t.due_date), today) < 0; } catch { return false; }
+        }).length;
+        const todayDue = active.filter((t: any) => {
+          if (!t.due_date) return false;
+          try { return differenceInDays(parseISO(t.due_date), today) === 0; } catch { return false; }
+        }).length;
+        const weekDue = active.filter((t: any) => {
+          if (!t.due_date) return false;
+          try { const d = differenceInDays(parseISO(t.due_date), today); return d >= 0 && d <= 7; } catch { return false; }
+        }).length;
+        const kpis = [
+          { label: isAdmin ? '전사 활성 업무' : '내 활성 업무', value: active.length, icon: Activity, color: 'text-info', to: '/tasks' },
+          { label: '지연 업무', value: overdue, icon: AlertTriangle, color: 'text-destructive', to: '/tasks' },
+          { label: '오늘 마감', value: todayDue, icon: CalendarClock, color: 'text-warning', to: '/tasks' },
+          { label: '이번 주 마감', value: weekDue, icon: CalendarRange, color: 'text-accent', to: '/tasks' },
+        ];
+        return (
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+            {kpis.map(k => (
+              <Link key={k.label} to={k.to} className="block">
+                <Card className="hover:border-primary/40 transition-colors">
+                  <CardContent className="p-4 flex items-center justify-between">
+                    <div>
+                      <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wide">{k.label}</p>
+                      <p className="text-xl font-bold mt-1">{k.value}</p>
+                    </div>
+                    <div className={`p-2 rounded-lg bg-muted ${k.color}`}>
+                      <k.icon className="h-4 w-4" />
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            ))}
+          </div>
+        );
+      })()}
+
+      {/* 담당자별 업무 현황 (관리자 전용) */}
+      {isAdmin && <TeamWorkloadSection profiles={sortedProfiles} roles={roles} tasks={tasks} />}
+
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <Card className="lg:col-span-2">

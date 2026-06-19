@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -51,7 +52,8 @@ export default function Tasks() {
   const [createMode, setCreateMode] = useState<'now' | 'scheduled'>('now');
   const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
   const [selectedProject, setSelectedProject] = useState<string>('all');
-  const [selectedAssignee, setSelectedAssignee] = useState<string>('all');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [selectedAssignee, setSelectedAssignee] = useState<string>(searchParams.get('assignee') || 'all');
   const [dateFrom, setDateFrom] = useState<string>('');
   const [dateTo, setDateTo] = useState<string>('');
   const [dateField, setDateField] = useState<'due_date' | 'start_date'>('due_date');
@@ -91,6 +93,13 @@ export default function Tasks() {
   const getProfile = (id: string | null) => profiles.find(p => p.id === id);
 
   useEffect(() => { fetchData(); }, []);
+
+  // URL ?assignee=<id> 딥링크 → 필터 동기화
+  useEffect(() => {
+    const a = searchParams.get('assignee');
+    if (a && a !== selectedAssignee) setSelectedAssignee(a);
+  }, [searchParams]);
+
 
   // 본인 프로필 로드 시 폼 기본 담당자를 본인으로 설정
   useEffect(() => {
