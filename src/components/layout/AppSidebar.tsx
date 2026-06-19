@@ -29,6 +29,10 @@ import {
   FileSignature,
   Building2,
   Inbox,
+  Archive,
+  ListChecks,
+  NotebookPen,
+  FileCheck2,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -82,6 +86,12 @@ const personalNavItems = [
   { title: '임시저장', url: '/drafts', icon: FileEdit },
 ];
 
+const assetNavItems = [
+  { title: '업무 자산함', url: '/assets/tasks', icon: ListChecks },
+  { title: '일일보고 자산함', url: '/assets/daily-reports', icon: NotebookPen },
+  { title: '결재문서 자산함', url: '/assets/approvals', icon: FileCheck2 },
+];
+
 const adminNavItems = [
   { title: '매출/KPI', url: '/sales', icon: BarChart3 },
   { title: '팀원관리', url: '/team', icon: UserCog, managerOnly: true },
@@ -113,6 +123,9 @@ export function AppSidebar() {
   });
   const [approvalOpen, setApprovalOpen] = useState(() => {
     return location.pathname.startsWith('/approvals') || location.pathname.startsWith('/expenses');
+  });
+  const [assetsOpen, setAssetsOpen] = useState(() => {
+    return location.pathname.startsWith('/assets');
   });
 
   const roleOrder: Record<string, number> = {
@@ -274,6 +287,31 @@ export function AppSidebar() {
             </Collapsible>
           </SidebarGroup>
         )}
+
+        {/* 업무 자산함 */}
+        {!collapsed ? (
+          <SidebarGroup>
+            <Collapsible open={assetsOpen} onOpenChange={setAssetsOpen}>
+              <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-xs font-medium text-sidebar-muted uppercase tracking-wider hover:text-sidebar-foreground transition-colors">
+                <div className="flex items-center gap-2">
+                  <Archive className="h-3.5 w-3.5" />
+                  <span>업무 자산함</span>
+                </div>
+                <ChevronDown className={`h-3.5 w-3.5 transition-transform ${assetsOpen ? 'rotate-180' : ''}`} />
+              </CollapsibleTrigger>
+              <CollapsibleContent>
+                <SidebarGroupContent>
+                  {renderNavItems(assetNavItems)}
+                </SidebarGroupContent>
+              </CollapsibleContent>
+            </Collapsible>
+          </SidebarGroup>
+        ) : (
+          <SidebarGroup>
+            <SidebarGroupContent>{renderNavItems(assetNavItems)}</SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
 
         {/* Admin / Management Section */}
         {!collapsed && (
