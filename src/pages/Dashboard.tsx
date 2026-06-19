@@ -251,6 +251,68 @@ export default function Dashboard() {
         );
       })()}
 
+      {/* 미배정 / 정체 업무 경보 (관리자 전용) */}
+      {isAdmin && (() => {
+        const unassigned = tasks.filter((t: any) => !t.assignee_id && t.status !== 'done');
+        const stuck = tasks.filter((t: any) => {
+          if (t.status === 'done' || t.status === 'todo') return false;
+          if (!t.updated_at) return false;
+          try { return differenceInDays(today, parseISO(t.updated_at)) >= 7; } catch { return false; }
+        });
+        if (unassigned.length === 0 && stuck.length === 0) return null;
+        return (
+          <Card className="border-warning/40">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <AlertTriangle className="h-4 w-4 text-warning" />
+                업무 배치 점검
+                <span className="text-xs font-normal text-muted-foreground">
+                  미배정 {unassigned.length} · 7일+ 정체 {stuck.length}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">담당자 없는 업무 (Top 5)</p>
+                {unassigned.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2">없음 ✨</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {unassigned.slice(0, 5).map((t: any) => (
+                      <li key={t.id} className="text-xs flex items-center gap-2 min-w-0">
+                        {t.priority === 'urgent' && <span className="text-[9px] px-1 py-0.5 rounded bg-destructive text-destructive-foreground">긴급</span>}
+                        <Link to={`/tasks?id=${t.id}`} className="truncate flex-1 hover:underline">{t.title}</Link>
+                        {t.due_date && <span className="text-[10px] text-muted-foreground whitespace-nowrap">{t.due_date.slice(5)}</span>}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+              <div>
+                <p className="text-xs font-medium text-muted-foreground mb-2">7일+ 업데이트 없는 업무 (Top 5)</p>
+                {stuck.length === 0 ? (
+                  <p className="text-xs text-muted-foreground py-2">없음 ✨</p>
+                ) : (
+                  <ul className="space-y-1.5">
+                    {stuck.slice(0, 5).map((t: any) => {
+                      const days = differenceInDays(today, parseISO(t.updated_at));
+                      const owner = profiles.find(p => p.id === t.assignee_id);
+                      return (
+                        <li key={t.id} className="text-xs flex items-center gap-2 min-w-0">
+                          <Link to={`/tasks?id=${t.id}`} className="truncate flex-1 hover:underline">{t.title}</Link>
+                          {owner && <span className="text-[10px] text-muted-foreground">{owner.name_kr}</span>}
+                          <span className="text-[10px] text-warning whitespace-nowrap">{days}일</span>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* 담당자별 업무 현황 (관리자 전용) */}
       {isAdmin && (
         <TeamWorkloadSection
