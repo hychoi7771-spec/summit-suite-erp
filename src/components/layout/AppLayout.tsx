@@ -28,9 +28,11 @@ export function AppLayout({ children }: AppLayoutProps) {
   const roleLabels: Record<string, string> = {
     ceo: '대표이사',
     general_director: '이사',
-    deputy_gm: '차장',
-    md: '영업담당',
-    designer: '디자이너',
+    managing_director: '실장',
+    deputy_gm: '부장',
+    md: '차장',
+    designer: '대리',
+    assistant_manager: '주임',
     staff: '사원',
   };
   const roleLabel = userRole ? roleLabels[userRole] || userRole : '사원';

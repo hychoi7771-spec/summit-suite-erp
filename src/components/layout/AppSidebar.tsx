@@ -129,7 +129,7 @@ export function AppSidebar() {
   });
 
   const roleOrder: Record<string, number> = {
-    ceo: 0, general_director: 1, deputy_gm: 2, md: 3, designer: 4, staff: 5,
+    ceo: 0, general_director: 1, managing_director: 2, deputy_gm: 3, md: 4, designer: 5, assistant_manager: 6, staff: 7,
   };
 
   useEffect(() => {
