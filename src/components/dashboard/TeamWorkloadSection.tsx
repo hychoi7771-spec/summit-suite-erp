@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, Users, Search, AlertTriangle } from 'lucide-react';
+import { ArrowRight, Users, Search, AlertTriangle, Flame, Leaf, Activity } from 'lucide-react';
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 
 const roleLabels: Record<string, string> = {
@@ -31,41 +31,59 @@ export default function TeamWorkloadSection({ profiles, roles, tasks, reportedTo
   const [roleFilter, setRoleFilter] = useState<string>('all');
   const today = startOfDay(new Date());
 
-  const cards = useMemo(() => {
-    return profiles
-      .map(p => {
-        const role = roles.find(r => r.user_id === p.user_id)?.role || 'staff';
-        const mine = tasks.filter(t => t.assignee_id === p.id);
-        const active = mine.filter(t => t.status !== 'done');
-        const inProgress = mine.filter(t => t.status === 'in-progress').length;
-        const review = mine.filter(t => t.status === 'review').length;
-        const todo = mine.filter(t => t.status === 'todo').length;
-        const done = mine.filter(t => t.status === 'done').length;
-        const overdue = active.filter(t => {
-          if (!t.due_date) return false;
-          try { return differenceInDays(parseISO(t.due_date), today) < 0; } catch { return false; }
-        }).length;
-        const total = mine.length;
-        const progress = total > 0 ? Math.round((done / total) * 100) : 0;
-        const recent = [...active]
-          .sort((a, b) => {
-            const pw = (priorityWeight[a.priority] ?? 9) - (priorityWeight[b.priority] ?? 9);
-            if (pw !== 0) return pw;
-            if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
-            if (a.due_date) return -1;
-            if (b.due_date) return 1;
-            return 0;
-          })
-          .slice(0, 3);
-        return { profile: p, role, todo, inProgress, review, done, overdue, total, active: active.length, progress, recent };
-      })
+  const { cards, avgLoad } = useMemo(() => {
+    const base = profiles.map(p => {
+      const role = roles.find(r => r.user_id === p.user_id)?.role || 'staff';
+      const mine = tasks.filter(t => t.assignee_id === p.id);
+      const active = mine.filter(t => t.status !== 'done');
+      const inProgress = mine.filter(t => t.status === 'in-progress').length;
+      const review = mine.filter(t => t.status === 'review').length;
+      const todo = mine.filter(t => t.status === 'todo').length;
+      const done = mine.filter(t => t.status === 'done').length;
+      const overdue = active.filter(t => {
+        if (!t.due_date) return false;
+        try { return differenceInDays(parseISO(t.due_date), today) < 0; } catch { return false; }
+      }).length;
+      const urgent = active.filter(t => t.priority === 'urgent').length;
+      const high = active.filter(t => t.priority === 'high').length;
+      // 가중 업무량 점수: 활성 업무 + 긴급×3 + 높음×2 + 지연×2
+      const loadScore = active.length + urgent * 3 + high * 2 + overdue * 2;
+      const total = mine.length;
+      const progress = total > 0 ? Math.round((done / total) * 100) : 0;
+      const recent = [...active]
+        .sort((a, b) => {
+          const pw = (priorityWeight[a.priority] ?? 9) - (priorityWeight[b.priority] ?? 9);
+          if (pw !== 0) return pw;
+          if (a.due_date && b.due_date) return a.due_date.localeCompare(b.due_date);
+          if (a.due_date) return -1;
+          if (b.due_date) return 1;
+          return 0;
+        })
+        .slice(0, 3);
+      return { profile: p, role, todo, inProgress, review, done, overdue, urgent, high, total, active: active.length, loadScore, progress, recent };
+    });
+    const activeBase = base.filter(c => !onLeaveIds?.has(c.profile.id));
+    const avg = activeBase.length > 0
+      ? activeBase.reduce((s, c) => s + c.loadScore, 0) / activeBase.length
+      : 0;
+    const filtered = base
       .filter(c => {
         if (roleFilter !== 'all' && c.role !== roleFilter) return false;
         if (query && !c.profile.name_kr?.toLowerCase().includes(query.toLowerCase())) return false;
         return true;
       })
-      .sort((a, b) => (roleOrder[a.role] ?? 99) - (roleOrder[b.role] ?? 99));
-  }, [profiles, roles, tasks, query, roleFilter]);
+      .sort((a, b) => b.loadScore - a.loadScore);
+    return { cards: filtered, avgLoad: avg };
+  }, [profiles, roles, tasks, query, roleFilter, onLeaveIds]);
+
+  const loadLevel = (score: number, isOnLeave: boolean) => {
+    if (isOnLeave) return null;
+    const high = Math.max(avgLoad * 1.5, 6);
+    const low = Math.max(avgLoad * 0.5, 1);
+    if (score >= high) return { label: '과부하', cls: 'bg-red-500 hover:bg-red-500 text-white', icon: Flame };
+    if (score <= low) return { label: '여유', cls: 'bg-emerald-600 hover:bg-emerald-600 text-white', icon: Leaf };
+    return { label: '적정', cls: 'bg-blue-500 hover:bg-blue-500 text-white', icon: Activity };
+  };
 
   return (
     <Card>
@@ -117,14 +135,22 @@ export default function TeamWorkloadSection({ profiles, roles, tasks, reportedTo
                   </div>
                   <div className="flex flex-col items-end gap-1">
                     {(() => {
-                      if (onLeaveIds?.has(c.profile.id)) {
+                      const isLeave = !!onLeaveIds?.has(c.profile.id);
+                      const lvl = loadLevel(c.loadScore, isLeave);
+                      if (isLeave) {
                         return <Badge className="text-[10px] bg-orange-500 hover:bg-orange-500">휴가중</Badge>;
                       }
-                      if (reportedTodayIds === undefined) return null;
-                      return reportedTodayIds.has(c.profile.id)
-                        ? <Badge className="text-[10px] bg-emerald-600 hover:bg-emerald-600">보고완료</Badge>
-                        : <Badge variant="outline" className="text-[10px]">보고미작성</Badge>;
+                      return lvl ? (
+                        <Badge className={`text-[10px] gap-1 ${lvl.cls}`} title={`업무 부하 점수 ${c.loadScore} (팀 평균 ${avgLoad.toFixed(1)})`}>
+                          <lvl.icon className="h-3 w-3" />{lvl.label} {c.loadScore}
+                        </Badge>
+                      ) : null;
                     })()}
+                    {reportedTodayIds !== undefined && !onLeaveIds?.has(c.profile.id) && (
+                      reportedTodayIds.has(c.profile.id)
+                        ? <Badge variant="outline" className="text-[10px] border-emerald-600 text-emerald-700">보고완료</Badge>
+                        : <Badge variant="outline" className="text-[10px]">보고미작성</Badge>
+                    )}
                     {c.overdue > 0 && (
                       <Badge variant="destructive" className="text-[10px] gap-1">
                         <AlertTriangle className="h-3 w-3" />지연 {c.overdue}
