@@ -115,11 +115,22 @@ export default function TeamWorkloadSection({ profiles, roles, tasks, reportedTo
                       <p className="text-xs text-muted-foreground">{roleLabels[c.role] || c.role}</p>
                     </div>
                   </div>
-                  {c.overdue > 0 && (
-                    <Badge variant="destructive" className="text-[10px] gap-1">
-                      <AlertTriangle className="h-3 w-3" />지연 {c.overdue}
-                    </Badge>
-                  )}
+                  <div className="flex flex-col items-end gap-1">
+                    {(() => {
+                      if (onLeaveIds?.has(c.profile.id)) {
+                        return <Badge className="text-[10px] bg-orange-500 hover:bg-orange-500">휴가중</Badge>;
+                      }
+                      if (reportedTodayIds === undefined) return null;
+                      return reportedTodayIds.has(c.profile.id)
+                        ? <Badge className="text-[10px] bg-emerald-600 hover:bg-emerald-600">보고완료</Badge>
+                        : <Badge variant="outline" className="text-[10px]">보고미작성</Badge>;
+                    })()}
+                    {c.overdue > 0 && (
+                      <Badge variant="destructive" className="text-[10px] gap-1">
+                        <AlertTriangle className="h-3 w-3" />지연 {c.overdue}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
 
                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground mb-2 flex-wrap">
