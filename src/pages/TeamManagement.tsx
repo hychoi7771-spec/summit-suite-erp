@@ -29,7 +29,9 @@ const roleOrder: Record<string, number> = {
   ceo: 0, general_director: 1, managing_director: 2, deputy_gm: 3, md: 4, designer: 5, assistant_manager: 6, staff: 7,
 };
 
-const roles = Constants.public.Enums.app_role;
+const roles = [...Constants.public.Enums.app_role].sort(
+  (a, b) => (roleOrder[a] ?? 99) - (roleOrder[b] ?? 99)
+);
 
 const presenceLabels: Record<string, string> = { working: '근무 중', away: '자리비움', offline: '오프라인' };
 const presenceColors: Record<string, string> = { working: 'bg-success', away: 'bg-warning', offline: 'bg-muted-foreground/40' };
