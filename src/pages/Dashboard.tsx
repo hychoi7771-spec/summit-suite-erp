@@ -253,6 +253,7 @@ export default function Dashboard() {
 
       {/* 미배정 / 정체 업무 경보 (관리자 전용) */}
       {isAdmin && (() => {
+        const today = startOfDay(new Date());
         const unassigned = tasks.filter((t: any) => !t.assignee_id && t.status !== 'done');
         const stuck = tasks.filter((t: any) => {
           if (t.status === 'done' || t.status === 'todo') return false;
