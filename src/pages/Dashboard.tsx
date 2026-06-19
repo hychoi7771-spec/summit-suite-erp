@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Package, ListTodo, Receipt, DollarSign, Users, ArrowUpRight, ArrowDownRight, Circle } from 'lucide-react';
+import { TrendingUp, Package, ListTodo, Receipt, DollarSign, Users, ArrowUpRight, ArrowDownRight, Circle, AlertTriangle, CalendarClock, CalendarRange, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -8,6 +8,9 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
+import TeamWorkloadSection from '@/components/dashboard/TeamWorkloadSection';
+import { differenceInDays, parseISO, startOfDay } from 'date-fns';
+import { Link } from 'react-router-dom';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 12 },
