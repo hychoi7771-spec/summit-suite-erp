@@ -26,7 +26,7 @@ const statusColors: Record<string, string> = {
 };
 
 export default function Dashboard() {
-  const { userRole } = useAuth();
+  const { userRole, profile } = useAuth();
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
   const [products, setProducts] = useState<any[]>([]);
   const [tasks, setTasks] = useState<any[]>([]);
