@@ -6,8 +6,13 @@ import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowRight, Users, Search, AlertTriangle, Flame, Leaf, Activity } from 'lucide-react';
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Button } from '@/components/ui/button';
+import { ArrowRight, Users, Search, AlertTriangle, Flame, Leaf, Activity, UserPlus2, Loader2 } from 'lucide-react';
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import { toast } from 'sonner';
 
 const roleLabels: Record<string, string> = {
   ceo: '대표이사', general_director: '이사', deputy_gm: '부장',
@@ -27,9 +32,46 @@ interface Props {
 }
 
 export default function TeamWorkloadSection({ profiles, roles, tasks, reportedTodayIds, onLeaveIds }: Props) {
+  const { profile } = useAuth();
   const [query, setQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState<string>('all');
+  const [reassigningId, setReassigningId] = useState<string | null>(null);
   const today = startOfDay(new Date());
+
+  const reassign = async (task: any, newAssigneeId: string, newAssigneeName: string) => {
+    if (!profile?.id) { toast.error('로그인이 필요합니다'); return; }
+    if (task.assignee_id === newAssigneeId) { toast.info('이미 해당 담당자입니다'); return; }
+    setReassigningId(task.id);
+    const oldId = task.assignee_id || null;
+    const { error } = await supabase.from('tasks').update({ assignee_id: newAssigneeId }).eq('id', task.id);
+    if (error) {
+      toast.error('재배치 실패: ' + error.message);
+      setReassigningId(null);
+      return;
+    }
+    await supabase.from('task_history').insert({
+      task_id: task.id,
+      user_id: profile.id,
+      field_name: 'assignee_id',
+      old_value: oldId,
+      new_value: newAssigneeId,
+    });
+    if (newAssigneeId && newAssigneeId !== profile.id) {
+      const targetUserId = profiles.find(p => p.id === newAssigneeId)?.user_id;
+      if (targetUserId) {
+        await supabase.from('notifications').insert({
+          user_id: targetUserId,
+          type: 'task',
+          title: '업무가 재배치되었습니다',
+          message: `「${task.title}」 업무가 회원님께 배정되었습니다`,
+          related_id: task.id,
+        });
+      }
+    }
+    toast.success(`「${task.title}」 → ${newAssigneeName}`);
+    setReassigningId(null);
+  };
+
 
   const { cards, avgLoad } = useMemo(() => {
     const base = profiles.map(p => {
@@ -190,6 +232,47 @@ export default function TeamWorkloadSection({ profiles, roles, tasks, reportedTo
                               {dday < 0 ? `D+${Math.abs(dday)}` : dday === 0 ? 'D-Day' : `D-${dday}`}
                             </span>
                           )}
+                          <Popover>
+                            <PopoverTrigger asChild>
+                              <Button
+                                size="icon"
+                                variant="ghost"
+                                className="h-5 w-5 shrink-0"
+                                title="재배치"
+                                disabled={reassigningId === t.id}
+                              >
+                                {reassigningId === t.id
+                                  ? <Loader2 className="h-3 w-3 animate-spin" />
+                                  : <UserPlus2 className="h-3 w-3" />}
+                              </Button>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-56 p-1" align="end">
+                              <p className="text-[10px] text-muted-foreground px-2 py-1.5">다른 담당자에게 재배치</p>
+                              <div className="max-h-64 overflow-y-auto">
+                                {profiles
+                                  .filter(p => p.id !== c.profile.id)
+                                  .map(p => {
+                                    const load = tasks.filter((x: any) => x.assignee_id === p.id && x.status !== 'done').length;
+                                    const isLeave = !!onLeaveIds?.has(p.id);
+                                    return (
+                                      <button
+                                        key={p.id}
+                                        onClick={() => reassign(t, p.id, p.name_kr)}
+                                        className="w-full flex items-center justify-between gap-2 px-2 py-1.5 text-xs rounded hover:bg-muted text-left disabled:opacity-50"
+                                        disabled={reassigningId === t.id}
+                                      >
+                                        <span className="flex items-center gap-1.5 min-w-0">
+                                          <Avatar className="h-5 w-5 bg-primary"><AvatarFallback className="bg-primary text-primary-foreground text-[9px]">{p.avatar}</AvatarFallback></Avatar>
+                                          <span className="truncate">{p.name_kr}</span>
+                                          {isLeave && <span className="text-[9px] text-orange-600">휴가</span>}
+                                        </span>
+                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">활성 {load}</span>
+                                      </button>
+                                    );
+                                  })}
+                              </div>
+                            </PopoverContent>
+                          </Popover>
                         </li>
                       );
                     })}
