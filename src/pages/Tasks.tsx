@@ -567,38 +567,6 @@ export default function Tasks() {
           })()}
 
           {/* Project filter */}
-          {(() => {
-            const projectNames = [...new Set(taskList.map(t => t.project_name).filter(Boolean))] as string[];
-            const hasUnassigned = taskList.some(t => !t.project_name);
-            return projectNames.length > 0 ? (
-              <div className="flex items-center gap-2 overflow-x-auto pb-1">
-                <FolderKanban className="h-4 w-4 text-muted-foreground shrink-0" />
-                <button
-                  onClick={() => setSelectedProject('all')}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap ${selectedProject === 'all' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'}`}
-                >
-                  전체 ({taskList.length})
-                </button>
-                {projectNames.map(p => (
-                  <button
-                    key={p}
-                    onClick={() => setSelectedProject(p)}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap ${selectedProject === p ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'}`}
-                  >
-                    {p} ({taskList.filter(t => t.project_name === p).length})
-                  </button>
-                ))}
-                {hasUnassigned && (
-                  <button
-                    onClick={() => setSelectedProject('__none__')}
-                    className={`px-3 py-1.5 text-xs font-medium rounded-full border transition-colors whitespace-nowrap ${selectedProject === '__none__' ? 'bg-primary text-primary-foreground border-primary' : 'bg-card text-muted-foreground border-border hover:border-primary/50'}`}
-                  >
-                    미지정 ({taskList.filter(t => !t.project_name).length})
-                  </button>
-                )}
-              </div>
-            ) : null;
-          })()}
 
           {/* Assignee filter */}
           {(() => {
