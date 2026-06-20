@@ -158,7 +158,7 @@ export default function Executive() {
     });
 
     const stuckTasks = tasks.filter((t) => {
-      if (t.status !== 'in_progress' || !t.updated_at) return false;
+      if (t.status !== 'in-progress' || !t.updated_at) return false;
       return differenceInDays(meta.now, parseISO(t.updated_at)) >= 7;
     });
     if (stuckTasks.length) {
