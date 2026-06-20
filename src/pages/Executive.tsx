@@ -124,9 +124,9 @@ export default function Executive() {
     const mtdRevenue = sales.filter((s) => s.month === meta.monthStr).reduce((a, b) => a + (b.revenue || 0), 0);
     const prevRevenue = sales.filter((s) => s.month === meta.prevMonthStr).reduce((a, b) => a + (b.revenue || 0), 0);
 
-    const inProgressProjects = new Set(tasks.filter((t) => t.status === 'in_progress' && t.project_name).map((t) => t.project_name)).size;
+    const inProgressProjects = new Set(tasks.filter((t) => t.status === 'in-progress' && t.project_name).map((t) => t.project_name)).size;
 
-    const overdueTasks = tasks.filter((t) => t.due_date && t.due_date < meta.todayStr && t.status !== 'completed');
+    const overdueTasks = tasks.filter((t) => t.due_date && t.due_date < meta.todayStr && t.status !== 'done');
     const pendingApprovals = approvals.filter((a) => a.status === 'pending');
 
     const todayLeaves = leaves.filter((l) => l.status === 'approved' && l.start_date <= meta.todayStr && l.end_date >= meta.todayStr);
@@ -134,7 +134,7 @@ export default function Executive() {
     const presentToday = Math.max(0, totalEmployees - todayLeaves.length);
     const attendanceRate = totalEmployees ? (presentToday / totalEmployees) * 100 : 0;
 
-    const pendingExpenses = expenses.filter((e) => e.status === 'pending');
+    const pendingExpenses = expenses.filter((e) => e.status === 'Pending');
     const mtdExpenses = expenses
       .filter((e) => e.date >= format(meta.monthStart, 'yyyy-MM-dd') && e.date <= format(meta.monthEnd, 'yyyy-MM-dd'))
       .reduce((a, b) => a + (b.amount || 0), 0);
@@ -216,13 +216,13 @@ export default function Executive() {
     // Tasks by category
     const tasksByCat = categories.map((c) => {
       const items = tasks.filter((t) => t.category_id === c.id);
-      const completed = items.filter((t) => t.status === 'completed').length;
+      const completed = items.filter((t) => t.status === 'done').length;
       return { name: c.name, total: items.length, completed, color: c.color };
     }).filter((c) => c.total > 0);
 
     // Workload by assignee
     const workload = profiles.map((p) => {
-      const open = tasks.filter((t) => t.assignee_id === p.id && t.status !== 'completed').length;
+      const open = tasks.filter((t) => t.assignee_id === p.id && t.status !== 'done').length;
       return { name: p.name_kr || p.name, value: open };
     }).filter((w) => w.value > 0).sort((a, b) => b.value - a.value).slice(0, 8);
 
