@@ -195,7 +195,7 @@ export default function TeamWorkloadSection({ profiles, roles, tasks, reportedTo
                     )}
                     {c.overdue > 0 && (
                       <Badge variant="destructive" className="text-[10px] gap-1">
-                        <AlertTriangle className="h-3 w-3" />지연 {c.overdue}
+                        <AlertTriangle className="h-3 w-3" />마감임박 {c.overdue}
                       </Badge>
                     )}
                   </div>
