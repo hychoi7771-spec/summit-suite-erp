@@ -122,9 +122,9 @@ export default function TeamWorkloadSection({ profiles, roles, tasks, reportedTo
     if (isOnLeave) return null;
     const high = Math.max(avgLoad * 1.5, 6);
     const low = Math.max(avgLoad * 0.5, 1);
-    if (score >= high) return { label: '과부하', cls: 'bg-red-500 hover:bg-red-500 text-white', icon: Flame };
-    if (score <= low) return { label: '여유', cls: 'bg-emerald-600 hover:bg-emerald-600 text-white', icon: Leaf };
-    return { label: '적정', cls: 'bg-blue-500 hover:bg-blue-500 text-white', icon: Activity };
+    if (score >= high) return { label: '집중', cls: 'bg-red-500 hover:bg-red-500 text-white', icon: Flame };
+    if (score <= low) return { label: '원활', cls: 'bg-emerald-600 hover:bg-emerald-600 text-white', icon: Leaf };
+    return { label: '양호', cls: 'bg-blue-500 hover:bg-blue-500 text-white', icon: Activity };
   };
 
   return (
@@ -195,7 +195,7 @@ export default function TeamWorkloadSection({ profiles, roles, tasks, reportedTo
                     )}
                     {c.overdue > 0 && (
                       <Badge variant="destructive" className="text-[10px] gap-1">
-                        <AlertTriangle className="h-3 w-3" />지연 {c.overdue}
+                        <AlertTriangle className="h-3 w-3" />마감임박 {c.overdue}
                       </Badge>
                     )}
                   </div>
