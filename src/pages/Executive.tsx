@@ -227,9 +227,6 @@ export default function Executive() {
     }).filter((w) => w.value > 0).sort((a, b) => b.value - a.value).slice(0, 8);
 
     // Sales trend (last 6 months)
-    const months: string[] = [];
-    for (let i = 5; i >= 0; i--) months.push(format(subDays(monthStart, i * 30), 'yyyy-MM'));
-    function monthStart() { return new Date(meta.now.getFullYear(), meta.now.getMonth(), 1); }
     const monthLabels: string[] = [];
     for (let i = 5; i >= 0; i--) {
       const d = new Date(meta.now.getFullYear(), meta.now.getMonth() - i, 1);
