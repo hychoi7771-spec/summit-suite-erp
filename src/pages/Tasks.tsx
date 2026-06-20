@@ -176,6 +176,23 @@ export default function Tasks() {
       createMode === 'scheduled' && taskForm.start_date && taskForm.start_date > today
         ? 'scheduled'
         : 'todo';
+    // 카테고리 미선택 시 AI 자동 분류
+    let resolvedCategoryId: string | null = taskForm.category_id || null;
+    if (!resolvedCategoryId && categories.length > 0) {
+      try {
+        const { data: ai } = await supabase.functions.invoke('classify-task', {
+          body: {
+            title: taskForm.title,
+            description: taskForm.description || '',
+            categories: categories.map((c: any) => ({ id: c.id, name: c.name })),
+          },
+        });
+        if (ai?.category_id) resolvedCategoryId = ai.category_id;
+      } catch (e) {
+        console.warn('auto-classify failed', e);
+      }
+    }
+
     const { error } = await supabase.from('tasks').insert({
       title: taskForm.title,
       description: taskForm.description || null,
@@ -184,7 +201,7 @@ export default function Tasks() {
       start_date: taskForm.start_date || null,
       due_date: taskForm.due_date || null,
       project_name: taskForm.project_name || null,
-      category_id: taskForm.category_id || null,
+      category_id: resolvedCategoryId,
       status: finalStatus as any,
     } as any);
     if (error) {
