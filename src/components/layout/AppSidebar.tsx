@@ -33,6 +33,7 @@ import {
   ListChecks,
   NotebookPen,
   FileCheck2,
+  Crown,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -111,6 +112,7 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const location = useLocation();
   const { userRole, isManager } = useAuth();
+  const isExecutive = userRole === 'ceo' || userRole === 'general_director';
   const [members, setMembers] = useState<any[]>([]);
   const visibleAdminNavItems = adminNavItems.filter(
     (item) => !('managerOnly' in item && (item as any).managerOnly) || isManager
@@ -237,6 +239,15 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent>
+        {/* Executive — ceo/general_director only */}
+        {isExecutive && (
+          <SidebarGroup>
+            <SidebarGroupContent>
+              {renderNavItems([{ title: '경영현황', url: '/executive', icon: Crown, accent: true } as any])}
+            </SidebarGroupContent>
+          </SidebarGroup>
+        )}
+
         {/* Main Navigation */}
         <SidebarGroup>
           <SidebarGroupContent>
