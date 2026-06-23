@@ -79,9 +79,8 @@ export default function Expenses() {
     }
 
     const isCeo = userRole === 'ceo';
-    const isCorporate = CORPORATE_METHODS.includes(form.payment_method);
-    // 대표 등록 또는 법인 결제수단(법인카드/법인계좌)은 등록 즉시 Approved
-    const autoApproved = isCeo || isCorporate;
+    // 대표 등록만 즉시 Approved (전결). 법인 결제수단도 대표 결재 필요.
+    const autoApproved = isCeo;
 
     const { error } = await supabase.from('expenses').insert({
       amount: parseInt(form.amount),
@@ -98,20 +97,13 @@ export default function Expenses() {
     } else {
       if (isCeo) {
         toast({ title: '전결 완료', description: '대표 권한으로 즉시 승인되었습니다.' });
-      } else if (isCorporate) {
-        toast({ title: '등록 완료', description: '법인 결제수단은 기록용으로 자동 승인됩니다.' });
-        await notifyAdmins(
-          '법인 결제 기록',
-          `${profile.name_kr}님이 ${formatKRW(parseInt(form.amount))} (${form.category} / ${paymentMethodLabel(form.payment_method)})을 등록했습니다.`,
-          'expense'
-        );
       } else {
         await notifyAdmins(
           '새 경비 청구',
           `${profile.name_kr}님이 ${formatKRW(parseInt(form.amount))} 경비를 청구했습니다. (${form.category} / ${paymentMethodLabel(form.payment_method)})`,
           'expense'
         );
-        toast({ title: '경비 등록 완료' });
+        toast({ title: '경비 등록 완료', description: '대표 승인 대기 중입니다.' });
       }
       setDialogOpen(false);
       setForm({ amount: '', category: '', description: '', payment_method: 'personal' });
