@@ -1,0 +1,1 @@
+UPDATE public.expenses SET status='Pending' WHERE id IN ('eba3ee3b-6dc0-4714-9783-0584bafa6f16','55a29112-7d0f-4a9e-b4de-473403d96d78','a8d8053c-5c99-401d-8ac8-8b77cf0ba57c');
