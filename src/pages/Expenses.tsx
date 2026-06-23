@@ -79,9 +79,8 @@ export default function Expenses() {
     }
 
     const isCeo = userRole === 'ceo';
-    const isCorporate = CORPORATE_METHODS.includes(form.payment_method);
-    // 대표 등록 또는 법인 결제수단(법인카드/법인계좌)은 등록 즉시 Approved
-    const autoApproved = isCeo || isCorporate;
+    // 대표 등록만 즉시 Approved (전결). 법인 결제수단도 대표 결재 필요.
+    const autoApproved = isCeo;
 
     const { error } = await supabase.from('expenses').insert({
       amount: parseInt(form.amount),
