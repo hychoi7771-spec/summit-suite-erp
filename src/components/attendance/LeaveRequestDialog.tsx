@@ -168,7 +168,8 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
         approved_by: profile.id,
         approved_at: new Date().toISOString(),
         approval_id: newApprovalId,
-      });
+        half_day_period: halfDayPeriod,
+      } as any);
 
       if (leaveErr) {
         toast({ title: '휴가 등록 실패', description: leaveErr.message, variant: 'destructive' });
