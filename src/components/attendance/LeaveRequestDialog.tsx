@@ -28,13 +28,20 @@ const LEAVE_TYPES_FULL = [
   { value: 'other', label: '기타' },
 ];
 
-// 입사 1년 미만 직원용 (연차/반차/병가 제외, 월차 사용)
+// 입사 1년 미만 직원용 (연차 제외, 월차/반차 사용 — 반차는 월차 0.5일 차감)
 const LEAVE_TYPES_SUB_YEAR = [
-  { value: 'monthly', label: '월차' },
+  { value: 'monthly', label: '월차 (1일)' },
+  { value: 'half_day_am', label: '오전반차 (9:00~14:00, 월차 0.5일 차감)' },
+  { value: 'half_day_pm', label: '오후반차 (14:00~18:00, 월차 0.5일 차감)' },
   { value: 'summer', label: '여름휴가' },
   { value: 'family_event', label: '경조사' },
   { value: 'other', label: '기타' },
 ];
+
+const HALF_DAY_TIME_NOTE: Record<string, string> = {
+  half_day_am: '[오전반차] 9:00~14:00 (점심시간 12:00~13:00 휴게시간 제외, 4시간 사용)',
+  half_day_pm: '[오후반차] 14:00~18:00 (4시간 사용)',
+};
 
 export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveRequestDialogProps) {
   const { profile, userRole } = useAuth();
@@ -67,8 +74,10 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultType]);
 
+  const isHalfDay = form.leave_type === 'half_day' || form.leave_type === 'half_day_am' || form.leave_type === 'half_day_pm';
+
   const computeDays = () => {
-    if (form.leave_type === 'half_day') return 0.5;
+    if (isHalfDay) return 0.5;
     if (!form.start_date || !form.end_date) return 1;
     const start = new Date(form.start_date);
     const end = new Date(form.end_date);
@@ -77,6 +86,14 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
     const days = eachDayOfInterval({ start, end }).filter(d => !isNonWorkingDay(d)).length;
     return days > 0 ? days : 0;
   };
+
+  // DB에 저장되는 실제 leave_type (오전/오후반차는 half_day 로 매핑)
+  const actualLeaveType = (form.leave_type === 'half_day_am' || form.leave_type === 'half_day_pm')
+    ? 'half_day'
+    : form.leave_type;
+  const reasonWithNote = HALF_DAY_TIME_NOTE[form.leave_type]
+    ? `${HALF_DAY_TIME_NOTE[form.leave_type]}${form.reason ? `\n${form.reason}` : ''}`
+    : form.reason;
 
   const handleSubmit = async () => {
     if (!profile) return;
@@ -122,11 +139,11 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
       // 휴가 신청 — 즉시 approved (트리거가 캘린더/잔액 자동 처리)
       const { error: leaveErr } = await supabase.from('leave_requests').insert({
         user_id: profile.id,
-        leave_type: form.leave_type as any,
+        leave_type: actualLeaveType as any,
         start_date: form.start_date,
-        end_date: form.end_date,
+        end_date: isHalfDay ? form.start_date : form.end_date,
         days,
-        reason: form.reason || null,
+        reason: reasonWithNote || null,
         status: 'approved',
         approved_by: profile.id,
         approved_at: new Date().toISOString(),
@@ -175,8 +192,8 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
           id: newApprovalId,
           requester_id: profile.id,
           type: 'leave',
-          title: `[${typeLabel}] ${form.start_date}${form.start_date !== form.end_date ? ` ~ ${form.end_date}` : ''} (${days}일)`,
-          content: form.reason || '',
+          title: `[${typeLabel}] ${form.start_date}${!isHalfDay && form.start_date !== form.end_date ? ` ~ ${form.end_date}` : ''} (${days}일)`,
+          content: reasonWithNote || '',
           status: 'pending',
           current_approver_id: orderedApproverProfileIds[0],
         });
@@ -203,11 +220,11 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
 
       const { error: leaveErr } = await supabase.from('leave_requests').insert({
         user_id: profile.id,
-        leave_type: form.leave_type as any,
+        leave_type: actualLeaveType as any,
         start_date: form.start_date,
-        end_date: form.end_date,
+        end_date: isHalfDay ? form.start_date : form.end_date,
         days,
-        reason: form.reason || null,
+        reason: reasonWithNote || null,
         status: 'pending',
         approval_id: newApprovalId,
       });
@@ -304,15 +321,15 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
               <Input
                 type="date"
                 value={form.start_date}
-                onChange={e => setForm(f => ({ ...f, start_date: e.target.value, end_date: form.leave_type === 'half_day' ? e.target.value : (f.end_date < e.target.value ? e.target.value : f.end_date) }))}
+                onChange={e => setForm(f => ({ ...f, start_date: e.target.value, end_date: isHalfDay ? e.target.value : (f.end_date < e.target.value ? e.target.value : f.end_date) }))}
               />
             </div>
             <div className="space-y-2">
               <Label>종료일</Label>
               <Input
                 type="date"
-                value={form.end_date}
-                disabled={form.leave_type === 'half_day'}
+                value={isHalfDay ? form.start_date : form.end_date}
+                disabled={isHalfDay}
                 onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
               />
             </div>
@@ -322,11 +339,14 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
             {(form.leave_type === 'annual' || form.leave_type === 'half_day' || form.leave_type === 'sick') && (
               <span className="text-xs text-muted-foreground ml-2">(연차에서 차감)</span>
             )}
-            {form.leave_type === 'monthly' && (
+            {(form.leave_type === 'monthly' || form.leave_type === 'half_day_am' || form.leave_type === 'half_day_pm') && (
               <span className="text-xs text-muted-foreground ml-2">(월차에서 차감)</span>
             )}
+            {HALF_DAY_TIME_NOTE[form.leave_type] && (
+              <div className="text-xs text-muted-foreground mt-1">{HALF_DAY_TIME_NOTE[form.leave_type]}</div>
+            )}
             {isSubYear && (
-              <div className="text-xs text-muted-foreground mt-1">입사 1년 미만은 월차만 사용 가능합니다.</div>
+              <div className="text-xs text-muted-foreground mt-1">입사 1년 미만은 월차/반차만 사용 가능합니다. (반차는 월차 0.5일 차감)</div>
             )}
           </div>
           <div className="space-y-2">
