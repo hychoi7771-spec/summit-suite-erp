@@ -21,7 +21,8 @@ interface LeaveRequestDialogProps {
 
 const LEAVE_TYPES_FULL = [
   { value: 'annual', label: '연차' },
-  { value: 'half_day', label: '반차' },
+  { value: 'half_day_am', label: '오전반차 (9:00~14:00, 연차 0.5일 차감)' },
+  { value: 'half_day_pm', label: '오후반차 (14:00~18:00, 연차 0.5일 차감)' },
   { value: 'summer', label: '여름휴가' },
   { value: 'family_event', label: '경조사' },
   { value: 'sick', label: '병가 (연차 차감)' },
@@ -38,9 +39,15 @@ const LEAVE_TYPES_SUB_YEAR = [
   { value: 'other', label: '기타' },
 ];
 
+// 반차 시간대는 회사 규정상 고정 — 클라이언트/서버 모두 동일 값으로 강제
+export const HALF_DAY_PERIODS = {
+  half_day_am: { period: 'am' as const, start: '09:00', end: '14:00', label: '오전반차', note: '[오전반차] 9:00~14:00 (점심시간 12:00~13:00 휴게시간 제외, 4시간 사용)' },
+  half_day_pm: { period: 'pm' as const, start: '14:00', end: '18:00', label: '오후반차', note: '[오후반차] 14:00~18:00 (4시간 사용)' },
+};
+
 const HALF_DAY_TIME_NOTE: Record<string, string> = {
-  half_day_am: '[오전반차] 9:00~14:00 (점심시간 12:00~13:00 휴게시간 제외, 4시간 사용)',
-  half_day_pm: '[오후반차] 14:00~18:00 (4시간 사용)',
+  half_day_am: HALF_DAY_PERIODS.half_day_am.note,
+  half_day_pm: HALF_DAY_PERIODS.half_day_pm.note,
 };
 
 export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveRequestDialogProps) {
@@ -91,6 +98,8 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
   const actualLeaveType = (form.leave_type === 'half_day_am' || form.leave_type === 'half_day_pm')
     ? 'half_day'
     : form.leave_type;
+  const halfDayMeta = HALF_DAY_PERIODS[form.leave_type as keyof typeof HALF_DAY_PERIODS] ?? null;
+  const halfDayPeriod = halfDayMeta?.period ?? null;
   const reasonWithNote = HALF_DAY_TIME_NOTE[form.leave_type]
     ? `${HALF_DAY_TIME_NOTE[form.leave_type]}${form.reason ? `\n${form.reason}` : ''}`
     : form.reason;
@@ -104,6 +113,17 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
     if (new Date(form.end_date) < new Date(form.start_date)) {
       toast({ title: '종료일이 시작일보다 빠를 수 없습니다', variant: 'destructive' });
       return;
+    }
+    // 반차 사전 검증: 시간대는 회사 규정상 9:00~14:00 / 14:00~18:00 으로 고정
+    if (isHalfDay) {
+      if (!halfDayMeta || (halfDayPeriod !== 'am' && halfDayPeriod !== 'pm')) {
+        toast({ title: '반차 시간대를 선택해주세요', description: '오전반차(9:00~14:00) 또는 오후반차(14:00~18:00)만 가능합니다.', variant: 'destructive' });
+        return;
+      }
+      if (form.start_date !== form.end_date) {
+        toast({ title: '반차는 하루만 신청 가능합니다', variant: 'destructive' });
+        return;
+      }
     }
     setSubmitting(true);
     const days = computeDays();
@@ -148,7 +168,8 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
         approved_by: profile.id,
         approved_at: new Date().toISOString(),
         approval_id: newApprovalId,
-      });
+        half_day_period: halfDayPeriod,
+      } as any);
 
       if (leaveErr) {
         toast({ title: '휴가 등록 실패', description: leaveErr.message, variant: 'destructive' });
@@ -227,7 +248,8 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
         reason: reasonWithNote || null,
         status: 'pending',
         approval_id: newApprovalId,
-      });
+        half_day_period: halfDayPeriod,
+      } as any);
 
       if (leaveErr) {
         toast({ title: '휴가 신청 실패', description: leaveErr.message, variant: 'destructive' });

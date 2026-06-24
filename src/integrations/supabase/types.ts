@@ -865,6 +865,7 @@ export type Database = {
           created_at: string
           days: number
           end_date: string
+          half_day_period: string | null
           id: string
           leave_type: Database["public"]["Enums"]["leave_type"]
           reason: string | null
@@ -881,6 +882,7 @@ export type Database = {
           created_at?: string
           days?: number
           end_date: string
+          half_day_period?: string | null
           id?: string
           leave_type: Database["public"]["Enums"]["leave_type"]
           reason?: string | null
@@ -897,6 +899,7 @@ export type Database = {
           created_at?: string
           days?: number
           end_date?: string
+          half_day_period?: string | null
           id?: string
           leave_type?: Database["public"]["Enums"]["leave_type"]
           reason?: string | null
