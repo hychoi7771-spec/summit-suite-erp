@@ -98,6 +98,8 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
   const actualLeaveType = (form.leave_type === 'half_day_am' || form.leave_type === 'half_day_pm')
     ? 'half_day'
     : form.leave_type;
+  const halfDayMeta = HALF_DAY_PERIODS[form.leave_type as keyof typeof HALF_DAY_PERIODS] ?? null;
+  const halfDayPeriod = halfDayMeta?.period ?? null;
   const reasonWithNote = HALF_DAY_TIME_NOTE[form.leave_type]
     ? `${HALF_DAY_TIME_NOTE[form.leave_type]}${form.reason ? `\n${form.reason}` : ''}`
     : form.reason;
