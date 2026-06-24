@@ -70,7 +70,7 @@ export default function Executive() {
   const [broadcastOpen, setBroadcastOpen] = useState(false);
   const [meetingOpen, setMeetingOpen] = useState(false);
 
-  const allowed = userRole === 'ceo' || userRole === 'general_director';
+  const allowed = userRole === 'ceo' || userRole === 'general_director' || userRole === 'managing_director';
 
   const { data, isLoading, refetch, isRefetching } = useQuery({
     queryKey: ['executive-stats', period],

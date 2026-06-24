@@ -112,7 +112,7 @@ export function AppSidebar() {
   const collapsed = state === 'collapsed';
   const location = useLocation();
   const { userRole, isManager } = useAuth();
-  const isExecutive = userRole === 'ceo' || userRole === 'general_director';
+  const isExecutive = userRole === 'ceo' || userRole === 'general_director' || userRole === 'managing_director';
   const [members, setMembers] = useState<any[]>([]);
   const visibleAdminNavItems = adminNavItems.filter(
     (item) => !('managerOnly' in item && (item as any).managerOnly) || isManager
