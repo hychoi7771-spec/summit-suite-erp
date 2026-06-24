@@ -321,15 +321,15 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
               <Input
                 type="date"
                 value={form.start_date}
-                onChange={e => setForm(f => ({ ...f, start_date: e.target.value, end_date: form.leave_type === 'half_day' ? e.target.value : (f.end_date < e.target.value ? e.target.value : f.end_date) }))}
+                onChange={e => setForm(f => ({ ...f, start_date: e.target.value, end_date: isHalfDay ? e.target.value : (f.end_date < e.target.value ? e.target.value : f.end_date) }))}
               />
             </div>
             <div className="space-y-2">
               <Label>종료일</Label>
               <Input
                 type="date"
-                value={form.end_date}
-                disabled={form.leave_type === 'half_day'}
+                value={isHalfDay ? form.start_date : form.end_date}
+                disabled={isHalfDay}
                 onChange={e => setForm(f => ({ ...f, end_date: e.target.value }))}
               />
             </div>
@@ -339,11 +339,14 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
             {(form.leave_type === 'annual' || form.leave_type === 'half_day' || form.leave_type === 'sick') && (
               <span className="text-xs text-muted-foreground ml-2">(연차에서 차감)</span>
             )}
-            {form.leave_type === 'monthly' && (
+            {(form.leave_type === 'monthly' || form.leave_type === 'half_day_am' || form.leave_type === 'half_day_pm') && (
               <span className="text-xs text-muted-foreground ml-2">(월차에서 차감)</span>
             )}
+            {HALF_DAY_TIME_NOTE[form.leave_type] && (
+              <div className="text-xs text-muted-foreground mt-1">{HALF_DAY_TIME_NOTE[form.leave_type]}</div>
+            )}
             {isSubYear && (
-              <div className="text-xs text-muted-foreground mt-1">입사 1년 미만은 월차만 사용 가능합니다.</div>
+              <div className="text-xs text-muted-foreground mt-1">입사 1년 미만은 월차/반차만 사용 가능합니다. (반차는 월차 0.5일 차감)</div>
             )}
           </div>
           <div className="space-y-2">
