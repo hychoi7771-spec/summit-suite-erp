@@ -220,11 +220,11 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
 
       const { error: leaveErr } = await supabase.from('leave_requests').insert({
         user_id: profile.id,
-        leave_type: form.leave_type as any,
+        leave_type: actualLeaveType as any,
         start_date: form.start_date,
-        end_date: form.end_date,
+        end_date: isHalfDay ? form.start_date : form.end_date,
         days,
-        reason: form.reason || null,
+        reason: reasonWithNote || null,
         status: 'pending',
         approval_id: newApprovalId,
       });
