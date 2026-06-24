@@ -28,13 +28,20 @@ const LEAVE_TYPES_FULL = [
   { value: 'other', label: '기타' },
 ];
 
-// 입사 1년 미만 직원용 (연차/반차/병가 제외, 월차 사용)
+// 입사 1년 미만 직원용 (연차 제외, 월차/반차 사용 — 반차는 월차 0.5일 차감)
 const LEAVE_TYPES_SUB_YEAR = [
-  { value: 'monthly', label: '월차' },
+  { value: 'monthly', label: '월차 (1일)' },
+  { value: 'half_day_am', label: '오전반차 (9:00~14:00, 월차 0.5일 차감)' },
+  { value: 'half_day_pm', label: '오후반차 (14:00~18:00, 월차 0.5일 차감)' },
   { value: 'summer', label: '여름휴가' },
   { value: 'family_event', label: '경조사' },
   { value: 'other', label: '기타' },
 ];
+
+const HALF_DAY_TIME_NOTE: Record<string, string> = {
+  half_day_am: '[오전반차] 9:00~14:00 (점심시간 12:00~13:00 휴게시간 제외, 4시간 사용)',
+  half_day_pm: '[오후반차] 14:00~18:00 (4시간 사용)',
+};
 
 export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveRequestDialogProps) {
   const { profile, userRole } = useAuth();
