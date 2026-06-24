@@ -43,6 +43,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const user = await requireUser(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const { audioUrl, fileName, prompt } = await req.json();
     const GENSPARK_API_KEY = Deno.env.get("GENSPARK_API_KEY");
     if (!GENSPARK_API_KEY) throw new Error("GENSPARK_API_KEY is not configured");
@@ -50,6 +56,12 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "녹음 파일 URL이 필요합니다." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const allowedPrefix = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/meeting-audio/`;
+    if (!audioUrl.startsWith(allowedPrefix)) {
+      return new Response(JSON.stringify({ error: "허용되지 않는 URL입니다." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
