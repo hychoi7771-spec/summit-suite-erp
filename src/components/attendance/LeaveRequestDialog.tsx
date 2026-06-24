@@ -192,8 +192,8 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
           id: newApprovalId,
           requester_id: profile.id,
           type: 'leave',
-          title: `[${typeLabel}] ${form.start_date}${form.start_date !== form.end_date ? ` ~ ${form.end_date}` : ''} (${days}일)`,
-          content: form.reason || '',
+          title: `[${typeLabel}] ${form.start_date}${!isHalfDay && form.start_date !== form.end_date ? ` ~ ${form.end_date}` : ''} (${days}일)`,
+          content: reasonWithNote || '',
           status: 'pending',
           current_approver_id: orderedApproverProfileIds[0],
         });
