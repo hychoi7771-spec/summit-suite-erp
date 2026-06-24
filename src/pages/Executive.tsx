@@ -288,7 +288,7 @@ export default function Executive() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight">경영현황</h1>
-            <p className="text-sm text-muted-foreground">대표·총괄이사 전용 통합 대시보드</p>
+            <p className="text-sm text-muted-foreground">대표 전용 통합 대시보드</p>
           </div>
         </div>
         <div className="flex items-center gap-2">
