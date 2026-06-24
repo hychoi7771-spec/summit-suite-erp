@@ -1,4 +1,6 @@
 // 신규 업무 등록 시 제목/설명을 분석해 적합한 카테고리 ID를 반환
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -10,10 +12,24 @@ interface CatIn {
   name: string;
 }
 
+async function requireUser(req: Request) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return null;
+  const client = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
+  const { data } = await client.auth.getUser(authHeader.replace("Bearer ", ""));
+  return data.user ?? null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
+    const user = await requireUser(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const key = Deno.env.get('LOVABLE_API_KEY');
     if (!key) {
       return new Response(JSON.stringify({ error: 'LOVABLE_API_KEY missing' }), {

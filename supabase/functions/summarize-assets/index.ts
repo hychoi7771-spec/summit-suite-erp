@@ -1,4 +1,6 @@
 // 업무 자산 라이브러리용 AI 요약 엔드포인트
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -18,10 +20,24 @@ const SOURCE_LABEL: Record<string, string> = {
   approvals: '승인된 결재문서',
 };
 
+async function requireUser(req: Request) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return null;
+  const client = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
+  const { data } = await client.auth.getUser(authHeader.replace("Bearer ", ""));
+  return data.user ?? null;
+}
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
   try {
+    const user = await requireUser(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), {
+        status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      });
+    }
     const key = Deno.env.get('LOVABLE_API_KEY');
     if (!key) {
       return new Response(JSON.stringify({ error: 'LOVABLE_API_KEY missing' }), {

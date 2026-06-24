@@ -1,9 +1,18 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
 };
+
+async function requireUser(req: Request) {
+  const authHeader = req.headers.get("Authorization");
+  if (!authHeader) return null;
+  const client = createClient(Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
+  const { data } = await client.auth.getUser(authHeader.replace("Bearer ", ""));
+  return data.user ?? null;
+}
 
 const extractTranscript = (payload: any): string => {
   const candidates = [
@@ -34,6 +43,12 @@ serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    const user = await requireUser(req);
+    if (!user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
     const { audioUrl, fileName, prompt } = await req.json();
     const GENSPARK_API_KEY = Deno.env.get("GENSPARK_API_KEY");
     if (!GENSPARK_API_KEY) throw new Error("GENSPARK_API_KEY is not configured");
@@ -41,6 +56,12 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "녹음 파일 URL이 필요합니다." }), {
         status: 400,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+    const allowedPrefix = `${Deno.env.get("SUPABASE_URL")}/storage/v1/object/public/meeting-audio/`;
+    if (!audioUrl.startsWith(allowedPrefix)) {
+      return new Response(JSON.stringify({ error: "허용되지 않는 URL입니다." }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
 
