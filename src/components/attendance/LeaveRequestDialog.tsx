@@ -114,6 +114,17 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
       toast({ title: '종료일이 시작일보다 빠를 수 없습니다', variant: 'destructive' });
       return;
     }
+    // 반차 사전 검증: 시간대는 회사 규정상 9:00~14:00 / 14:00~18:00 으로 고정
+    if (isHalfDay) {
+      if (!halfDayMeta || (halfDayPeriod !== 'am' && halfDayPeriod !== 'pm')) {
+        toast({ title: '반차 시간대를 선택해주세요', description: '오전반차(9:00~14:00) 또는 오후반차(14:00~18:00)만 가능합니다.', variant: 'destructive' });
+        return;
+      }
+      if (form.start_date !== form.end_date) {
+        toast({ title: '반차는 하루만 신청 가능합니다', variant: 'destructive' });
+        return;
+      }
+    }
     setSubmitting(true);
     const days = computeDays();
     const typeLabel = LEAVE_TYPES.find(t => t.value === form.leave_type)?.label || '휴가';
