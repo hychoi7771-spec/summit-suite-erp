@@ -21,7 +21,8 @@ interface LeaveRequestDialogProps {
 
 const LEAVE_TYPES_FULL = [
   { value: 'annual', label: '연차' },
-  { value: 'half_day', label: '반차' },
+  { value: 'half_day_am', label: '오전반차 (9:00~14:00, 연차 0.5일 차감)' },
+  { value: 'half_day_pm', label: '오후반차 (14:00~18:00, 연차 0.5일 차감)' },
   { value: 'summer', label: '여름휴가' },
   { value: 'family_event', label: '경조사' },
   { value: 'sick', label: '병가 (연차 차감)' },
@@ -38,9 +39,15 @@ const LEAVE_TYPES_SUB_YEAR = [
   { value: 'other', label: '기타' },
 ];
 
+// 반차 시간대는 회사 규정상 고정 — 클라이언트/서버 모두 동일 값으로 강제
+export const HALF_DAY_PERIODS = {
+  half_day_am: { period: 'am' as const, start: '09:00', end: '14:00', label: '오전반차', note: '[오전반차] 9:00~14:00 (점심시간 12:00~13:00 휴게시간 제외, 4시간 사용)' },
+  half_day_pm: { period: 'pm' as const, start: '14:00', end: '18:00', label: '오후반차', note: '[오후반차] 14:00~18:00 (4시간 사용)' },
+};
+
 const HALF_DAY_TIME_NOTE: Record<string, string> = {
-  half_day_am: '[오전반차] 9:00~14:00 (점심시간 12:00~13:00 휴게시간 제외, 4시간 사용)',
-  half_day_pm: '[오후반차] 14:00~18:00 (4시간 사용)',
+  half_day_am: HALF_DAY_PERIODS.half_day_am.note,
+  half_day_pm: HALF_DAY_PERIODS.half_day_pm.note,
 };
 
 export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveRequestDialogProps) {
