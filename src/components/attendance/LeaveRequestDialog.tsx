@@ -74,8 +74,10 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, defaultType]);
 
+  const isHalfDay = form.leave_type === 'half_day' || form.leave_type === 'half_day_am' || form.leave_type === 'half_day_pm';
+
   const computeDays = () => {
-    if (form.leave_type === 'half_day') return 0.5;
+    if (isHalfDay) return 0.5;
     if (!form.start_date || !form.end_date) return 1;
     const start = new Date(form.start_date);
     const end = new Date(form.end_date);
@@ -84,6 +86,14 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
     const days = eachDayOfInterval({ start, end }).filter(d => !isNonWorkingDay(d)).length;
     return days > 0 ? days : 0;
   };
+
+  // DB에 저장되는 실제 leave_type (오전/오후반차는 half_day 로 매핑)
+  const actualLeaveType = (form.leave_type === 'half_day_am' || form.leave_type === 'half_day_pm')
+    ? 'half_day'
+    : form.leave_type;
+  const reasonWithNote = HALF_DAY_TIME_NOTE[form.leave_type]
+    ? `${HALF_DAY_TIME_NOTE[form.leave_type]}${form.reason ? `\n${form.reason}` : ''}`
+    : form.reason;
 
   const handleSubmit = async () => {
     if (!profile) return;
