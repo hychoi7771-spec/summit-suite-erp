@@ -49,7 +49,8 @@ const STATUS_STYLE: Record<string, string> = {
 export default function Attendance() {
   const { profile, userRole, isManager } = useAuth();
   const { toast } = useToast();
-  const isAdmin = isManager; // 부장급 이상이 근태 관리 가능
+  // 실장(managing_director)도 인사/근태 관리자: 휴가 수정·삭제 가능
+  const isAdmin = isManager || userRole === 'managing_director';
 
   const [requests, setRequests] = useState<any[]>([]);
   const [balances, setBalances] = useState<any[]>([]);
