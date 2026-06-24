@@ -248,7 +248,8 @@ export function LeaveRequestDialog({ open, onOpenChange, onCreated }: LeaveReque
         reason: reasonWithNote || null,
         status: 'pending',
         approval_id: newApprovalId,
-      });
+        half_day_period: halfDayPeriod,
+      } as any);
 
       if (leaveErr) {
         toast({ title: '휴가 신청 실패', description: leaveErr.message, variant: 'destructive' });
