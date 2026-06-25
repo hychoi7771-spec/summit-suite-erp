@@ -6,7 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StatusBadge } from '@/components/shared/StatusBadge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
-import { TrendingUp, ShoppingCart, Target, Activity, Plus } from 'lucide-react';
+import { TrendingUp, ShoppingCart, Target, Activity, Plus, LineChart as LineChartIcon } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 
