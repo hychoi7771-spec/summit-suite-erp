@@ -537,15 +537,16 @@ export default function Meetings() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">📋 회의록</h1>
-          <p className="text-sm text-muted-foreground mt-1">실행 중심 회의 기록 · 주간 스탠드업</p>
-        </div>
-        <Dialog open={meetingDialogOpen} onOpenChange={setMeetingDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />새 회의 등록</Button>
-          </DialogTrigger>
+      <PageHeader
+        icon={NotebookPen}
+        title="회의록"
+        description="실행 중심 회의 기록 · 주간 스탠드업"
+        tone="violet"
+        actions={
+          <Dialog open={meetingDialogOpen} onOpenChange={setMeetingDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />새 회의 등록</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>새 회의 등록</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">

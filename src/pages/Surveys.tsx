@@ -200,15 +200,16 @@ export default function Surveys() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">설문 / 투표</h1>
-          <p className="text-sm text-muted-foreground">무기명 설문을 만들고 링크를 공유하세요</p>
-        </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-1" />새 설문 만들기</Button>
-          </DialogTrigger>
+      <PageHeader
+        icon={ClipboardList}
+        title="설문 / 투표"
+        description="무기명 설문을 만들고 링크를 공유하세요"
+        tone="teal"
+        actions={
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 mr-1" />새 설문 만들기</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[80vh] overflow-y-auto">
             <DialogHeader>
               <DialogTitle>새 설문 / 투표 만들기</DialogTitle>

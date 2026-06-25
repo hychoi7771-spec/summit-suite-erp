@@ -582,19 +582,20 @@ export default function DesignReviews() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">디자인 시안</h1>
-          <p className="text-sm text-muted-foreground mt-1">디자인 시안을 공유하고 피드백을 주고받으세요</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" onClick={() => { setCompareOpen(true); setCompareLeft(''); setCompareRight(''); }}>
-            <GitCompare className="h-4 w-4 mr-1" /> 버전 비교
-          </Button>
-          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-            <DialogTrigger asChild>
-              <Button><Plus className="h-4 w-4 mr-1" /> 시안 등록</Button>
-            </DialogTrigger>
+      <PageHeader
+        icon={Palette}
+        title="디자인 시안"
+        description="디자인 시안을 공유하고 피드백을 주고받으세요"
+        tone="pink"
+        actions={
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => { setCompareOpen(true); setCompareLeft(''); setCompareRight(''); }}>
+              <GitCompare className="h-4 w-4 mr-1" /> 버전 비교
+            </Button>
+            <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+              <DialogTrigger asChild>
+                <Button><Plus className="h-4 w-4 mr-1" /> 시안 등록</Button>
+              </DialogTrigger>
             <DialogContent className="sm:max-w-lg">
               <DialogHeader>
                 <DialogTitle>새 디자인 시안 등록</DialogTitle>

@@ -144,18 +144,15 @@ export default function TeamManagement() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">{isAdmin ? '팀원 관리' : '팀원 현황'}</h1>
-          <p className="text-sm text-muted-foreground mt-1">{isAdmin ? '팀원 역할 및 상태 관리' : '팀원 접속 현황'}</p>
-        </div>
-        {isAdmin && (
+      <PageHeader
+        icon={Users}
+        title={isAdmin ? '팀원 관리' : '팀원 현황'}
+        description={isAdmin ? '팀원 역할 및 상태 관리' : '팀원 접속 현황'}
+        tone="indigo"
+        actions={isAdmin && (
           <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
             <DialogTrigger asChild>
-              <Button size="sm" className="gap-2">
-                <UserPlus className="h-4 w-4" />
-                팀원 추가
-              </Button>
+              <Button size="sm" className="gap-2"><UserPlus className="h-4 w-4" />팀원 추가</Button>
             </DialogTrigger>
             <DialogContent>
               <DialogHeader>

@@ -155,15 +155,16 @@ export default function Library() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">자료실</h1>
-          <p className="text-sm text-muted-foreground mt-1">디자인 자산, 인증서, 계약서 관리</p>
-        </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />파일 업로드</Button>
-          </DialogTrigger>
+      <PageHeader
+        icon={LibraryIcon}
+        title="자료실"
+        description="디자인 자산, 인증서, 계약서 관리"
+        tone="cyan"
+        actions={
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />파일 업로드</Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>파일 업로드</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
