@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AtSign, MessageSquare } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';

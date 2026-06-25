@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Plus, Upload, MessageSquare, Check, RotateCcw, Eye, Trash2, Send, Palette, ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Maximize2, Pencil, Type, MousePointer, Undo2, Eraser, GitCompare, MapPin, Edit2, MoreVertical } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';

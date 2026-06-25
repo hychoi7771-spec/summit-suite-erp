@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { CalendarOff, Plus, Pencil, Trash2 } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { loadCompanyHolidays } from '@/lib/holidays';
 
 interface CompanyHoliday {

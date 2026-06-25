@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Folder, Plus, Trash2, Edit2, FolderKanban, ChevronRight, GripVertical } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

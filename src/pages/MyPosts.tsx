@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MessageSquare, FileText, Palette, ListTodo } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';

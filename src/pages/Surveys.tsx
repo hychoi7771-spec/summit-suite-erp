@@ -7,7 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, Copy, BarChart3, Trash2, ImagePlus, X, ExternalLink } from 'lucide-react';
+import { Plus, Copy, BarChart3, Trash2, ImagePlus, X, ExternalLink, ClipboardList } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { toast } from 'sonner';
 import { SurveyResults } from '@/components/surveys/SurveyResults';
 
