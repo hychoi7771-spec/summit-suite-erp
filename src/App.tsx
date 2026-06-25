@@ -31,6 +31,7 @@ import AssetsTasks from "./pages/AssetsTasks";
 import AssetsDailyReports from "./pages/AssetsDailyReports";
 import AssetsApprovals from "./pages/AssetsApprovals";
 import Executive from "./pages/Executive";
+import StockAlerts from "./pages/StockAlerts";
 
 import Attendance from "./pages/Attendance";
 import AccountSettings from "./pages/AccountSettings";
@@ -102,6 +103,7 @@ function AppRoutes() {
                 <Route path="/project-folders" element={<ProjectFolders />} />
                 <Route path="/daily-report" element={<Navigate to="/tasks" replace />} />
                 <Route path="/attendance" element={<Attendance />} />
+                <Route path="/stock-alerts" element={<StockAlerts />} />
                 <Route path="/account" element={<AccountSettings />} />
                 <Route path="/company-holidays" element={<CompanyHolidays />} />
                 <Route path="/assets/tasks" element={<AssetsTasks />} />

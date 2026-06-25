@@ -1429,6 +1429,72 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_urgent_alerts: {
+        Row: {
+          created_at: string
+          created_by: string
+          expiry_date: string | null
+          id: string
+          incentive_note: string | null
+          message: string | null
+          notice_id: string | null
+          product_name: string
+          resolved_at: string | null
+          sales_channel: string | null
+          status: string
+          stock_qty: number | null
+          updated_at: string
+          urgency: string
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          expiry_date?: string | null
+          id?: string
+          incentive_note?: string | null
+          message?: string | null
+          notice_id?: string | null
+          product_name: string
+          resolved_at?: string | null
+          sales_channel?: string | null
+          status?: string
+          stock_qty?: number | null
+          updated_at?: string
+          urgency?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          expiry_date?: string | null
+          id?: string
+          incentive_note?: string | null
+          message?: string | null
+          notice_id?: string | null
+          product_name?: string
+          resolved_at?: string | null
+          sales_channel?: string | null
+          status?: string
+          stock_qty?: number | null
+          updated_at?: string
+          urgency?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_urgent_alerts_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_urgent_alerts_notice_id_fkey"
+            columns: ["notice_id"]
+            isOneToOne: false
+            referencedRelation: "notices"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       survey_options: {
         Row: {
           created_at: string

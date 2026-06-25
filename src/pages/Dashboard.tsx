@@ -9,6 +9,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import TeamWorkloadSection from '@/components/dashboard/TeamWorkloadSection';
+import StockUrgentWidget from '@/components/dashboard/StockUrgentWidget';
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 import { Link } from 'react-router-dom';
 
@@ -133,6 +134,8 @@ export default function Dashboard() {
         <h1 className="text-2xl font-bold">대시보드</h1>
         <p className="text-muted-foreground text-sm mt-1">SHFoodHub — 경영 현황</p>
       </div>
+
+      <StockUrgentWidget />
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
