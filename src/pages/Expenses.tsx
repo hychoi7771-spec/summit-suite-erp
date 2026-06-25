@@ -344,6 +344,71 @@ export default function Expenses() {
           </div>
         </CardContent>
       </Card>
+
+      <Card>
+        <CardHeader className="pb-2">
+          <CardTitle className="text-base">결재 승인 지출 품의 (구매·계약·출장·행사)</CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">전자결재로 승인 완료된 지출성 품의 — 실집행 시 별도 경비 등록이 필요할 수 있습니다.</p>
+        </CardHeader>
+        <CardContent>
+          <div className="overflow-x-auto">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>승인일</TableHead>
+                  <TableHead>구분</TableHead>
+                  <TableHead>제목</TableHead>
+                  <TableHead>기안자</TableHead>
+                  <TableHead>상태</TableHead>
+                  <TableHead>상세</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {approvedApprovals.length === 0 && (
+                  <TableRow>
+                    <TableCell colSpan={6} className="text-center text-sm text-muted-foreground py-6">
+                      승인된 지출성 품의가 없습니다.
+                    </TableCell>
+                  </TableRow>
+                )}
+                {approvedApprovals.map(a => {
+                  const requester = getProfile(a.requester_id);
+                  const subLabel: Record<string, string> = {
+                    purchase_request: '구매 품의',
+                    contract_request: '계약 품의',
+                    business_trip: '출장 품의',
+                    event_proposal: '행사안 품의',
+                  };
+                  return (
+                    <TableRow key={a.id}>
+                      <TableCell className="text-sm">{a.approved_at ? new Date(a.approved_at).toLocaleDateString('ko-KR') : '—'}</TableCell>
+                      <TableCell>
+                        <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded">{subLabel[a.subcategory] || a.subcategory}</span>
+                      </TableCell>
+                      <TableCell className="text-sm font-medium max-w-[260px] truncate">{a.title}</TableCell>
+                      <TableCell>
+                        {requester && (
+                          <div className="flex items-center gap-1.5">
+                            <Avatar className="h-5 w-5 bg-primary">
+                              <AvatarFallback className="bg-primary text-primary-foreground text-[9px]">{requester.avatar}</AvatarFallback>
+                            </Avatar>
+                            <span className="text-xs">{requester.name_kr}</span>
+                          </div>
+                        )}
+                      </TableCell>
+                      <TableCell><StatusBadge status="Approved" /></TableCell>
+                      <TableCell>
+                        <Link to={`/approvals?category=${a.subcategory}`} className="text-xs text-info hover:underline">결재함 열기</Link>
+                      </TableCell>
+                    </TableRow>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
     </div>
+
   );
 }
