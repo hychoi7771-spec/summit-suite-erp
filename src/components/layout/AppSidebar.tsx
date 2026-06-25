@@ -66,7 +66,7 @@ const workspaceNavItems: NavItem[] = [
   { title: '일정', url: '/calendar', icon: CalendarDays },
   { title: '공지 게시판', url: '/notices-board', icon: Megaphone },
   { title: '설문/투표', url: '/surveys', icon: Vote },
-  { title: '유통기한 임박 판매독려', url: '/stock-alerts', icon: PackageX },
+  { title: '유통기한 임박제품', url: '/stock-alerts', icon: PackageX },
   { title: '파일', url: '/library', icon: FolderArchive },
 ];
 
