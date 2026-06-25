@@ -103,6 +103,7 @@ function AppRoutes() {
                 <Route path="/project-folders" element={<ProjectFolders />} />
                 <Route path="/daily-report" element={<Navigate to="/tasks" replace />} />
                 <Route path="/attendance" element={<Attendance />} />
+                <Route path="/stock-alerts" element={<StockAlerts />} />
                 <Route path="/account" element={<AccountSettings />} />
                 <Route path="/company-holidays" element={<CompanyHolidays />} />
                 <Route path="/assets/tasks" element={<AssetsTasks />} />
