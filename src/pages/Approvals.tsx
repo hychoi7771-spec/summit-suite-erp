@@ -458,29 +458,20 @@ export default function Approvals() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground flex items-center gap-2">
-            {activeCategory ? (
-              <>
-                <activeCategory.icon className="h-6 w-6 text-primary" />
-                {activeCategory.label}
-              </>
-            ) : (
-              '전자결재'
-            )}
-          </h1>
-          <p className="text-sm text-muted-foreground">
-            {activeCategory
-              ? `${activeCategory.label} 결재 요청 및 진행 현황`
-              : '문서 기안, 경비 결재, 프로젝트 제출, 휴가/근태 신청'}
-          </p>
-        </div>
-        <Button onClick={() => openCreateWithCategory()} size="lg" className="shadow-sm">
-          <Plus className="h-4 w-4 mr-2" />
-          {activeCategory ? `${activeCategory.label} 작성` : '새 결재 요청'}
-        </Button>
-      </div>
+      <PageHeader
+        icon={activeCategory ? activeCategory.icon : Stamp}
+        title={activeCategory ? activeCategory.label : '전자결재'}
+        description={activeCategory
+          ? `${activeCategory.label} 결재 요청 및 진행 현황`
+          : '문서 기안, 경비 결재, 프로젝트 제출, 휴가/근태 신청'}
+        tone="emerald"
+        actions={
+          <Button onClick={() => openCreateWithCategory()} size="lg" className="shadow-sm">
+            <Plus className="h-4 w-4 mr-2" />
+            {activeCategory ? `${activeCategory.label} 작성` : '새 결재 요청'}
+          </Button>
+        }
+      />
 
       {/* 미결재 알림 배너 */}
       {pendingCount > 0 && (
