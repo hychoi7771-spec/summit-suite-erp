@@ -52,14 +52,22 @@ export default function Expenses() {
   }, []);
 
   const fetchData = async () => {
-    const [expRes, profRes] = await Promise.all([
+    const [expRes, profRes, apprRes] = await Promise.all([
       supabase.from('expenses').select('*').order('date', { ascending: false }),
       supabase.from('profiles').select('id, user_id, name, name_kr, avatar'),
+      supabase
+        .from('approvals')
+        .select('id, title, type, subcategory, status, requester_id, approved_at, created_at, content')
+        .eq('status', 'approved')
+        .in('subcategory', ['purchase_request', 'contract_request', 'business_trip', 'event_proposal'])
+        .order('approved_at', { ascending: false }),
     ]);
     setExpenses(expRes.data || []);
     setProfiles(profRes.data || []);
+    setApprovedApprovals(apprRes.data || []);
     setLoading(false);
   };
+
 
   const getProfile = (id: string) => profiles.find(p => p.id === id);
 
