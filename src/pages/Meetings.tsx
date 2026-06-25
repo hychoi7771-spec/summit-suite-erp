@@ -10,7 +10,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Calendar, Users, FileText, ChevronDown, ChevronUp, ArrowRight, Target, CheckCircle2, AlertCircle, Clock, BarChart3, Video, ExternalLink, Send, Mic, MicOff, Brain, Loader2, ClipboardPaste, Pencil, Trash2, Upload } from 'lucide-react';
+import { Plus, Calendar, Users, FileText, ChevronDown, ChevronUp, ArrowRight, Target, CheckCircle2, AlertCircle, Clock, BarChart3, Video, ExternalLink, Send, Mic, MicOff, Brain, Loader2, ClipboardPaste, Pencil, Trash2, Upload, NotebookPen } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
@@ -536,15 +537,16 @@ export default function Meetings() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">📋 회의록</h1>
-          <p className="text-sm text-muted-foreground mt-1">실행 중심 회의 기록 · 주간 스탠드업</p>
-        </div>
-        <Dialog open={meetingDialogOpen} onOpenChange={setMeetingDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />새 회의 등록</Button>
-          </DialogTrigger>
+      <PageHeader
+        icon={NotebookPen}
+        title="회의록"
+        description="실행 중심 회의 기록 · 주간 스탠드업"
+        tone="violet"
+        actions={
+          <Dialog open={meetingDialogOpen} onOpenChange={setMeetingDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />새 회의 등록</Button>
+            </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>새 회의 등록</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
@@ -639,8 +641,9 @@ export default function Meetings() {
               <Button onClick={handleAddMeeting} disabled={!meetingForm.title} className="w-full">등록</Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       <div className="space-y-4">
         {meetings.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">등록된 회의가 없습니다</p>}

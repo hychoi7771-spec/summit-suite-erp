@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { MessageSquare, FileText, Palette, ListTodo } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -61,10 +62,12 @@ export default function MyPosts() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">내 게시물</h1>
-        <p className="text-sm text-muted-foreground mt-1">내가 작성한 댓글, 피드백, 공지사항을 확인하세요</p>
-      </div>
+      <PageHeader
+        icon={MessageSquare}
+        title="내 게시물"
+        description="내가 작성한 댓글, 피드백, 공지사항을 확인하세요"
+        tone="blue"
+      />
 
       <Tabs defaultValue="all">
         <TabsList>

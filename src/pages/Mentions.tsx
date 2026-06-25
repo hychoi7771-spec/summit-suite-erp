@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { AtSign, MessageSquare } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
@@ -39,10 +40,12 @@ export default function Mentions() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">나를 언급</h1>
-        <p className="text-sm text-muted-foreground mt-1">다른 팀원이 나를 @멘션한 댓글 목록입니다</p>
-      </div>
+      <PageHeader
+        icon={AtSign}
+        title="나를 언급"
+        description="다른 팀원이 나를 @멘션한 댓글 목록입니다"
+        tone="pink"
+      />
 
       {mentions.length === 0 ? (
         <div className="text-center py-16">

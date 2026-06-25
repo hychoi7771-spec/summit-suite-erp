@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { FileEdit, Trash2, ExternalLink, Clock } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -46,10 +47,12 @@ export default function Drafts() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">임시저장</h1>
-        <p className="text-sm text-muted-foreground mt-1">작성 중이던 항목을 이어서 완성하세요</p>
-      </div>
+      <PageHeader
+        icon={FileEdit}
+        title="임시저장"
+        description="작성 중이던 항목을 이어서 완성하세요"
+        tone="amber"
+      />
 
       {drafts.length === 0 ? (
         <div className="text-center py-16">

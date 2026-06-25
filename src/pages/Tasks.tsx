@@ -10,7 +10,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Calendar, FileText, Palette, Pencil, Trash2, AlertTriangle, ChevronLeft, ChevronRight, FolderKanban, GanttChartSquare, LayoutList, CalendarDays } from 'lucide-react';
+import { Plus, Calendar, FileText, Palette, Pencil, Trash2, AlertTriangle, ChevronLeft, ChevronRight, FolderKanban, GanttChartSquare, LayoutList, CalendarDays, ListTodo } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -308,12 +309,13 @@ export default function Tasks() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">업무 관리</h1>
-          <p className="text-sm text-muted-foreground mt-1">칸반 보드와 간트차트로 업무를 관리하세요</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        icon={ListTodo}
+        title="업무 관리"
+        description="칸반 보드와 간트차트로 업무를 관리하세요"
+        tone="blue"
+        actions={
+          <div className="flex items-center gap-2">
           <DesignRequestDialog profiles={profiles} onSuccess={fetchData} />
           <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
             <DialogTrigger asChild>
@@ -408,8 +410,9 @@ export default function Tasks() {
               </Tabs>
             </DialogContent>
           </Dialog>
-        </div>
-      </div>
+          </div>
+        }
+      />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>

@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, Dialog
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { CalendarOff, Plus, Pencil, Trash2 } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { loadCompanyHolidays } from '@/lib/holidays';
 
 interface CompanyHoliday {
@@ -130,17 +131,12 @@ export default function CompanyHolidays() {
 
   return (
     <div className="max-w-4xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div className="h-10 w-10 rounded-lg bg-primary/10 flex items-center justify-center">
-            <CalendarOff className="h-5 w-5 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold">사내 휴무일 관리</h1>
-            <p className="text-sm text-muted-foreground">워크샵, 창립기념일 등 회사 자체 휴무일을 등록합니다.</p>
-          </div>
-        </div>
-        {isManager && (
+      <PageHeader
+        icon={CalendarOff}
+        title="사내 휴무일 관리"
+        description="워크샵, 창립기념일 등 회사 자체 휴무일을 등록합니다."
+        tone="red"
+        actions={isManager && (
           <Dialog open={dialogOpen} onOpenChange={(o) => { setDialogOpen(o); if (!o) resetForm(); }}>
             <DialogTrigger asChild>
               <Button onClick={openCreate}>
@@ -188,7 +184,7 @@ export default function CompanyHolidays() {
             </DialogContent>
           </Dialog>
         )}
-      </div>
+      />
 
       {!isManager && (
         <Card className="bg-muted/30">

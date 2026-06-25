@@ -11,7 +11,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { Plus, Clock, CheckCircle, DollarSign, Upload, Image } from 'lucide-react';
+import { Plus, Clock, CheckCircle, DollarSign, Upload, Image, Receipt } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -168,31 +169,31 @@ export default function Expenses() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">지출 통합 관리</h1>
-          <p className="text-sm text-muted-foreground mt-1">경비 청구 및 승인된 구매·계약·출장·행사 품의 통합 현황</p>
-
-        </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 shrink-0">
-              <Plus className="h-4 w-4" />
-              새 경비 청구
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>새 경비 청구</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4 mt-2">
-              <div className="space-y-2">
-                <Label>금액 (원)</Label>
-                <Input type="number" placeholder="250000" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label>분류</Label>
-                <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
+      <PageHeader
+        icon={Receipt}
+        title="지출 통합 관리"
+        description="경비 청구 및 승인된 구매·계약·출장·행사 품의 통합 현황"
+        tone="amber"
+        actions={
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 shrink-0">
+                <Plus className="h-4 w-4" />
+                새 경비 청구
+              </Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>새 경비 청구</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4 mt-2">
+                <div className="space-y-2">
+                  <Label>금액 (원)</Label>
+                  <Input type="number" placeholder="250000" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
+                </div>
+                <div className="space-y-2">
+                  <Label>분류</Label>
+                  <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
                   <SelectTrigger><SelectValue placeholder="분류 선택" /></SelectTrigger>
                   <SelectContent>
                     {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
@@ -238,7 +239,8 @@ export default function Expenses() {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {summaryCards.map(card => (

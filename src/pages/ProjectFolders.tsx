@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Folder, Plus, Trash2, Edit2, FolderKanban, ChevronRight, GripVertical } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -81,15 +82,16 @@ export default function ProjectFolders() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-foreground">프로젝트 폴더</h1>
-          <p className="text-sm text-muted-foreground mt-1">프로젝트를 폴더별로 정리하고 관리하세요</p>
-        </div>
-        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
-          <DialogTrigger asChild>
-            <Button><Plus className="h-4 w-4 mr-1" /> 폴더 만들기</Button>
-          </DialogTrigger>
+      <PageHeader
+        icon={FolderKanban}
+        title="프로젝트 폴더"
+        description="프로젝트를 폴더별로 정리하고 관리하세요"
+        tone="amber"
+        actions={
+          <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+            <DialogTrigger asChild>
+              <Button><Plus className="h-4 w-4 mr-1" /> 폴더 만들기</Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-sm">
             <DialogHeader><DialogTitle>새 폴더</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
@@ -113,8 +115,9 @@ export default function ProjectFolders() {
               <Button onClick={handleCreateFolder} disabled={!folderName.trim()} className="w-full">생성</Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       {/* Edit folder dialog */}
       <Dialog open={!!editFolder} onOpenChange={open => { if (!open) setEditFolder(null); }}>

@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { ChevronLeft, ChevronRight, ListTodo, Users, CalendarPlus, Trash2, CalendarDays, Pencil } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -204,15 +205,17 @@ export default function CalendarPage() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">캘린더</h1>
-          <p className="text-sm text-muted-foreground mt-1">업무·회의·주요 일정을 한눈에 확인하고 등록</p>
-        </div>
-        <Button className="gap-2 shrink-0" onClick={openDialogForDate}>
-          <CalendarPlus className="h-4 w-4" />새 일정 등록
-        </Button>
-      </div>
+      <PageHeader
+        icon={CalendarDays}
+        title="캘린더"
+        description="업무·회의·주요 일정을 한눈에 확인하고 등록"
+        tone="sky"
+        actions={
+          <Button className="gap-2 shrink-0" onClick={openDialogForDate}>
+            <CalendarPlus className="h-4 w-4" />새 일정 등록
+          </Button>
+        }
+      />
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={open => { if (!open) { resetForm(); } setDialogOpen(open); }}>

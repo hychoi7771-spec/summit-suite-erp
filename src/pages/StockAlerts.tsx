@@ -10,6 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, PackageX, CheckCircle2, Trash2, Clock, Megaphone, AlertTriangle, Sparkles, Upload, FileSpreadsheet } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -285,17 +286,12 @@ export default function StockAlerts() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold flex items-center gap-2">
-            <PackageX className="h-6 w-6 text-destructive" />
-            유통기한 임박제품
-          </h1>
-          <p className="text-sm text-muted-foreground mt-1">
-            유통기한 임박·재고 소진 대상 상품의 판매 독려 공지를 관리합니다
-          </p>
-        </div>
-        {canManage && (
+      <PageHeader
+        icon={PackageX}
+        title="유통기한 임박제품"
+        description="유통기한 임박·재고 소진 대상 상품의 판매 독려 공지를 관리합니다"
+        tone="red"
+        actions={canManage && (
           <div className="flex gap-2 shrink-0">
             <Dialog open={candidateDialogOpen} onOpenChange={setCandidateDialogOpen}>
               <DialogTrigger asChild>
@@ -436,7 +432,7 @@ export default function StockAlerts() {
           </Dialog>
           </div>
         )}
-      </div>
+      />
 
       {!canManage && (
         <Card>

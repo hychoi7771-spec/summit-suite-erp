@@ -7,6 +7,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Package, Calculator } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -125,15 +126,17 @@ export default function Products() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">제품 개발</h1>
-          <p className="text-sm text-muted-foreground mt-1">기획부터 출시까지 제품 개발 현황 관리</p>
-        </div>
-        <Button className="gap-2 shrink-0" onClick={() => { resetForm(); setDialogOpen(true); }}>
-          <Plus className="h-4 w-4" />새 제품 등록
-        </Button>
-      </div>
+      <PageHeader
+        icon={Package}
+        title="제품 개발"
+        description="기획부터 출시까지 제품 개발 현황 관리"
+        tone="emerald"
+        actions={
+          <Button className="gap-2 shrink-0" onClick={() => { resetForm(); setDialogOpen(true); }}>
+            <Plus className="h-4 w-4" />새 제품 등록
+          </Button>
+        }
+      />
 
       {/* Add/Edit Dialog */}
       <Dialog open={dialogOpen} onOpenChange={open => { if (!open) resetForm(); setDialogOpen(open); }}>

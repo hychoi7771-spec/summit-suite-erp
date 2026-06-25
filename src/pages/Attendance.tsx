@@ -9,7 +9,8 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Users, Clock, CheckCircle2, XCircle, Trash2, Loader2 } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, ChevronLeft, ChevronRight, Users, Clock, CheckCircle2, XCircle, Trash2, Loader2, CalendarCheck } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
@@ -249,15 +250,17 @@ export default function Attendance() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">근태관리</h1>
-          <p className="text-sm text-muted-foreground">휴가 신청 · 승인 현황 · 남은 휴가를 한눈에 관리하세요.</p>
-        </div>
-        <Button onClick={() => setShowRequest(true)} className="gap-2">
-          <Plus className="h-4 w-4" /> 휴가 신청
-        </Button>
-      </div>
+      <PageHeader
+        icon={CalendarCheck}
+        title="근태관리"
+        description="휴가 신청 · 승인 현황 · 남은 휴가를 한눈에 관리하세요."
+        tone="sky"
+        actions={
+          <Button onClick={() => setShowRequest(true)} className="gap-2">
+            <Plus className="h-4 w-4" /> 휴가 신청
+          </Button>
+        }
+      />
 
       {/* 오늘 현황 위젯 */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

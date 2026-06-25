@@ -9,6 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pin, Clock, Trash2, Megaphone, Pencil } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -170,12 +171,13 @@ export default function Notices() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">공지 게시판</h1>
-          <p className="text-sm text-muted-foreground mt-1">사내 공지사항 및 안내</p>
-        </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+      <PageHeader
+        icon={Megaphone}
+        title="공지 게시판"
+        description="사내 공지사항 및 안내"
+        tone="orange"
+        actions={
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
             <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />공지 작성</Button>
           </DialogTrigger>
@@ -214,8 +216,9 @@ export default function Notices() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       <div className="space-y-3">
         {notices.length === 0 && (

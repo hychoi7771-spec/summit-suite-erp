@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FolderKanban, Calendar, Users, ArrowRight } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
@@ -53,10 +54,12 @@ export default function MyProjects() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-foreground">내 프로젝트</h1>
-        <p className="text-sm text-muted-foreground mt-1">내가 담당하거나 참여 중인 프로젝트 목록입니다</p>
-      </div>
+      <PageHeader
+        icon={FolderKanban}
+        title="내 프로젝트"
+        description="내가 담당하거나 참여 중인 프로젝트 목록입니다"
+        tone="violet"
+      />
 
       {projects.length === 0 ? (
         <div className="text-center py-16">

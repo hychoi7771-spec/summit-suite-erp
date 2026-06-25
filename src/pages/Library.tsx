@@ -9,7 +9,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Progress } from '@/components/ui/progress';
-import { Plus, FileText, Image, Archive, Download, File, Upload, ExternalLink, HardDrive, FolderOpen, Trash2 } from 'lucide-react';
+import { Plus, FileText, Image, Archive, Download, File, Upload, ExternalLink, HardDrive, FolderOpen, Trash2, Library as LibraryIcon } from 'lucide-react';
+import { PageHeader } from '@/components/shared/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -154,15 +155,16 @@ export default function Library() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">자료실</h1>
-          <p className="text-sm text-muted-foreground mt-1">디자인 자산, 인증서, 계약서 관리</p>
-        </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />파일 업로드</Button>
-          </DialogTrigger>
+      <PageHeader
+        icon={LibraryIcon}
+        title="자료실"
+        description="디자인 자산, 인증서, 계약서 관리"
+        tone="cyan"
+        actions={
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />파일 업로드</Button>
+            </DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>파일 업로드</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
@@ -191,8 +193,9 @@ export default function Library() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       <Tabs defaultValue="files" className="w-full">
         <TabsList>
