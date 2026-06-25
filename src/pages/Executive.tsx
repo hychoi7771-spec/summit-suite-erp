@@ -311,6 +311,137 @@ export default function Executive() {
         <div className="grid place-items-center py-20 text-muted-foreground">데이터 집계 중...</div>
       ) : (
         <>
+          {/* ⓞ Hero Pillars — 재무 / 총괄 진행률 / 핵심 KPI */}
+          {(() => {
+            const monthTarget = data!.sales.filter((s) => s.month === data!.meta.monthStr).reduce((a, b) => a + (b.target || 0), 0);
+            const attain = monthTarget ? (stats.kpis.revenue / monthTarget) * 100 : 0;
+            const allTasks = data!.tasks.length;
+            const doneTasks = data!.tasks.filter((t) => t.status === 'done').length;
+            const inProgTasks = data!.tasks.filter((t) => t.status === 'in-progress').length;
+            const todoTasks = data!.tasks.filter((t) => t.status === 'todo').length;
+            const completionRate = allTasks ? (doneTasks / allTasks) * 100 : 0;
+            const profitProxy = stats.kpis.revenue - stats.kpis.expenseAmount;
+            const profitMargin = stats.kpis.revenue ? (profitProxy / stats.kpis.revenue) * 100 : 0;
+            const sig = (ok: boolean) => (ok ? 'bg-emerald-500' : 'bg-rose-500');
+
+            return (
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                {/* 재무 요약 */}
+                <Card className="relative overflow-hidden border-emerald-200/60 bg-gradient-to-br from-emerald-50 via-white to-white dark:from-emerald-950/30 dark:via-background dark:to-background cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/sales')}>
+                  <div className="absolute top-0 right-0 h-24 w-24 -mr-6 -mt-6 rounded-full bg-emerald-400/20 blur-2xl" />
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center justify-between text-sm text-emerald-700 dark:text-emerald-400">
+                      <span className="flex items-center gap-2"><DollarSign className="h-4 w-4" /> 재무 요약</span>
+                      {stats.kpis.revenueChange != null && (
+                        <Badge variant={stats.kpis.revenueChange >= 0 ? 'default' : 'destructive'} className="gap-1 bg-emerald-600 hover:bg-emerald-600">
+                          {stats.kpis.revenueChange >= 0 ? <TrendingUp className="h-3 w-3" /> : <TrendingDown className="h-3 w-3" />}
+                          {Math.abs(stats.kpis.revenueChange).toFixed(1)}%
+                        </Badge>
+                      )}
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div>
+                      <p className="text-3xl font-bold tracking-tight text-emerald-900 dark:text-emerald-100">
+                        {(stats.kpis.revenue / 10000).toLocaleString()}<span className="text-base font-normal ml-1">만원</span>
+                      </p>
+                      <p className="text-xs text-muted-foreground">이번달 매출 (MTD)</p>
+                    </div>
+                    {monthTarget > 0 && (
+                      <div>
+                        <div className="flex justify-between text-xs mb-1">
+                          <span className="text-muted-foreground">목표 달성률</span>
+                          <span className="font-semibold text-emerald-700">{attain.toFixed(0)}% / {(monthTarget / 10000).toLocaleString()}만</span>
+                        </div>
+                        <Progress value={Math.min(attain, 100)} className="h-2" />
+                      </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-2 pt-1 border-t border-emerald-200/40">
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">경비</p>
+                        <p className="text-sm font-bold">{(stats.kpis.expenseAmount / 10000).toLocaleString()}만</p>
+                      </div>
+                      <div>
+                        <p className="text-[10px] text-muted-foreground">수익 (매출-경비)</p>
+                        <p className={`text-sm font-bold ${profitProxy >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {(profitProxy / 10000).toLocaleString()}만 ({profitMargin.toFixed(0)}%)
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 총괄 진행률 */}
+                <Card className="relative overflow-hidden border-blue-200/60 bg-gradient-to-br from-blue-50 via-white to-white dark:from-blue-950/30 dark:via-background dark:to-background cursor-pointer hover:shadow-lg transition-shadow" onClick={() => navigate('/tasks')}>
+                  <div className="absolute top-0 right-0 h-24 w-24 -mr-6 -mt-6 rounded-full bg-blue-400/20 blur-2xl" />
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center justify-between text-sm text-blue-700 dark:text-blue-400">
+                      <span className="flex items-center gap-2"><ListTodo className="h-4 w-4" /> 총괄 진행률</span>
+                      <Badge variant="secondary" className="text-[10px]">{allTasks}건</Badge>
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <div className="flex items-baseline gap-2">
+                      <p className="text-3xl font-bold tracking-tight text-blue-900 dark:text-blue-100">{completionRate.toFixed(0)}<span className="text-base font-normal">%</span></p>
+                      <span className="text-xs text-muted-foreground">완료율</span>
+                    </div>
+                    <Progress value={completionRate} className="h-2" />
+                    <div className="grid grid-cols-3 gap-2 pt-1">
+                      <div className="text-center p-2 rounded-lg bg-blue-500/10">
+                        <p className="text-[10px] text-muted-foreground">진행중</p>
+                        <p className="text-sm font-bold text-blue-600">{inProgTasks}</p>
+                      </div>
+                      <div className="text-center p-2 rounded-lg bg-slate-500/10">
+                        <p className="text-[10px] text-muted-foreground">대기</p>
+                        <p className="text-sm font-bold text-slate-600">{todoTasks}</p>
+                      </div>
+                      <div className="text-center p-2 rounded-lg bg-rose-500/10">
+                        <p className="text-[10px] text-muted-foreground">지연</p>
+                        <p className="text-sm font-bold text-rose-600">{stats.kpis.overdue}</p>
+                      </div>
+                    </div>
+                    <div className="flex justify-between items-center text-xs pt-1 border-t border-blue-200/40">
+                      <span className="text-muted-foreground">진행중 프로젝트</span>
+                      <span className="font-semibold text-blue-700">{stats.kpis.projects}개</span>
+                    </div>
+                  </CardContent>
+                </Card>
+
+                {/* 핵심 KPI 신호등 */}
+                <Card className="relative overflow-hidden border-amber-200/60 bg-gradient-to-br from-amber-50 via-white to-white dark:from-amber-950/30 dark:via-background dark:to-background">
+                  <div className="absolute top-0 right-0 h-24 w-24 -mr-6 -mt-6 rounded-full bg-amber-400/20 blur-2xl" />
+                  <CardHeader className="pb-2">
+                    <CardTitle className="flex items-center gap-2 text-sm text-amber-700 dark:text-amber-400">
+                      <Zap className="h-4 w-4" /> 핵심 KPI 신호등
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-2.5">
+                    {[
+                      { label: '출근률', value: `${stats.kpis.attendance.toFixed(0)}%`, ok: stats.kpis.attendance >= 90, href: '/attendance' },
+                      { label: '대기 결재', value: `${stats.kpis.pendingApprovals}건`, ok: stats.kpis.pendingApprovals <= 5, href: '/approvals' },
+                      { label: '결재 평균 처리', value: `${stats.avgApprovalHours.toFixed(1)}h`, ok: stats.avgApprovalHours <= 24, href: '/approvals' },
+                      { label: '지연 업무', value: `${stats.kpis.overdue}건`, ok: stats.kpis.overdue === 0, href: '/tasks' },
+                      { label: '경영 이상신호', value: `${stats.diagnostics.length}건`, ok: stats.diagnostics.length === 0 },
+                    ].map((k) => (
+                      <button
+                        key={k.label}
+                        type="button"
+                        onClick={() => k.href && navigate(k.href)}
+                        className="w-full flex items-center justify-between px-2 py-1.5 rounded-md hover:bg-amber-100/40 transition-colors text-left"
+                      >
+                        <div className="flex items-center gap-2">
+                          <span className={`h-2 w-2 rounded-full ${sig(k.ok)} ${k.ok ? '' : 'animate-pulse'}`} />
+                          <span className="text-xs text-foreground/80">{k.label}</span>
+                        </div>
+                        <span className={`text-sm font-semibold ${k.ok ? 'text-emerald-700' : 'text-rose-700'}`}>{k.value}</span>
+                      </button>
+                    ))}
+                  </CardContent>
+                </Card>
+              </div>
+            );
+          })()}
+
           {/* ① KPI */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <KpiCard icon={DollarSign} label="이번달 매출" value={`${(stats.kpis.revenue / 10000).toLocaleString()}만`} change={stats.kpis.revenueChange} accent="bg-emerald-500/10 text-emerald-600" onClick={() => navigate('/sales')} />
