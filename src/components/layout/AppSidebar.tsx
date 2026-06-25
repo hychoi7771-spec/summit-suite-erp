@@ -77,7 +77,7 @@ const approvalNavItems = [
   { title: '계약 품의', url: '/approvals?category=contract_request', icon: FileSignature },
   { title: '출장 품의', url: '/approvals?category=business_trip', icon: Building2 },
   { title: '일반 기안', url: '/approvals?category=general_document', icon: FileText },
-  { title: '경비 결재', url: '/expenses', icon: Receipt },
+  { title: '지출 통합 관리', url: '/expenses', icon: Receipt },
 ];
 
 const personalNavItems = [
