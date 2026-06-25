@@ -31,6 +31,7 @@ import AssetsTasks from "./pages/AssetsTasks";
 import AssetsDailyReports from "./pages/AssetsDailyReports";
 import AssetsApprovals from "./pages/AssetsApprovals";
 import Executive from "./pages/Executive";
+import StockAlerts from "./pages/StockAlerts";
 
 import Attendance from "./pages/Attendance";
 import AccountSettings from "./pages/AccountSettings";
