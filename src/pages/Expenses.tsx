@@ -39,11 +39,13 @@ export default function Expenses() {
   const { toast } = useToast();
   const [expenses, setExpenses] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
+  const [approvedApprovals, setApprovedApprovals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [form, setForm] = useState({ amount: '', category: '' as string, description: '', payment_method: 'personal' as PaymentMethodValue });
+
 
   useEffect(() => {
     fetchData();
