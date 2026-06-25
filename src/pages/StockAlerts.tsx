@@ -47,7 +47,11 @@ export default function StockAlerts() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'active' | 'resolved'>('active');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [candidateDialogOpen, setCandidateDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [thresholdDays, setThresholdDays] = useState(14);
+  const [thresholdQty, setThresholdQty] = useState(20);
+  const [csvRows, setCsvRows] = useState<{ product_name: string; stock_qty: number | null; expiry_date: string | null }[]>([]);
   const [form, setForm] = useState({
     product_name: '',
     stock_qty: '',
