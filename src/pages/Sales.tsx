@@ -76,31 +76,33 @@ export default function Sales() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">매출 & KPI</h1>
-          <p className="text-sm text-muted-foreground mt-1">플랫폼 성과 및 매출 추적</p>
-        </div>
-        <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />매출 데이터 추가</Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader><DialogTitle>매출 데이터 추가</DialogTitle></DialogHeader>
-            <div className="space-y-4 mt-2">
-              <div className="space-y-2"><Label>플랫폼</Label><Input placeholder="와디즈" value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))} /></div>
-              <div className="space-y-2"><Label>월 (YYYY-MM)</Label><Input placeholder="2026-03" value={form.month} onChange={e => setForm(f => ({ ...f, month: e.target.value }))} /></div>
-              <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2"><Label>매출 (원)</Label><Input type="number" value={form.revenue} onChange={e => setForm(f => ({ ...f, revenue: e.target.value }))} /></div>
-                <div className="space-y-2"><Label>목표 (원)</Label><Input type="number" value={form.target} onChange={e => setForm(f => ({ ...f, target: e.target.value }))} /></div>
-                <div className="space-y-2"><Label>ROAS</Label><Input type="number" step="0.1" value={form.roas} onChange={e => setForm(f => ({ ...f, roas: e.target.value }))} /></div>
-                <div className="space-y-2"><Label>주문 수</Label><Input type="number" value={form.orders} onChange={e => setForm(f => ({ ...f, orders: e.target.value }))} /></div>
+      <PageHeader
+        icon={LineChartIcon}
+        title="매출 & KPI"
+        description="플랫폼 성과 및 매출 추적"
+        tone="rose"
+        actions={
+          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />매출 데이터 추가</Button>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader><DialogTitle>매출 데이터 추가</DialogTitle></DialogHeader>
+              <div className="space-y-4 mt-2">
+                <div className="space-y-2"><Label>플랫폼</Label><Input placeholder="와디즈" value={form.platform} onChange={e => setForm(f => ({ ...f, platform: e.target.value }))} /></div>
+                <div className="space-y-2"><Label>월 (YYYY-MM)</Label><Input placeholder="2026-03" value={form.month} onChange={e => setForm(f => ({ ...f, month: e.target.value }))} /></div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div className="space-y-2"><Label>매출 (원)</Label><Input type="number" value={form.revenue} onChange={e => setForm(f => ({ ...f, revenue: e.target.value }))} /></div>
+                  <div className="space-y-2"><Label>목표 (원)</Label><Input type="number" value={form.target} onChange={e => setForm(f => ({ ...f, target: e.target.value }))} /></div>
+                  <div className="space-y-2"><Label>ROAS</Label><Input type="number" step="0.1" value={form.roas} onChange={e => setForm(f => ({ ...f, roas: e.target.value }))} /></div>
+                  <div className="space-y-2"><Label>주문 수</Label><Input type="number" value={form.orders} onChange={e => setForm(f => ({ ...f, orders: e.target.value }))} /></div>
+                </div>
+                <Button onClick={handleSubmit} disabled={!form.platform || !form.month || !form.revenue} className="w-full">등록</Button>
               </div>
-              <Button onClick={handleSubmit} disabled={!form.platform || !form.month || !form.revenue} className="w-full">등록</Button>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
+            </DialogContent>
+          </Dialog>
+        }
+      />
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {stats.map(stat => (
