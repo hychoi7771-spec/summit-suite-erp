@@ -223,7 +223,7 @@ export function AppSidebar() {
   );
 
   const GroupLabel = ({ children }: { children: React.ReactNode }) => (
-    <div className="px-3 pt-3 pb-1.5 text-[10.5px] font-semibold text-sidebar-muted uppercase tracking-[0.12em]">
+    <div className="px-3 pt-4 pb-2 text-xs font-bold text-sidebar-accent-foreground uppercase tracking-[0.14em]">
       {children}
     </div>
   );
