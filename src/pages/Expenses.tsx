@@ -239,7 +239,8 @@ export default function Expenses() {
             </div>
           </DialogContent>
         </Dialog>
-      </div>
+        }
+      />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         {summaryCards.map(card => (
