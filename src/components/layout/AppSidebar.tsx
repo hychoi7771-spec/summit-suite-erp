@@ -272,11 +272,33 @@ export function AppSidebar() {
       </SidebarHeader>
 
       <SidebarContent className="px-2 gap-0">
-        {/* 경영현황 — 별도 강조 (대표/총괄/관리이사) */}
+        {/* 경영현황 — 대표 전용 강조 카드 */}
         {isExecutive && (
-          <SidebarGroup className="py-1">
+          <SidebarGroup className="pt-2 pb-1">
             <SidebarGroupContent>
-              {renderNavItems([{ title: '경영현황', url: '/executive', icon: Crown, accent: true }])}
+              <NavLink
+                to="/executive"
+                end
+                className={({ isActive }) =>
+                  `group relative flex items-center gap-2.5 mx-1 px-3 py-2.5 rounded-xl overflow-hidden transition-all
+                   bg-gradient-to-br from-amber-400/95 via-amber-300/90 to-orange-300/85
+                   ring-1 ring-amber-500/40 shadow-[0_4px_14px_-4px_rgba(217,119,6,0.45)]
+                   hover:shadow-[0_6px_20px_-4px_rgba(217,119,6,0.55)] hover:scale-[1.01]
+                   ${isActive ? 'ring-2 ring-amber-600/60' : ''}`
+                }
+              >
+                <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
+                <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-white/30 backdrop-blur-sm ring-1 ring-white/40 shrink-0">
+                  <Crown className="h-4 w-4 text-amber-900" />
+                </div>
+                {!collapsed && (
+                  <div className="relative min-w-0 flex-1">
+                    <div className="text-[13px] font-bold text-amber-950 tracking-tight leading-tight">경영현황</div>
+                    <div className="text-[10px] text-amber-900/75 font-medium tracking-wide">EXECUTIVE</div>
+                  </div>
+                )}
+                {!collapsed && <ChevronRight className="relative h-3.5 w-3.5 text-amber-900/70 shrink-0" />}
+              </NavLink>
             </SidebarGroupContent>
           </SidebarGroup>
         )}
