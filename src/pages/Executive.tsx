@@ -287,7 +287,7 @@ export default function Executive() {
             <Crown className="h-6 w-6" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">경영현황</h1>
+            <h1 className="text-2xl font-bold tracking-tight">CEO 인사이트</h1>
             <p className="text-sm text-muted-foreground">대표 전용 통합 대시보드</p>
           </div>
         </div>
