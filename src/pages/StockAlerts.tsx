@@ -429,6 +429,7 @@ export default function StockAlerts() {
                 </Button>
               </div>
             </DialogContent>
+          </Dialog>
           </div>
         )}
       />
