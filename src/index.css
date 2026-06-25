@@ -48,13 +48,13 @@
     --radius: 0.75rem;
 
     /* Light sidebar — fresh, airy mint-blue tint */
-    --sidebar-background: 200 50% 97.5%;
-    --sidebar-foreground: 215 28% 25%;
-    --sidebar-primary: 217 91% 60%;
+    --sidebar-background: 195 55% 93%;
+    --sidebar-foreground: 215 30% 22%;
+    --sidebar-primary: 217 91% 58%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 190 75% 92%;
-    --sidebar-accent-foreground: 200 85% 28%;
-    --sidebar-border: 200 40% 90%;
+    --sidebar-accent: 190 75% 85%;
+    --sidebar-accent-foreground: 200 85% 24%;
+    --sidebar-border: 195 45% 82%;
     --sidebar-ring: 217 91% 60%;
     --sidebar-muted: 210 16% 52%;
 
