@@ -170,8 +170,9 @@ export default function Expenses() {
     <div className="space-y-6 animate-fade-in">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         <div>
-          <h1 className="text-2xl font-bold">경비 관리</h1>
-          <p className="text-sm text-muted-foreground mt-1">경비 청구 및 승인 현황 관리</p>
+          <h1 className="text-2xl font-bold">지출 통합 관리</h1>
+          <p className="text-sm text-muted-foreground mt-1">경비 청구 및 승인된 구매·계약·출장·행사 품의 통합 현황</p>
+
         </div>
         <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
           <DialogTrigger asChild>
