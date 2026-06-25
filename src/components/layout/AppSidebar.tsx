@@ -279,13 +279,11 @@ export function AppSidebar() {
               <NavLink
                 to="/executive"
                 end
-                className={({ isActive }) =>
-                  `group relative flex items-center gap-2.5 mx-1 px-3 py-2.5 rounded-xl overflow-hidden transition-all
+                className={`group relative flex items-center gap-2.5 mx-1 px-3 py-2.5 rounded-xl overflow-hidden transition-all
                    bg-gradient-to-br from-amber-400/95 via-amber-300/90 to-orange-300/85
                    ring-1 ring-amber-500/40 shadow-[0_4px_14px_-4px_rgba(217,119,6,0.45)]
-                   hover:shadow-[0_6px_20px_-4px_rgba(217,119,6,0.55)] hover:scale-[1.01]
-                   ${isActive ? 'ring-2 ring-amber-600/60' : ''}`
-                }
+                   hover:shadow-[0_6px_20px_-4px_rgba(217,119,6,0.55)] hover:scale-[1.01]`}
+                activeClassName="ring-2 ring-amber-600/60"
               >
                 <span className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/30 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                 <div className="relative flex h-7 w-7 items-center justify-center rounded-lg bg-white/30 backdrop-blur-sm ring-1 ring-white/40 shrink-0">
