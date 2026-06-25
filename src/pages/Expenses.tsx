@@ -169,8 +169,6 @@ export default function Expenses() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
       <PageHeader
         icon={Receipt}
         title="지출 통합 관리"
