@@ -93,6 +93,94 @@ export default function StockAlerts() {
     urgency: 'medium', sales_channel: '', incentive_note: '', message: '',
   });
 
+  // CSV 파일을 읽어 { product_name, stock_qty, expiry_date } 행으로 파싱
+  const parseCsv = (text: string) => {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return [] as typeof csvRows;
+    // 헤더 자동 감지
+    const first = lines[0].split(',').map(s => s.trim().toLowerCase());
+    const hasHeader = first.some(c => ['상품명','product','name','품목'].some(k => c.includes(k)))
+                    || first.some(c => ['재고','stock','qty','수량'].some(k => c.includes(k)));
+    const startIdx = hasHeader ? 1 : 0;
+    let nameIdx = 0, qtyIdx = 1, dateIdx = 2;
+    if (hasHeader) {
+      first.forEach((c, i) => {
+        if (['상품명','product','name','품목'].some(k => c.includes(k))) nameIdx = i;
+        else if (['재고','stock','qty','수량'].some(k => c.includes(k))) qtyIdx = i;
+        else if (['유통','expiry','date','기한','만료'].some(k => c.includes(k))) dateIdx = i;
+      });
+    }
+    const rows: typeof csvRows = [];
+    for (let i = startIdx; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+      const name = cols[nameIdx];
+      if (!name) continue;
+      const qtyRaw = cols[qtyIdx];
+      const dateRaw = cols[dateIdx];
+      const qty = qtyRaw && !isNaN(Number(qtyRaw)) ? Number(qtyRaw) : null;
+      let date: string | null = null;
+      if (dateRaw) {
+        const d = dateRaw.replace(/\./g, '-').replace(/\//g, '-');
+        if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(d)) {
+          const [y, m, day] = d.split('-');
+          date = `${y}-${m.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+      }
+      rows.push({ product_name: name, stock_qty: qty, expiry_date: date });
+    }
+    return rows;
+  };
+
+  const handleCsvUpload = async (file: File) => {
+    const text = await file.text();
+    const rows = parseCsv(text);
+    setCsvRows(rows);
+    if (rows.length === 0) {
+      toast({ title: 'CSV 파싱 실패', description: '상품명/수량/유통기한 열을 확인해주세요.', variant: 'destructive' });
+    } else {
+      toast({ title: `${rows.length}개 항목 로드`, description: '아래 후보 목록에서 등록할 항목을 선택하세요.' });
+    }
+  };
+
+  // 임계치 기반 후보 자동 계산 + 긴급도 자동 산정
+  const candidates = useMemo(() => {
+    const today = new Date(); today.setHours(0,0,0,0);
+    return csvRows
+      .map(r => {
+        let dDay: number | null = null;
+        if (r.expiry_date) {
+          try { dDay = differenceInDays(parseISO(r.expiry_date), today); } catch {}
+        }
+        const expiryHit = dDay !== null && dDay <= thresholdDays;
+        const qtyHit = r.stock_qty !== null && r.stock_qty <= thresholdQty;
+        if (!expiryHit && !qtyHit) return null;
+        let urgency: 'high' | 'medium' | 'low' = 'low';
+        if ((dDay !== null && dDay <= 7) || (r.stock_qty !== null && r.stock_qty <= 10)) urgency = 'high';
+        else if ((dDay !== null && dDay <= 14) || (r.stock_qty !== null && r.stock_qty <= 20)) urgency = 'medium';
+        return { ...r, dDay, urgency };
+      })
+      .filter(Boolean)
+      .sort((a: any, b: any) => {
+        const order = { high: 0, medium: 1, low: 2 } as const;
+        if (order[a.urgency] !== order[b.urgency]) return order[a.urgency] - order[b.urgency];
+        return (a.dDay ?? 999) - (b.dDay ?? 999);
+      }) as Array<{ product_name: string; stock_qty: number | null; expiry_date: string | null; dDay: number | null; urgency: 'high'|'medium'|'low' }>;
+  }, [csvRows, thresholdDays, thresholdQty]);
+
+  const pickCandidate = (c: typeof candidates[number]) => {
+    setForm({
+      product_name: c.product_name,
+      stock_qty: c.stock_qty != null ? String(c.stock_qty) : '',
+      expiry_date: c.expiry_date || '',
+      urgency: c.urgency,
+      sales_channel: '',
+      incentive_note: '',
+      message: `유통기한 ${c.expiry_date ?? '미상'} · 잔여 ${c.stock_qty ?? '미상'}개 — 소진 독려 부탁드립니다.`,
+    });
+    setCandidateDialogOpen(false);
+    setDialogOpen(true);
+  };
+
   const handleSubmit = async () => {
     if (!profile || !form.product_name) return;
     setSubmitting(true);
