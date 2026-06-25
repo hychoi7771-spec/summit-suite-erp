@@ -47,16 +47,16 @@
 
     --radius: 0.75rem;
 
-    /* Light sidebar — modern, refined */
-    --sidebar-background: 210 40% 98%;
-    --sidebar-foreground: 215 25% 27%;
+    /* Light sidebar — fresh, airy mint-blue tint */
+    --sidebar-background: 200 50% 97.5%;
+    --sidebar-foreground: 215 28% 25%;
     --sidebar-primary: 217 91% 60%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 217 70% 94%;
-    --sidebar-accent-foreground: 217 80% 32%;
-    --sidebar-border: 214 32% 91%;
+    --sidebar-accent: 190 75% 92%;
+    --sidebar-accent-foreground: 200 85% 28%;
+    --sidebar-border: 200 40% 90%;
     --sidebar-ring: 217 91% 60%;
-    --sidebar-muted: 215 16% 55%;
+    --sidebar-muted: 210 16% 52%;
 
     --chart-1: 217 91% 60%;
     --chart-2: 195 80% 45%;
