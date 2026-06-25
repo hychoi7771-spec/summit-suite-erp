@@ -291,8 +291,8 @@ export function AppSidebar() {
                 </div>
                 {!collapsed && (
                   <div className="relative min-w-0 flex-1">
-                    <div className="text-[13px] font-bold text-amber-950 tracking-tight leading-tight">CEO 집무실</div>
-                    <div className="text-[10px] text-amber-900/75 font-medium tracking-wide">CEO OFFICE</div>
+                    <div className="text-[13px] font-bold text-amber-950 tracking-tight leading-tight">CEO 인사이트</div>
+                    <div className="text-[10px] text-amber-900/75 font-medium tracking-wide">CEO INSIGHT</div>
                   </div>
                 )}
                 {!collapsed && <ChevronRight className="relative h-3.5 w-3.5 text-amber-900/70 shrink-0" />}
