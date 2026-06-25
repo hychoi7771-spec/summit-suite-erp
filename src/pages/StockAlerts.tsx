@@ -289,7 +289,7 @@ export default function StockAlerts() {
         <div>
           <h1 className="text-2xl font-bold flex items-center gap-2">
             <PackageX className="h-6 w-6 text-destructive" />
-            재고임박 판매독려
+            유통기한 임박 판매독려
           </h1>
           <p className="text-sm text-muted-foreground mt-1">
             유통기한 임박·재고 소진 대상 상품의 판매 독려 공지를 관리합니다

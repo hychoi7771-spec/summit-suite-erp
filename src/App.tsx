@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
-import Projects from "./pages/Projects";
+
 import Tasks from "./pages/Tasks";
 import Meetings from "./pages/Meetings";
 import Expenses from "./pages/Expenses";
@@ -81,7 +81,7 @@ function AppRoutes() {
               <Routes>
                 <Route path="/" element={<Dashboard />} />
                 <Route path="/executive" element={<Executive />} />
-                <Route path="/projects" element={<Projects />} />
+                
                 <Route path="/products" element={<Products />} />
                 <Route path="/tasks" element={<Tasks />} />
                 <Route path="/design-reviews" element={<DesignReviews />} />
