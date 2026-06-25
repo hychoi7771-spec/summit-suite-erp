@@ -296,7 +296,82 @@ export default function StockAlerts() {
           </p>
         </div>
         {canManage && (
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <div className="flex gap-2 shrink-0">
+            <Dialog open={candidateDialogOpen} onOpenChange={setCandidateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Sparkles className="h-4 w-4" />후보 자동 계산
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    재고/유통기한 기반 판매독려 후보
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 mt-2">
+                  <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+                    <div className="flex items-center gap-2 text-foreground font-medium">
+                      <FileSpreadsheet className="h-3.5 w-3.5" />CSV 형식 안내
+                    </div>
+                    <div>열 순서: <b>상품명, 재고수량, 유통기한</b> (예: <code>곶감세트,12,2026-07-05</code>)</div>
+                    <div>헤더 행이 있어도 자동 인식됩니다. 날짜는 YYYY-MM-DD / YYYY.MM.DD / YYYY/MM/DD 모두 가능.</div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1.5 sm:col-span-1">
+                      <Label className="text-xs">CSV 업로드</Label>
+                      <label className="flex items-center justify-center gap-2 h-9 px-3 border rounded-md cursor-pointer text-xs hover:bg-muted">
+                        <Upload className="h-3.5 w-3.5" />파일 선택
+                        <input type="file" accept=".csv,text/csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleCsvUpload(f); }} />
+                      </label>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">유통기한 임박 기준 (일 이내)</Label>
+                      <Input type="number" min={1} value={thresholdDays} onChange={e => setThresholdDays(Number(e.target.value) || 0)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">재고 부족 기준 (개 이하)</Label>
+                      <Input type="number" min={0} value={thresholdQty} onChange={e => setThresholdQty(Number(e.target.value) || 0)} />
+                    </div>
+                  </div>
+
+                  {csvRows.length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      업로드 {csvRows.length}건 중 <b className="text-foreground">{candidates.length}건</b>이 임계치에 해당합니다.
+                    </div>
+                  )}
+
+                  <div className="max-h-[360px] overflow-y-auto space-y-2 -mx-1 px-1">
+                    {candidates.length === 0 ? (
+                      <div className="py-10 text-center text-sm text-muted-foreground border rounded-md">
+                        {csvRows.length === 0 ? 'CSV 업로드 후 후보가 표시됩니다.' : '임계치에 해당하는 후보가 없습니다.'}
+                      </div>
+                    ) : candidates.map((c, i) => (
+                      <div key={i} className="flex items-center justify-between gap-3 p-3 border rounded-md hover:bg-muted/40 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge className={`${urgencyMeta[c.urgency].cls} text-[10px] h-5`}>{urgencyMeta[c.urgency].label}</Badge>
+                            <span className="font-medium truncate">{c.product_name}</span>
+                            {c.dDay !== null && (
+                              <Badge variant="outline" className="text-[10px] h-5">
+                                {c.dDay < 0 ? `D+${-c.dDay}` : c.dDay === 0 ? 'D-DAY' : `D-${c.dDay}`}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {c.stock_qty != null && <>재고 {c.stock_qty}개</>} {c.expiry_date && <>· 유통기한 {c.expiry_date}</>}
+                          </div>
+                        </div>
+                        <Button size="sm" variant="secondary" onClick={() => pickCandidate(c)}>공지 등록</Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2 shrink-0">
                 <Plus className="h-4 w-4" />독려 공지 등록
