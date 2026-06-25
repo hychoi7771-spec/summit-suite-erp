@@ -308,12 +308,13 @@ export default function Tasks() {
 
   return (
     <div className="space-y-6 animate-fade-in">
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">업무 관리</h1>
-          <p className="text-sm text-muted-foreground mt-1">칸반 보드와 간트차트로 업무를 관리하세요</p>
-        </div>
-        <div className="flex items-center gap-2">
+      <PageHeader
+        icon={ListTodo}
+        title="업무 관리"
+        description="칸반 보드와 간트차트로 업무를 관리하세요"
+        tone="blue"
+        actions={
+          <div className="flex items-center gap-2">
           <DesignRequestDialog profiles={profiles} onSuccess={fetchData} />
           <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
             <DialogTrigger asChild>
