@@ -58,7 +58,7 @@ export default function MyProjects() {
         icon={FolderKanban}
         title="내 프로젝트"
         description="내가 담당하거나 참여 중인 프로젝트 목록입니다"
-        tone="purple"
+        tone="violet"
       />
 
       {projects.length === 0 ? (
