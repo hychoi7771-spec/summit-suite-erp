@@ -445,7 +445,7 @@ export default function Executive() {
           {/* ① KPI */}
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-3">
             <KpiCard icon={DollarSign} label="이번달 매출" value={`${(stats.kpis.revenue / 10000).toLocaleString()}만`} change={stats.kpis.revenueChange} accent="bg-emerald-500/10 text-emerald-600" onClick={() => navigate('/sales')} />
-            <KpiCard icon={FolderKanban} label="진행중 프로젝트" value={stats.kpis.projects} accent="bg-blue-500/10 text-blue-600" onClick={() => navigate('/projects')} />
+            <KpiCard icon={FolderKanban} label="진행중 프로젝트" value={stats.kpis.projects} accent="bg-blue-500/10 text-blue-600" onClick={() => navigate('/my-projects')} />
             <KpiCard icon={AlertTriangle} label="지연 업무" value={stats.kpis.overdue} accent="bg-rose-500/10 text-rose-600" onClick={() => navigate('/tasks')} />
             <KpiCard icon={Stamp} label="대기 결재" value={stats.kpis.pendingApprovals} accent="bg-violet-500/10 text-violet-600" onClick={() => navigate('/approvals')} />
             <KpiCard icon={Users} label="출근률" value={stats.kpis.attendance.toFixed(0)} suffix="%" accent="bg-cyan-500/10 text-cyan-600" onClick={() => navigate('/attendance')} />
