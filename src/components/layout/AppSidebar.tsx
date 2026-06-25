@@ -34,6 +34,7 @@ import {
   FileCheck2,
   Crown,
   Stamp,
+  PackageX,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
