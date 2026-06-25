@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, PackageX, CheckCircle2, Trash2, Clock, Megaphone, AlertTriangle } from 'lucide-react';
+import { Plus, PackageX, CheckCircle2, Trash2, Clock, Megaphone, AlertTriangle, Sparkles, Upload, FileSpreadsheet } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -47,7 +47,11 @@ export default function StockAlerts() {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<'active' | 'resolved'>('active');
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [candidateDialogOpen, setCandidateDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [thresholdDays, setThresholdDays] = useState(14);
+  const [thresholdQty, setThresholdQty] = useState(20);
+  const [csvRows, setCsvRows] = useState<{ product_name: string; stock_qty: number | null; expiry_date: string | null }[]>([]);
   const [form, setForm] = useState({
     product_name: '',
     stock_qty: '',
@@ -88,6 +92,94 @@ export default function StockAlerts() {
     product_name: '', stock_qty: '', expiry_date: '',
     urgency: 'medium', sales_channel: '', incentive_note: '', message: '',
   });
+
+  // CSV 파일을 읽어 { product_name, stock_qty, expiry_date } 행으로 파싱
+  const parseCsv = (text: string) => {
+    const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+    if (lines.length === 0) return [] as typeof csvRows;
+    // 헤더 자동 감지
+    const first = lines[0].split(',').map(s => s.trim().toLowerCase());
+    const hasHeader = first.some(c => ['상품명','product','name','품목'].some(k => c.includes(k)))
+                    || first.some(c => ['재고','stock','qty','수량'].some(k => c.includes(k)));
+    const startIdx = hasHeader ? 1 : 0;
+    let nameIdx = 0, qtyIdx = 1, dateIdx = 2;
+    if (hasHeader) {
+      first.forEach((c, i) => {
+        if (['상품명','product','name','품목'].some(k => c.includes(k))) nameIdx = i;
+        else if (['재고','stock','qty','수량'].some(k => c.includes(k))) qtyIdx = i;
+        else if (['유통','expiry','date','기한','만료'].some(k => c.includes(k))) dateIdx = i;
+      });
+    }
+    const rows: typeof csvRows = [];
+    for (let i = startIdx; i < lines.length; i++) {
+      const cols = lines[i].split(',').map(s => s.trim().replace(/^"|"$/g, ''));
+      const name = cols[nameIdx];
+      if (!name) continue;
+      const qtyRaw = cols[qtyIdx];
+      const dateRaw = cols[dateIdx];
+      const qty = qtyRaw && !isNaN(Number(qtyRaw)) ? Number(qtyRaw) : null;
+      let date: string | null = null;
+      if (dateRaw) {
+        const d = dateRaw.replace(/\./g, '-').replace(/\//g, '-');
+        if (/^\d{4}-\d{1,2}-\d{1,2}$/.test(d)) {
+          const [y, m, day] = d.split('-');
+          date = `${y}-${m.padStart(2, '0')}-${day.padStart(2, '0')}`;
+        }
+      }
+      rows.push({ product_name: name, stock_qty: qty, expiry_date: date });
+    }
+    return rows;
+  };
+
+  const handleCsvUpload = async (file: File) => {
+    const text = await file.text();
+    const rows = parseCsv(text);
+    setCsvRows(rows);
+    if (rows.length === 0) {
+      toast({ title: 'CSV 파싱 실패', description: '상품명/수량/유통기한 열을 확인해주세요.', variant: 'destructive' });
+    } else {
+      toast({ title: `${rows.length}개 항목 로드`, description: '아래 후보 목록에서 등록할 항목을 선택하세요.' });
+    }
+  };
+
+  // 임계치 기반 후보 자동 계산 + 긴급도 자동 산정
+  const candidates = useMemo(() => {
+    const today = new Date(); today.setHours(0,0,0,0);
+    return csvRows
+      .map(r => {
+        let dDay: number | null = null;
+        if (r.expiry_date) {
+          try { dDay = differenceInDays(parseISO(r.expiry_date), today); } catch {}
+        }
+        const expiryHit = dDay !== null && dDay <= thresholdDays;
+        const qtyHit = r.stock_qty !== null && r.stock_qty <= thresholdQty;
+        if (!expiryHit && !qtyHit) return null;
+        let urgency: 'high' | 'medium' | 'low' = 'low';
+        if ((dDay !== null && dDay <= 7) || (r.stock_qty !== null && r.stock_qty <= 10)) urgency = 'high';
+        else if ((dDay !== null && dDay <= 14) || (r.stock_qty !== null && r.stock_qty <= 20)) urgency = 'medium';
+        return { ...r, dDay, urgency };
+      })
+      .filter(Boolean)
+      .sort((a: any, b: any) => {
+        const order = { high: 0, medium: 1, low: 2 } as const;
+        if (order[a.urgency] !== order[b.urgency]) return order[a.urgency] - order[b.urgency];
+        return (a.dDay ?? 999) - (b.dDay ?? 999);
+      }) as Array<{ product_name: string; stock_qty: number | null; expiry_date: string | null; dDay: number | null; urgency: 'high'|'medium'|'low' }>;
+  }, [csvRows, thresholdDays, thresholdQty]);
+
+  const pickCandidate = (c: typeof candidates[number]) => {
+    setForm({
+      product_name: c.product_name,
+      stock_qty: c.stock_qty != null ? String(c.stock_qty) : '',
+      expiry_date: c.expiry_date || '',
+      urgency: c.urgency,
+      sales_channel: '',
+      incentive_note: '',
+      message: `유통기한 ${c.expiry_date ?? '미상'} · 잔여 ${c.stock_qty ?? '미상'}개 — 소진 독려 부탁드립니다.`,
+    });
+    setCandidateDialogOpen(false);
+    setDialogOpen(true);
+  };
 
   const handleSubmit = async () => {
     if (!profile || !form.product_name) return;
@@ -204,7 +296,82 @@ export default function StockAlerts() {
           </p>
         </div>
         {canManage && (
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <div className="flex gap-2 shrink-0">
+            <Dialog open={candidateDialogOpen} onOpenChange={setCandidateDialogOpen}>
+              <DialogTrigger asChild>
+                <Button variant="outline" className="gap-2">
+                  <Sparkles className="h-4 w-4" />후보 자동 계산
+                </Button>
+              </DialogTrigger>
+              <DialogContent className="max-w-2xl">
+                <DialogHeader>
+                  <DialogTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-primary" />
+                    재고/유통기한 기반 판매독려 후보
+                  </DialogTitle>
+                </DialogHeader>
+                <div className="space-y-4 mt-2">
+                  <div className="rounded-md border bg-muted/30 p-3 text-xs text-muted-foreground space-y-1">
+                    <div className="flex items-center gap-2 text-foreground font-medium">
+                      <FileSpreadsheet className="h-3.5 w-3.5" />CSV 형식 안내
+                    </div>
+                    <div>열 순서: <b>상품명, 재고수량, 유통기한</b> (예: <code>곶감세트,12,2026-07-05</code>)</div>
+                    <div>헤더 행이 있어도 자동 인식됩니다. 날짜는 YYYY-MM-DD / YYYY.MM.DD / YYYY/MM/DD 모두 가능.</div>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div className="space-y-1.5 sm:col-span-1">
+                      <Label className="text-xs">CSV 업로드</Label>
+                      <label className="flex items-center justify-center gap-2 h-9 px-3 border rounded-md cursor-pointer text-xs hover:bg-muted">
+                        <Upload className="h-3.5 w-3.5" />파일 선택
+                        <input type="file" accept=".csv,text/csv" className="hidden" onChange={e => { const f = e.target.files?.[0]; if (f) handleCsvUpload(f); }} />
+                      </label>
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">유통기한 임박 기준 (일 이내)</Label>
+                      <Input type="number" min={1} value={thresholdDays} onChange={e => setThresholdDays(Number(e.target.value) || 0)} />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">재고 부족 기준 (개 이하)</Label>
+                      <Input type="number" min={0} value={thresholdQty} onChange={e => setThresholdQty(Number(e.target.value) || 0)} />
+                    </div>
+                  </div>
+
+                  {csvRows.length > 0 && (
+                    <div className="text-xs text-muted-foreground">
+                      업로드 {csvRows.length}건 중 <b className="text-foreground">{candidates.length}건</b>이 임계치에 해당합니다.
+                    </div>
+                  )}
+
+                  <div className="max-h-[360px] overflow-y-auto space-y-2 -mx-1 px-1">
+                    {candidates.length === 0 ? (
+                      <div className="py-10 text-center text-sm text-muted-foreground border rounded-md">
+                        {csvRows.length === 0 ? 'CSV 업로드 후 후보가 표시됩니다.' : '임계치에 해당하는 후보가 없습니다.'}
+                      </div>
+                    ) : candidates.map((c, i) => (
+                      <div key={i} className="flex items-center justify-between gap-3 p-3 border rounded-md hover:bg-muted/40 transition-colors">
+                        <div className="min-w-0 flex-1">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <Badge className={`${urgencyMeta[c.urgency].cls} text-[10px] h-5`}>{urgencyMeta[c.urgency].label}</Badge>
+                            <span className="font-medium truncate">{c.product_name}</span>
+                            {c.dDay !== null && (
+                              <Badge variant="outline" className="text-[10px] h-5">
+                                {c.dDay < 0 ? `D+${-c.dDay}` : c.dDay === 0 ? 'D-DAY' : `D-${c.dDay}`}
+                              </Badge>
+                            )}
+                          </div>
+                          <div className="text-xs text-muted-foreground mt-0.5">
+                            {c.stock_qty != null && <>재고 {c.stock_qty}개</>} {c.expiry_date && <>· 유통기한 {c.expiry_date}</>}
+                          </div>
+                        </div>
+                        <Button size="sm" variant="secondary" onClick={() => pickCandidate(c)}>공지 등록</Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </DialogContent>
+            </Dialog>
+
+            <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2 shrink-0">
                 <Plus className="h-4 w-4" />독려 공지 등록
@@ -267,6 +434,7 @@ export default function StockAlerts() {
               </div>
             </DialogContent>
           </Dialog>
+          </div>
         )}
       </div>
 
