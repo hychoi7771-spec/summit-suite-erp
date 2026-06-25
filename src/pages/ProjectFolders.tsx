@@ -115,8 +115,9 @@ export default function ProjectFolders() {
               <Button onClick={handleCreateFolder} disabled={!folderName.trim()} className="w-full">생성</Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       {/* Edit folder dialog */}
       <Dialog open={!!editFolder} onOpenChange={open => { if (!open) setEditFolder(null); }}>

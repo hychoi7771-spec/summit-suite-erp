@@ -641,8 +641,9 @@ export default function Meetings() {
               <Button onClick={handleAddMeeting} disabled={!meetingForm.title} className="w-full">등록</Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       <div className="space-y-4">
         {meetings.length === 0 && <p className="text-sm text-muted-foreground text-center py-8">등록된 회의가 없습니다</p>}

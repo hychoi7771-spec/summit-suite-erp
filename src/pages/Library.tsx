@@ -193,8 +193,9 @@ export default function Library() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       <Tabs defaultValue="files" className="w-full">
         <TabsList>

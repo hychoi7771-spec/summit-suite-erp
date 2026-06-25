@@ -319,8 +319,9 @@ export default function Surveys() {
               </Button>
             </div>
           </DialogContent>
-        </Dialog>
-      </div>
+          </Dialog>
+        }
+      />
 
       {loading ? (
         <div className="flex justify-center py-12">

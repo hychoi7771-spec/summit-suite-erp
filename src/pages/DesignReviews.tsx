@@ -660,7 +660,9 @@ export default function DesignReviews() {
               </div>
             </DialogContent>
           </Dialog>
-        </div>
+          </div>
+        }
+      />
       </div>
 
       {/* Filters */}
