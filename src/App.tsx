@@ -7,7 +7,7 @@ import { AuthProvider, useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import Dashboard from "./pages/Dashboard";
 import Products from "./pages/Products";
-import Projects from "./pages/Projects";
+
 import Tasks from "./pages/Tasks";
 import Meetings from "./pages/Meetings";
 import Expenses from "./pages/Expenses";
