@@ -209,6 +209,36 @@ export function NoticePopupOnLogin() {
               7일간
             </Button>
           </div>
+
+          {/* 담당자/관리자: 이 공지의 팝업 노출을 영구 중단 */}
+          {(profile?.id === current.author_id || isManager) && (
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
+              <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground mr-1">담당자 설정:</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={async () => {
+                  const { error } = await supabase
+                    .from('notices')
+                    .update({ show_as_popup: false } as any)
+                    .eq('id', current.id);
+                  if (error) {
+                    toast({ title: '설정 실패', description: error.message, variant: 'destructive' });
+                    return;
+                  }
+                  toast({ title: '팝업 노출 중단됨', description: '이 공지는 더 이상 팝업으로 표시되지 않습니다.' });
+                  // 현재 사용자도 즉시 닫기
+                  setPopups(prev => prev.filter(p => p.id !== current.id));
+                  if (popups.length <= 1) setOpen(false);
+                  else setIndex(i => Math.min(i, popups.length - 2));
+                }}
+              >
+                이 공지 팝업 노출 영구 중단
+              </Button>
+            </div>
+          )}
         </div>
         <DialogFooter className="flex-col sm:flex-row gap-2">
           {popups.length > 1 && (
