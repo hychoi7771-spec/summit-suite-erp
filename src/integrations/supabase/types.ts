@@ -1429,6 +1429,51 @@ export type Database = {
         }
         Relationships: []
       }
+      stock_alert_shipments: {
+        Row: {
+          alert_id: string
+          created_at: string
+          created_by: string
+          id: string
+          note: string | null
+          qty: number
+          ship_date: string
+        }
+        Insert: {
+          alert_id: string
+          created_at?: string
+          created_by: string
+          id?: string
+          note?: string | null
+          qty: number
+          ship_date?: string
+        }
+        Update: {
+          alert_id?: string
+          created_at?: string
+          created_by?: string
+          id?: string
+          note?: string | null
+          qty?: number
+          ship_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "stock_alert_shipments_alert_id_fkey"
+            columns: ["alert_id"]
+            isOneToOne: false
+            referencedRelation: "stock_urgent_alerts"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "stock_alert_shipments_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stock_urgent_alerts: {
         Row: {
           created_at: string
