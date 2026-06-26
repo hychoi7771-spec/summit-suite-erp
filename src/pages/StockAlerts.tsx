@@ -308,7 +308,7 @@ export default function StockAlerts() {
     const noticeTitle = `[재고임박 · ${urgencyMeta[form.urgency].label}] ${form.product_name} 판매 독려`;
     const noticeBody = [
       form.stock_qty ? `잔여 수량: ${form.stock_qty}` : null,
-      form.expiry_date ? `유통기한/소진목표: ${form.expiry_date}` : null,
+      form.expiry_date ? `소비기한: ${form.expiry_date}` : null,
       form.sales_channel ? `판매 채널: ${form.sales_channel}` : null,
       form.incentive_note ? `인센티브: ${form.incentive_note}` : null,
       form.message ? `\n${form.message}` : null,
