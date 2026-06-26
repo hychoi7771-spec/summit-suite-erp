@@ -94,6 +94,124 @@ export default function StockAlerts() {
     urgency: 'medium', sales_channel: '', incentive_note: '', message: '',
   });
 
+  // ---- 등록 후 수정 (edit) ----
+  const [editTarget, setEditTarget] = useState<Alert | null>(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const openEdit = (a: Alert) => {
+    setEditTarget(a);
+    setForm({
+      product_name: a.product_name,
+      stock_qty: a.stock_qty != null ? String(a.stock_qty) : '',
+      expiry_date: a.expiry_date || '',
+      urgency: a.urgency,
+      sales_channel: a.sales_channel || '',
+      incentive_note: a.incentive_note || '',
+      message: a.message || '',
+    });
+  };
+  const handleEditSubmit = async () => {
+    if (!editTarget) return;
+    setEditSubmitting(true);
+    const stockQty = form.stock_qty ? parseInt(form.stock_qty) : null;
+    const { error } = await supabase.from('stock_urgent_alerts').update({
+      product_name: form.product_name,
+      stock_qty: stockQty,
+      expiry_date: form.expiry_date || null,
+      urgency: form.urgency,
+      sales_channel: form.sales_channel || null,
+      incentive_note: form.incentive_note || null,
+      message: form.message || null,
+    } as any).eq('id', editTarget.id);
+    if (error) {
+      toast({ title: '수정 실패', description: error.message, variant: 'destructive' });
+      setEditSubmitting(false);
+      return;
+    }
+    // 연동 공지 본문도 함께 갱신
+    if (editTarget.notice_id) {
+      const noticeTitle = `[재고임박 · ${urgencyMeta[form.urgency].label}] ${form.product_name} 판매 독려`;
+      const noticeBody = [
+        stockQty != null ? `잔여 수량: ${stockQty}` : null,
+        form.expiry_date ? `소비기한: ${form.expiry_date}` : null,
+        form.sales_channel ? `판매 채널: ${form.sales_channel}` : null,
+        form.incentive_note ? `인센티브: ${form.incentive_note}` : null,
+        form.message ? `\n${form.message}` : null,
+      ].filter(Boolean).join('\n');
+      await supabase.from('notices').update({
+        title: noticeTitle,
+        content: noticeBody || '재고 소진을 위한 판매 독려 안내입니다.',
+        is_pinned: form.urgency === 'high',
+      } as any).eq('id', editTarget.notice_id);
+    }
+    toast({ title: '수정 완료' });
+    setEditTarget(null);
+    resetForm();
+    setEditSubmitting(false);
+    fetchData();
+  };
+
+  // ---- 출고 기록 ----
+  const [shipTarget, setShipTarget] = useState<Alert | null>(null);
+  const [shipments, setShipments] = useState<any[]>([]);
+  const [shipForm, setShipForm] = useState({ ship_date: format(new Date(), 'yyyy-MM-dd'), qty: '', note: '' });
+  const [shipSubmitting, setShipSubmitting] = useState(false);
+
+  const openShipments = async (a: Alert) => {
+    setShipTarget(a);
+    setShipForm({ ship_date: format(new Date(), 'yyyy-MM-dd'), qty: '', note: '' });
+    const { data } = await supabase
+      .from('stock_alert_shipments')
+      .select('*')
+      .eq('alert_id', a.id)
+      .order('ship_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    setShipments(data || []);
+  };
+  const refreshShipments = async (alertId: string) => {
+    const { data } = await supabase
+      .from('stock_alert_shipments')
+      .select('*')
+      .eq('alert_id', alertId)
+      .order('ship_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    setShipments(data || []);
+  };
+  const handleAddShipment = async () => {
+    if (!shipTarget || !profile) return;
+    const qtyNum = parseInt(shipForm.qty);
+    if (!qtyNum || qtyNum <= 0) {
+      toast({ title: '출고 수량을 확인해주세요', variant: 'destructive' });
+      return;
+    }
+    setShipSubmitting(true);
+    const { error } = await supabase.from('stock_alert_shipments').insert({
+      alert_id: shipTarget.id,
+      ship_date: shipForm.ship_date,
+      qty: qtyNum,
+      note: shipForm.note || null,
+      created_by: profile.id,
+    } as any);
+    if (error) {
+      toast({ title: '출고 등록 실패', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: '출고가 기록되어 잔여 수량이 차감되었습니다' });
+      setShipForm({ ship_date: format(new Date(), 'yyyy-MM-dd'), qty: '', note: '' });
+      await refreshShipments(shipTarget.id);
+      fetchData();
+    }
+    setShipSubmitting(false);
+  };
+  const handleDeleteShipment = async (id: string) => {
+    const { error } = await supabase.from('stock_alert_shipments').delete().eq('id', id);
+    if (error) {
+      toast({ title: '삭제 실패', description: error.message, variant: 'destructive' });
+      return;
+    }
+    if (shipTarget) await refreshShipments(shipTarget.id);
+    fetchData();
+  };
+
+
   // CSV 파일을 읽어 { product_name, stock_qty, expiry_date } 행으로 파싱
   const parseCsv = (text: string) => {
     const lines = text.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
