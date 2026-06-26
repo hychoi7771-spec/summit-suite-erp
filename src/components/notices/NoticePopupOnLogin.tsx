@@ -66,7 +66,8 @@ const sevenDaysFromNowIso = () => {
 };
 
 export function NoticePopupOnLogin() {
-  const { user, profile } = useAuth();
+  const { user, profile, isManager } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [popups, setPopups] = useState<any[]>([]);
   const [authorMap, setAuthorMap] = useState<Map<string, string>>(new Map());
