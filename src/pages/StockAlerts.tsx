@@ -556,7 +556,7 @@ export default function StockAlerts() {
         <Card>
           <CardContent className="p-3 text-xs text-muted-foreground flex items-center gap-2">
             <AlertTriangle className="h-3.5 w-3.5" />
-            등록 권한은 담당자(조정선 주임) 및 경영진(대표·이사·실장)에게 부여되어 있습니다.
+            등록 권한은 담당자(조정선 주임) 및 이사(경영진)에게 부여되어 있습니다.
           </CardContent>
         </Card>
       )}
