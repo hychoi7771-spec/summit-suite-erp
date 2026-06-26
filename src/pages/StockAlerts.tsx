@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Plus, PackageX, CheckCircle2, Trash2, Clock, Megaphone, AlertTriangle, Sparkles, Upload, FileSpreadsheet } from 'lucide-react';
+import { Plus, PackageX, CheckCircle2, Trash2, Clock, Megaphone, AlertTriangle, Sparkles, Upload, FileSpreadsheet, Pencil, Truck, History } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
@@ -93,6 +93,124 @@ export default function StockAlerts() {
     product_name: '', stock_qty: '', expiry_date: '',
     urgency: 'medium', sales_channel: '', incentive_note: '', message: '',
   });
+
+  // ---- 등록 후 수정 (edit) ----
+  const [editTarget, setEditTarget] = useState<Alert | null>(null);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const openEdit = (a: Alert) => {
+    setEditTarget(a);
+    setForm({
+      product_name: a.product_name,
+      stock_qty: a.stock_qty != null ? String(a.stock_qty) : '',
+      expiry_date: a.expiry_date || '',
+      urgency: a.urgency,
+      sales_channel: a.sales_channel || '',
+      incentive_note: a.incentive_note || '',
+      message: a.message || '',
+    });
+  };
+  const handleEditSubmit = async () => {
+    if (!editTarget) return;
+    setEditSubmitting(true);
+    const stockQty = form.stock_qty ? parseInt(form.stock_qty) : null;
+    const { error } = await supabase.from('stock_urgent_alerts').update({
+      product_name: form.product_name,
+      stock_qty: stockQty,
+      expiry_date: form.expiry_date || null,
+      urgency: form.urgency,
+      sales_channel: form.sales_channel || null,
+      incentive_note: form.incentive_note || null,
+      message: form.message || null,
+    } as any).eq('id', editTarget.id);
+    if (error) {
+      toast({ title: '수정 실패', description: error.message, variant: 'destructive' });
+      setEditSubmitting(false);
+      return;
+    }
+    // 연동 공지 본문도 함께 갱신
+    if (editTarget.notice_id) {
+      const noticeTitle = `[재고임박 · ${urgencyMeta[form.urgency].label}] ${form.product_name} 판매 독려`;
+      const noticeBody = [
+        stockQty != null ? `잔여 수량: ${stockQty}` : null,
+        form.expiry_date ? `소비기한: ${form.expiry_date}` : null,
+        form.sales_channel ? `판매 채널: ${form.sales_channel}` : null,
+        form.incentive_note ? `인센티브: ${form.incentive_note}` : null,
+        form.message ? `\n${form.message}` : null,
+      ].filter(Boolean).join('\n');
+      await supabase.from('notices').update({
+        title: noticeTitle,
+        content: noticeBody || '재고 소진을 위한 판매 독려 안내입니다.',
+        is_pinned: form.urgency === 'high',
+      } as any).eq('id', editTarget.notice_id);
+    }
+    toast({ title: '수정 완료' });
+    setEditTarget(null);
+    resetForm();
+    setEditSubmitting(false);
+    fetchData();
+  };
+
+  // ---- 출고 기록 ----
+  const [shipTarget, setShipTarget] = useState<Alert | null>(null);
+  const [shipments, setShipments] = useState<any[]>([]);
+  const [shipForm, setShipForm] = useState({ ship_date: format(new Date(), 'yyyy-MM-dd'), qty: '', note: '' });
+  const [shipSubmitting, setShipSubmitting] = useState(false);
+
+  const openShipments = async (a: Alert) => {
+    setShipTarget(a);
+    setShipForm({ ship_date: format(new Date(), 'yyyy-MM-dd'), qty: '', note: '' });
+    const { data } = await supabase
+      .from('stock_alert_shipments')
+      .select('*')
+      .eq('alert_id', a.id)
+      .order('ship_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    setShipments(data || []);
+  };
+  const refreshShipments = async (alertId: string) => {
+    const { data } = await supabase
+      .from('stock_alert_shipments')
+      .select('*')
+      .eq('alert_id', alertId)
+      .order('ship_date', { ascending: false })
+      .order('created_at', { ascending: false });
+    setShipments(data || []);
+  };
+  const handleAddShipment = async () => {
+    if (!shipTarget || !profile) return;
+    const qtyNum = parseInt(shipForm.qty);
+    if (!qtyNum || qtyNum <= 0) {
+      toast({ title: '출고 수량을 확인해주세요', variant: 'destructive' });
+      return;
+    }
+    setShipSubmitting(true);
+    const { error } = await supabase.from('stock_alert_shipments').insert({
+      alert_id: shipTarget.id,
+      ship_date: shipForm.ship_date,
+      qty: qtyNum,
+      note: shipForm.note || null,
+      created_by: profile.id,
+    } as any);
+    if (error) {
+      toast({ title: '출고 등록 실패', description: error.message, variant: 'destructive' });
+    } else {
+      toast({ title: '출고가 기록되어 잔여 수량이 차감되었습니다' });
+      setShipForm({ ship_date: format(new Date(), 'yyyy-MM-dd'), qty: '', note: '' });
+      await refreshShipments(shipTarget.id);
+      fetchData();
+    }
+    setShipSubmitting(false);
+  };
+  const handleDeleteShipment = async (id: string) => {
+    const { error } = await supabase.from('stock_alert_shipments').delete().eq('id', id);
+    if (error) {
+      toast({ title: '삭제 실패', description: error.message, variant: 'destructive' });
+      return;
+    }
+    if (shipTarget) await refreshShipments(shipTarget.id);
+    fetchData();
+  };
+
 
   // CSV 파일을 읽어 { product_name, stock_qty, expiry_date } 행으로 파싱
   const parseCsv = (text: string) => {
@@ -190,7 +308,7 @@ export default function StockAlerts() {
     const noticeTitle = `[재고임박 · ${urgencyMeta[form.urgency].label}] ${form.product_name} 판매 독려`;
     const noticeBody = [
       form.stock_qty ? `잔여 수량: ${form.stock_qty}` : null,
-      form.expiry_date ? `유통기한/소진목표: ${form.expiry_date}` : null,
+      form.expiry_date ? `소비기한: ${form.expiry_date}` : null,
       form.sales_channel ? `판매 채널: ${form.sales_channel}` : null,
       form.incentive_note ? `인센티브: ${form.incentive_note}` : null,
       form.message ? `\n${form.message}` : null,
@@ -391,7 +509,7 @@ export default function StockAlerts() {
                     <Input type="number" value={form.stock_qty} onChange={e => setForm(f => ({ ...f, stock_qty: e.target.value }))} placeholder="개" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>소진 목표일</Label>
+                    <Label>소비기한</Label>
                     <Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} />
                   </div>
                 </div>
@@ -438,7 +556,7 @@ export default function StockAlerts() {
         <Card>
           <CardContent className="p-3 text-xs text-muted-foreground flex items-center gap-2">
             <AlertTriangle className="h-3.5 w-3.5" />
-            등록 권한은 담당자(조정선 주임) 및 경영진(대표·이사·실장)에게 부여되어 있습니다.
+            등록 권한은 담당자(조정선 주임) 및 이사(경영진)에게 부여되어 있습니다.
           </CardContent>
         </Card>
       )}
@@ -479,7 +597,7 @@ export default function StockAlerts() {
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                       {a.stock_qty != null && <span>재고 {a.stock_qty}개</span>}
-                      {a.expiry_date && <span>· 목표일 {a.expiry_date}</span>}
+                      {a.expiry_date && <span>· 소비기한 {a.expiry_date}</span>}
                       {a.sales_channel && <span>· {a.sales_channel}</span>}
                     </div>
                     {a.incentive_note && (
@@ -503,7 +621,15 @@ export default function StockAlerts() {
                     <span>{format(new Date(a.created_at), 'yyyy.MM.dd HH:mm')}</span>
                   </div>
                   {(canManage || profile?.id === a.created_by) && (
-                    <div className="flex gap-1">
+                    <div className="flex gap-1 flex-wrap">
+                      {a.status === 'active' && (
+                        <Button variant="ghost" size="sm" onClick={() => openShipments(a)}>
+                          <Truck className="h-3.5 w-3.5 mr-1" />출고 기록
+                        </Button>
+                      )}
+                      <Button variant="ghost" size="sm" onClick={() => openEdit(a)}>
+                        <Pencil className="h-3.5 w-3.5 mr-1" />수정
+                      </Button>
                       {a.status === 'active' && (
                         <Button variant="ghost" size="sm" onClick={() => handleResolve(a)}>
                           <CheckCircle2 className="h-3.5 w-3.5 mr-1" />소진 완료
@@ -520,6 +646,125 @@ export default function StockAlerts() {
           );
         })}
       </div>
+
+      {/* 수정 다이얼로그 */}
+      <Dialog open={!!editTarget} onOpenChange={v => { if (!v) { setEditTarget(null); resetForm(); } }}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Pencil className="h-5 w-5 text-primary" />재고임박 공지 수정
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 mt-2">
+            <div className="space-y-1.5">
+              <Label>상품명 *</Label>
+              <Input value={form.product_name} onChange={e => setForm(f => ({ ...f, product_name: e.target.value }))} />
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>잔여 수량</Label>
+                <Input type="number" value={form.stock_qty} onChange={e => setForm(f => ({ ...f, stock_qty: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label>소비기한</Label>
+                <Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label>긴급도</Label>
+                <Select value={form.urgency} onValueChange={(v: any) => setForm(f => ({ ...f, urgency: v }))}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="high">긴급 (즉시 판매)</SelectItem>
+                    <SelectItem value="medium">주의</SelectItem>
+                    <SelectItem value="low">관찰</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-1.5">
+                <Label>판매 채널</Label>
+                <Input value={form.sales_channel} onChange={e => setForm(f => ({ ...f, sales_channel: e.target.value }))} />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label>인센티브/할인 안내</Label>
+              <Input value={form.incentive_note} onChange={e => setForm(f => ({ ...f, incentive_note: e.target.value }))} />
+            </div>
+            <div className="space-y-1.5">
+              <Label>독려 메시지</Label>
+              <Textarea rows={4} value={form.message} onChange={e => setForm(f => ({ ...f, message: e.target.value }))} />
+            </div>
+            <Button onClick={handleEditSubmit} disabled={editSubmitting || !form.product_name} className="w-full">
+              {editSubmitting ? '수정 중...' : '수정 저장 (공지 본문도 갱신)'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* 출고 기록 다이얼로그 */}
+      <Dialog open={!!shipTarget} onOpenChange={v => { if (!v) { setShipTarget(null); setShipments([]); } }}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Truck className="h-5 w-5 text-primary" />
+              {shipTarget?.product_name} · 일일 출고 기록
+            </DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 mt-2">
+            <div className="rounded-md border bg-muted/30 p-3 text-xs space-y-1">
+              <div><b>현재 잔여 수량:</b> {shipTarget?.stock_qty ?? '미상'}개</div>
+              <div className="text-muted-foreground">출고 기록을 등록하면 잔여 수량이 자동 차감됩니다.</div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-4 gap-2 items-end">
+              <div className="space-y-1.5">
+                <Label className="text-xs">출고일</Label>
+                <Input type="date" value={shipForm.ship_date} onChange={e => setShipForm(f => ({ ...f, ship_date: e.target.value }))} />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">출고 수량</Label>
+                <Input type="number" min={1} value={shipForm.qty} onChange={e => setShipForm(f => ({ ...f, qty: e.target.value }))} placeholder="개" />
+              </div>
+              <div className="space-y-1.5 sm:col-span-2">
+                <Label className="text-xs">메모</Label>
+                <Input value={shipForm.note} onChange={e => setShipForm(f => ({ ...f, note: e.target.value }))} placeholder="채널/주문번호 등 (선택)" />
+              </div>
+            </div>
+            <Button onClick={handleAddShipment} disabled={shipSubmitting || !shipForm.qty} className="w-full">
+              {shipSubmitting ? '등록 중...' : '출고 기록 추가 (잔여 자동 차감)'}
+            </Button>
+            <div className="border-t pt-3">
+              <div className="flex items-center gap-2 text-xs font-medium mb-2">
+                <History className="h-3.5 w-3.5" />출고 이력 ({shipments.length}건)
+              </div>
+              <div className="max-h-[280px] overflow-y-auto space-y-1.5">
+                {shipments.length === 0 ? (
+                  <div className="py-6 text-center text-xs text-muted-foreground border rounded-md">출고 기록이 없습니다</div>
+                ) : shipments.map(s => {
+                  const sAuthor = getProfile(s.created_by);
+                  return (
+                    <div key={s.id} className="flex items-center justify-between gap-2 p-2 border rounded-md text-xs">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="font-medium">{s.ship_date}</span>
+                        <Badge variant="secondary" className="h-5">-{s.qty}개</Badge>
+                        {s.note && <span className="text-muted-foreground truncate">{s.note}</span>}
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {sAuthor && <span className="text-muted-foreground">{sAuthor.name_kr}</span>}
+                        {(canManage || profile?.id === s.created_by) && (
+                          <Button variant="ghost" size="sm" className="h-6 w-6 p-0 text-destructive" onClick={() => handleDeleteShipment(s.id)}>
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

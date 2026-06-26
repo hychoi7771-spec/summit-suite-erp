@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Pin, Megaphone, ChevronLeft, ChevronRight, Clock } from 'lucide-react';
+import { Pin, Megaphone, ChevronLeft, ChevronRight, Clock, EyeOff } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useNavigate } from 'react-router-dom';
@@ -65,7 +66,8 @@ const sevenDaysFromNowIso = () => {
 };
 
 export function NoticePopupOnLogin() {
-  const { user, profile } = useAuth();
+  const { user, profile, isManager } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const [popups, setPopups] = useState<any[]>([]);
   const [authorMap, setAuthorMap] = useState<Map<string, string>>(new Map());
@@ -207,6 +209,36 @@ export function NoticePopupOnLogin() {
               7일간
             </Button>
           </div>
+
+          {/* 담당자/관리자: 이 공지의 팝업 노출을 영구 중단 */}
+          {(profile?.id === current.author_id || isManager) && (
+            <div className="flex flex-wrap items-center gap-2 pt-2 border-t">
+              <EyeOff className="h-3.5 w-3.5 text-muted-foreground" />
+              <span className="text-xs text-muted-foreground mr-1">담당자 설정:</span>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 px-2 text-xs"
+                onClick={async () => {
+                  const { error } = await supabase
+                    .from('notices')
+                    .update({ show_as_popup: false } as any)
+                    .eq('id', current.id);
+                  if (error) {
+                    toast({ title: '설정 실패', description: error.message, variant: 'destructive' });
+                    return;
+                  }
+                  toast({ title: '팝업 노출 중단됨', description: '이 공지는 더 이상 팝업으로 표시되지 않습니다.' });
+                  // 현재 사용자도 즉시 닫기
+                  setPopups(prev => prev.filter(p => p.id !== current.id));
+                  if (popups.length <= 1) setOpen(false);
+                  else setIndex(i => Math.min(i, popups.length - 2));
+                }}
+              >
+                이 공지 팝업 노출 영구 중단
+              </Button>
+            </div>
+          )}
         </div>
         <DialogFooter className="flex-col sm:flex-row gap-2">
           {popups.length > 1 && (
