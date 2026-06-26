@@ -47,9 +47,7 @@ export default function Surveys() {
   const [expiresAt, setExpiresAt] = useState('');
   const [submitting, setSubmitting] = useState(false);
 
-  const PUBLIC_SITE_URL = (import.meta.env.VITE_PUBLIC_SITE_URL?.trim() || 'https://hub.recoverylabkorea.com').replace(/\/$/, '');
-
-  const getVoteUrl = (token: string) => `${PUBLIC_SITE_URL}/vote/${token}`;
+  const getVoteUrl = (token: string) => `${window.location.origin.replace(/\/$/, '')}/vote/${token}`;
 
   const fetchSurveys = async () => {
     const { data } = await supabase
