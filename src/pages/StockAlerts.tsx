@@ -509,7 +509,7 @@ export default function StockAlerts() {
                     <Input type="number" value={form.stock_qty} onChange={e => setForm(f => ({ ...f, stock_qty: e.target.value }))} placeholder="개" />
                   </div>
                   <div className="space-y-1.5">
-                    <Label>소진 목표일</Label>
+                    <Label>소비기한</Label>
                     <Input type="date" value={form.expiry_date} onChange={e => setForm(f => ({ ...f, expiry_date: e.target.value }))} />
                   </div>
                 </div>
