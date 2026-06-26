@@ -58,27 +58,32 @@ export default function StockUrgentWidget() {
           </Link>
         </div>
       </CardHeader>
-      <CardContent className="space-y-2">
-        {items.map((a: any) => {
-          const meta = urgencyMeta[a.urgency] || urgencyMeta.medium;
-          let dDay: string | null = null;
-          if (a.expiry_date) {
-            try {
-              const d = differenceInDays(parseISO(a.expiry_date), new Date());
-              dDay = d < 0 ? `D+${-d}` : d === 0 ? 'D-DAY' : `D-${d}`;
-            } catch {}
-          }
-          return (
-            <Link to="/stock-alerts" key={a.id}
-              className="flex items-center gap-2 p-2 rounded-md bg-background hover:bg-muted/50 transition-colors">
-              <Badge className={`${meta.cls} text-[10px] h-5 shrink-0`}>{meta.label}</Badge>
-              <span className="font-medium text-sm truncate flex-1">{a.product_name}</span>
-              {a.stock_qty != null && <span className="text-xs text-muted-foreground shrink-0">{a.stock_qty}개</span>}
-              {dDay && <Badge variant="outline" className="text-[10px] h-5 shrink-0">{dDay}</Badge>}
-            </Link>
-          );
-        })}
+      <CardContent>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 max-h-[120px] overflow-y-auto pr-1">
+          {items.map((a: any) => {
+            const meta = urgencyMeta[a.urgency] || urgencyMeta.medium;
+            let dDay: string | null = null;
+            if (a.expiry_date) {
+              try {
+                const d = differenceInDays(parseISO(a.expiry_date), new Date());
+                dDay = d < 0 ? `D+${-d}` : d === 0 ? 'D-DAY' : `D-${d}`;
+              } catch {}
+            }
+            return (
+              <Link to="/stock-alerts" key={a.id}
+                className="flex flex-col gap-1 p-2 rounded-md bg-background border border-border/60 hover:border-destructive/40 hover:shadow-sm transition-all min-w-0">
+                <div className="flex items-center justify-between gap-1">
+                  <Badge className={`${meta.cls} text-[10px] h-4 px-1.5 shrink-0`}>{meta.label}</Badge>
+                  {dDay && <Badge variant="outline" className="text-[10px] h-4 px-1.5 shrink-0">{dDay}</Badge>}
+                </div>
+                <div className="font-medium text-xs leading-tight line-clamp-2 min-h-[2rem]">{a.product_name}</div>
+                {a.stock_qty != null && <div className="text-[10px] text-muted-foreground">{a.stock_qty}개</div>}
+              </Link>
+            );
+          })}
+        </div>
       </CardContent>
+
     </Card>
   );
 }
