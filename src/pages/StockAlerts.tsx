@@ -597,7 +597,7 @@ export default function StockAlerts() {
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground flex-wrap">
                       {a.stock_qty != null && <span>재고 {a.stock_qty}개</span>}
-                      {a.expiry_date && <span>· 목표일 {a.expiry_date}</span>}
+                      {a.expiry_date && <span>· 소비기한 {a.expiry_date}</span>}
                       {a.sales_channel && <span>· {a.sales_channel}</span>}
                     </div>
                     {a.incentive_note && (
