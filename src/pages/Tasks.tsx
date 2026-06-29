@@ -50,6 +50,7 @@ export default function Tasks() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [createMode, setCreateMode] = useState<'now' | 'scheduled'>('now');
   const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
   const [selectedProject, setSelectedProject] = useState<string>('all');
