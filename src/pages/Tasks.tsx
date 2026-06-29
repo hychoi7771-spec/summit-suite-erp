@@ -405,10 +405,10 @@ export default function Tasks() {
                   </div>
                   <Button
                     onClick={handleAddTask}
-                    disabled={!taskForm.title || (createMode === 'scheduled' && !taskForm.start_date)}
+                    disabled={submitting || !taskForm.title || (createMode === 'scheduled' && !taskForm.start_date)}
                     className="w-full"
                   >
-                    {createMode === 'scheduled' ? '예약 등록' : '등록'}
+                    {submitting ? '등록 중...' : (createMode === 'scheduled' ? '예약 등록' : '등록')}
                   </Button>
                 </div>
               </Tabs>
