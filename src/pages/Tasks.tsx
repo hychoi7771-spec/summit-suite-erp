@@ -50,6 +50,7 @@ export default function Tasks() {
   const [profiles, setProfiles] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
   const [createMode, setCreateMode] = useState<'now' | 'scheduled'>('now');
   const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
   const [selectedProject, setSelectedProject] = useState<string>('all');
@@ -167,54 +168,55 @@ export default function Tasks() {
 
   const handleAddTask = async () => {
     if (!taskForm.title) return;
+    if (submitting) return; // 중복 제출 방지
     if (createMode === 'scheduled' && !taskForm.start_date) {
       toast({ title: '예약 등록 실패', description: '예약 업무는 시작일이 필수입니다.', variant: 'destructive' });
       return;
     }
-    const today = new Date().toISOString().slice(0, 10);
-    // If scheduled but start_date is today or earlier → goes straight to 'todo'
-    const finalStatus: TaskStatus =
-      createMode === 'scheduled' && taskForm.start_date && taskForm.start_date > today
-        ? 'scheduled'
-        : 'todo';
-    // 카테고리 미선택 시 AI 자동 분류
-    let resolvedCategoryId: string | null = taskForm.category_id || null;
-    if (!resolvedCategoryId && categories.length > 0) {
-      try {
-        const { data: ai } = await supabase.functions.invoke('classify-task', {
-          body: {
-            title: taskForm.title,
-            description: taskForm.description || '',
-            categories: categories.map((c: any) => ({ id: c.id, name: c.name })),
-          },
-        });
-        if (ai?.category_id) resolvedCategoryId = ai.category_id;
-      } catch (e) {
-        console.warn('auto-classify failed', e);
+    setSubmitting(true);
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const finalStatus: TaskStatus =
+        createMode === 'scheduled' && taskForm.start_date && taskForm.start_date > today
+          ? 'scheduled'
+          : 'todo';
+      // 카테고리 미선택 시 AI 자동 분류
+      let resolvedCategoryId: string | null = taskForm.category_id || null;
+      if (!resolvedCategoryId && categories.length > 0) {
+        try {
+          const { data: ai } = await supabase.functions.invoke('classify-task', {
+            body: {
+              title: taskForm.title,
+              description: taskForm.description || '',
+              categories: categories.map((c: any) => ({ id: c.id, name: c.name })),
+            },
+          });
+          if (ai?.category_id) resolvedCategoryId = ai.category_id;
+        } catch (e) {
+          console.warn('auto-classify failed', e);
+        }
       }
-    }
 
-    const { error } = await supabase.from('tasks').insert({
-      title: taskForm.title,
-      description: taskForm.description || null,
-      priority: taskForm.priority as any,
-      assignee_id: taskForm.assignee_id || profile?.id || null,
-      start_date: taskForm.start_date || null,
-      due_date: taskForm.due_date || null,
-      project_name: taskForm.project_name || null,
-      category_id: resolvedCategoryId,
-      status: finalStatus as any,
-    } as any);
-    if (error) {
-      toast({ title: '업무 등록 실패', description: error.message, variant: 'destructive' });
-    } else {
-      // Notify admins
+      const { error } = await supabase.from('tasks').insert({
+        title: taskForm.title,
+        description: taskForm.description || null,
+        priority: taskForm.priority as any,
+        assignee_id: taskForm.assignee_id || profile?.id || null,
+        start_date: taskForm.start_date || null,
+        due_date: taskForm.due_date || null,
+        project_name: taskForm.project_name || null,
+        category_id: resolvedCategoryId,
+        status: finalStatus as any,
+      } as any);
+      if (error) {
+        toast({ title: '업무 등록 실패', description: error.message, variant: 'destructive' });
+        return;
+      }
       await notifyAdmins(
         finalStatus === 'scheduled' ? '새 예약 업무 등록' : '새 업무 등록',
         `"${taskForm.title}" 업무가 ${finalStatus === 'scheduled' ? `${taskForm.start_date}에 예약` : '등록'}되었습니다.`,
         'task'
       );
-      // Notify assignee if assigned
       if (taskForm.assignee_id && taskForm.assignee_id !== profile?.id) {
         await notifyUser(taskForm.assignee_id, '업무 배정', `"${taskForm.title}" 업무가 배정되었습니다.`, 'task');
       }
@@ -223,6 +225,8 @@ export default function Tasks() {
       setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
       setCreateMode('now');
       fetchData();
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -401,10 +405,10 @@ export default function Tasks() {
                   </div>
                   <Button
                     onClick={handleAddTask}
-                    disabled={!taskForm.title || (createMode === 'scheduled' && !taskForm.start_date)}
+                    disabled={submitting || !taskForm.title || (createMode === 'scheduled' && !taskForm.start_date)}
                     className="w-full"
                   >
-                    {createMode === 'scheduled' ? '예약 등록' : '등록'}
+                    {submitting ? '등록 중...' : (createMode === 'scheduled' ? '예약 등록' : '등록')}
                   </Button>
                 </div>
               </Tabs>
