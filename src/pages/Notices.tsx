@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { notifyAdmins } from '@/lib/notifications';
+import { ReactionBar } from '@/components/shared/ReactionBar';
 
 // 공경미 실장 프로필 ID — 대표/이사와 함께 자동 팝업 권한 보유
 const POPUP_AUTHOR_PROFILE_IDS = new Set<string>([
