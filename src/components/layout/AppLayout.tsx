@@ -198,6 +198,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <NoticePopupOnLogin />
       <PendingApprovalToast />
       <CEOPendingApprovalDialog />
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </SidebarProvider>
   );
 }
