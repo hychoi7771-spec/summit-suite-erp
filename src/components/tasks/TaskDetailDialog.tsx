@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { notifyUser, notifyAllUsers } from '@/lib/notifications';
+import { ReactionBar } from '@/components/shared/ReactionBar';
 
 interface TaskDetailDialogProps {
   task: any;
