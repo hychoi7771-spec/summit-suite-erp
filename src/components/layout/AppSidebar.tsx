@@ -105,6 +105,7 @@ const assetNavItems: NavItem[] = [
 const personalNavItems: NavItem[] = [
   { title: '내 프로젝트', url: '/my-projects', icon: User },
   { title: '내 게시물', url: '/my-posts', icon: FileText },
+  { title: '1:1 피드백', url: '/one-on-one', icon: MessagesSquare },
   { title: '나를 언급', url: '/mentions', icon: AtSign },
   { title: '임시저장', url: '/drafts', icon: FileEdit },
 ];
