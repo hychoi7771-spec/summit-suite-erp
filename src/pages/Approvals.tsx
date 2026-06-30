@@ -827,6 +827,8 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
           </DialogTitle>
         </DialogHeader>
 
+        <ReactionBar targetType="approval" targetId={approval.id} />
+
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3 text-sm">
             <div><span className="text-muted-foreground">유형:</span> <span className="font-medium">{typeLabels[approval.type]}</span></div>
