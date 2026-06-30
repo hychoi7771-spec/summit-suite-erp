@@ -12,6 +12,7 @@ import { useNavigate } from 'react-router-dom';
 import { NoticePopupOnLogin } from '@/components/notices/NoticePopupOnLogin';
 import { PendingApprovalToast } from '@/components/approvals/PendingApprovalToast';
 import { CEOPendingApprovalDialog } from '@/components/approvals/CEOPendingApprovalDialog';
+import { CommandPalette, useCommandPalette } from '@/components/shared/CommandPalette';
 
 interface AppLayoutProps {
   children: ReactNode;
