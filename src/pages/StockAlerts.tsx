@@ -449,11 +449,8 @@ export default function StockAlerts() {
             >
               <Download className="h-4 w-4" />엑셀 다운로드
             </Button>
-            {canManage && (<></>)}
-          </div>
-        )}
-        actionsExtra={canManage && (
-          <div className="flex gap-2 shrink-0">
+            {canManage && (<>
+
 
             <Dialog open={candidateDialogOpen} onOpenChange={setCandidateDialogOpen}>
               <DialogTrigger asChild>
