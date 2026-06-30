@@ -10,6 +10,7 @@ import {
   CommandSeparator,
 } from "@/components/ui/command";
 import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 import {
   LayoutDashboard,
   ListTodo,
@@ -39,6 +40,22 @@ import {
   Plus,
   Search,
 } from "lucide-react";
+
+type SearchHit = {
+  kind: "task" | "approval" | "notice" | "file";
+  id: string;
+  title: string;
+  subtitle: string | null;
+  created_at: string;
+};
+
+const hitMeta: Record<SearchHit["kind"], { icon: any; label: string; to: (id: string) => string }> = {
+  task: { icon: ListTodo, label: "업무", to: () => "/tasks" },
+  approval: { icon: Inbox, label: "결재", to: () => "/approvals" },
+  notice: { icon: Megaphone, label: "공지", to: () => "/notices-board" },
+  file: { icon: FolderArchive, label: "파일", to: () => "/library" },
+};
+
 
 type Cmd = {
   label: string;
