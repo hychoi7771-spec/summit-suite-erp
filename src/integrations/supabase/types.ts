@@ -1931,6 +1931,16 @@ export type Database = {
         Returns: boolean
       }
       get_public_survey: { Args: { _token: string }; Returns: Json }
+      global_search: {
+        Args: { _q: string }
+        Returns: {
+          created_at: string
+          id: string
+          kind: string
+          subtitle: string
+          title: string
+        }[]
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
