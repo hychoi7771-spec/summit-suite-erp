@@ -32,6 +32,8 @@ import AssetsDailyReports from "./pages/AssetsDailyReports";
 import AssetsApprovals from "./pages/AssetsApprovals";
 import Executive from "./pages/Executive";
 import StockAlerts from "./pages/StockAlerts";
+import Kudos from "./pages/Kudos";
+import OneOnOne from "./pages/OneOnOne";
 
 import Attendance from "./pages/Attendance";
 import AccountSettings from "./pages/AccountSettings";
