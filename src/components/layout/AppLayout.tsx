@@ -23,6 +23,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
+  const { open: paletteOpen, setOpen: setPaletteOpen } = useCommandPalette();
 
   const displayName = profile?.name_kr || profile?.name || '사용자';
   const avatar = profile?.avatar || displayName.slice(0, 2).toUpperCase();
