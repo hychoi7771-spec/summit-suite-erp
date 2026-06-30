@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { ReactionBar } from '@/components/shared/ReactionBar';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -826,6 +827,8 @@ function ApprovalDetail({ approval, steps, profiles, currentProfileId, onClose, 
             <Badge variant="outline" className={statusStyles[approval.status]}>{statusLabels[approval.status]}</Badge>
           </DialogTitle>
         </DialogHeader>
+
+        <ReactionBar targetType="approval" targetId={approval.id} />
 
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3 text-sm">

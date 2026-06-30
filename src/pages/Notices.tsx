@@ -16,6 +16,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
 import { notifyAdmins } from '@/lib/notifications';
+import { ReactionBar } from '@/components/shared/ReactionBar';
 
 // 공경미 실장 프로필 ID — 대표/이사와 함께 자동 팝업 권한 보유
 const POPUP_AUTHOR_PROFILE_IDS = new Set<string>([
@@ -282,6 +283,7 @@ export default function Notices() {
           {selectedNotice && (
             <div className="space-y-4">
               <div className="whitespace-pre-wrap text-sm leading-relaxed">{selectedNotice.content}</div>
+              <ReactionBar targetType="notice" targetId={selectedNotice.id} />
               <div className="flex items-center justify-between pt-3 border-t flex-wrap gap-2">
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   {(() => { const a = getProfile(selectedNotice.author_id); return a ? <span>{a.name_kr}</span> : null; })()}

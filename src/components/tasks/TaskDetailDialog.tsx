@@ -15,6 +15,7 @@ import { useToast } from '@/hooks/use-toast';
 import { formatDistanceToNow } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { notifyUser, notifyAllUsers } from '@/lib/notifications';
+import { ReactionBar } from '@/components/shared/ReactionBar';
 
 interface TaskDetailDialogProps {
   task: any;
@@ -282,6 +283,8 @@ export default function TaskDetailDialog({ task, profiles, allTasks, open, onOpe
             </div>
           </div>
         </DialogHeader>
+
+        <ReactionBar targetType="task" targetId={task.id} className="mt-1" />
 
         <Tabs defaultValue="comments" className="mt-2">
           <TabsList className="w-full">
