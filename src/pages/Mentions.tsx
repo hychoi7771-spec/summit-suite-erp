@@ -37,7 +37,7 @@ export default function Mentions() {
   const getProfile = (id: string) => profiles.find(p => p.id === id);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+    return <PageSkeleton variant="list" />;
   }
 
   return (
@@ -50,10 +50,7 @@ export default function Mentions() {
       />
 
       {mentions.length === 0 ? (
-        <div className="text-center py-16">
-          <AtSign className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-muted-foreground">아직 멘션이 없습니다</p>
-        </div>
+        <EmptyState icon={AtSign} title="아직 멘션이 없습니다" description="다른 팀원이 @로 나를 언급하면 여기에 표시됩니다." tone="rose" />
       ) : (
         <div className="space-y-2">
           {mentions.map(m => {

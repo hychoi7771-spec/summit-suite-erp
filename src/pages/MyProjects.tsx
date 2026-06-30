@@ -51,7 +51,7 @@ export default function MyProjects() {
   const getProfile = (id: string) => profiles.find(p => p.id === id);
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+    return <PageSkeleton variant="board" />;
   }
 
   return (
@@ -64,10 +64,7 @@ export default function MyProjects() {
       />
 
       {projects.length === 0 ? (
-        <div className="text-center py-16">
-          <FolderKanban className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-muted-foreground">참여 중인 프로젝트가 없습니다</p>
-        </div>
+        <EmptyState icon={FolderKanban} title="참여 중인 프로젝트가 없습니다" description="담당자로 지정되면 이곳에 카드가 추가됩니다." tone="violet" />
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <AnimatePresence>

@@ -44,7 +44,7 @@ export default function Drafts() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+    return <PageSkeleton variant="list" />;
   }
 
   return (
@@ -57,10 +57,7 @@ export default function Drafts() {
       />
 
       {drafts.length === 0 ? (
-        <div className="text-center py-16">
-          <FileEdit className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-          <p className="text-muted-foreground">임시저장된 항목이 없습니다</p>
-        </div>
+        <EmptyState icon={FileEdit} title="임시저장된 항목이 없습니다" description="작성 중 자동 저장된 항목이 여기에 나타납니다." tone="amber" />
       ) : (
         <div className="space-y-2">
           {drafts.map(draft => (

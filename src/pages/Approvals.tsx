@@ -456,7 +456,7 @@ export default function Approvals() {
     setShowCreate(true);
   };
 
-  if (loading) return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+  if (loading) return <PageSkeleton variant="list" />;
 
   return (
     <div className="space-y-6">
@@ -545,10 +545,7 @@ export default function Approvals() {
 
         <TabsContent value={tab} className="mt-4">
           {filtered.length === 0 ? (
-            <Card><CardContent className="py-12 text-center text-muted-foreground">
-              <Inbox className="h-10 w-10 text-muted-foreground/40 mx-auto mb-2" />
-              결재 내역이 없습니다.
-            </CardContent></Card>
+            <EmptyState icon={Inbox} title="결재 내역이 없습니다" description="현재 탭에 해당하는 결재 건이 없어요." tone="slate" />
           ) : (
             <div className="space-y-2">
               {filtered.map(approval => {
