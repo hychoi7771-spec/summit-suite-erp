@@ -35,6 +35,8 @@ import {
   Crown,
   Stamp,
   PackageX,
+  Sparkles,
+  MessagesSquare,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
@@ -67,6 +69,7 @@ const workspaceNavItems: NavItem[] = [
   { title: '공지 게시판', url: '/notices-board', icon: Megaphone },
   { title: '설문/투표', url: '/surveys', icon: Vote },
   { title: '유통기한 임박제품', url: '/stock-alerts', icon: PackageX },
+  { title: '칭찬·감사 보드', url: '/kudos', icon: Sparkles },
   { title: '파일', url: '/library', icon: FolderArchive },
 ];
 
@@ -102,6 +105,7 @@ const assetNavItems: NavItem[] = [
 const personalNavItems: NavItem[] = [
   { title: '내 프로젝트', url: '/my-projects', icon: User },
   { title: '내 게시물', url: '/my-posts', icon: FileText },
+  { title: '1:1 피드백', url: '/one-on-one', icon: MessagesSquare },
   { title: '나를 언급', url: '/mentions', icon: AtSign },
   { title: '임시저장', url: '/drafts', icon: FileEdit },
 ];

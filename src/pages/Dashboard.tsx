@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import TeamWorkloadSection from '@/components/dashboard/TeamWorkloadSection';
 import StockUrgentWidget from '@/components/dashboard/StockUrgentWidget';
+import { KudosWeeklyTopWidget } from '@/components/dashboard/KudosWeeklyTopWidget';
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 import { Link } from 'react-router-dom';
 
@@ -135,7 +136,11 @@ export default function Dashboard() {
         <p className="text-muted-foreground text-sm mt-1">SHFoodHub — 경영 현황</p>
       </div>
 
-      <StockUrgentWidget />
+      <div className="grid lg:grid-cols-[1fr_320px] gap-4">
+        <StockUrgentWidget />
+        <KudosWeeklyTopWidget />
+      </div>
+
 
       {/* 통계 카드 */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
