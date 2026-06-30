@@ -96,14 +96,18 @@ export function AppLayout({ children }: AppLayoutProps) {
           <header className="h-14 flex items-center justify-between border-b border-border bg-card px-4 sticky top-0 z-30">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
-              <div className="hidden md:flex items-center gap-2 bg-muted rounded-lg px-3 py-1.5">
+              <button
+                type="button"
+                onClick={() => setPaletteOpen(true)}
+                className="hidden md:flex items-center gap-2 bg-muted hover:bg-muted/80 rounded-lg px-3 py-1.5 transition-colors text-left"
+                aria-label="빠른 검색 (Ctrl+K)"
+              >
                 <Search className="h-4 w-4 text-muted-foreground" />
-                <input
-                  type="text"
-                  placeholder="검색..."
-                  className="bg-transparent text-sm outline-none w-48 placeholder:text-muted-foreground"
-                />
-              </div>
+                <span className="text-sm text-muted-foreground w-48">검색 또는 이동...</span>
+                <kbd className="ml-2 hidden lg:inline-flex items-center gap-0.5 text-[10px] font-mono text-muted-foreground/80 bg-background/60 border border-border rounded px-1.5 py-0.5">
+                  ⌘K
+                </kbd>
+              </button>
             </div>
             <div className="flex items-center gap-3">
               <Popover>
