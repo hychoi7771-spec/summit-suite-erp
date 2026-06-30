@@ -10,6 +10,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line, Legend } from 'recharts';
 import TeamWorkloadSection from '@/components/dashboard/TeamWorkloadSection';
 import StockUrgentWidget from '@/components/dashboard/StockUrgentWidget';
+import { KudosWeeklyTopWidget } from '@/components/dashboard/KudosWeeklyTopWidget';
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 import { Link } from 'react-router-dom';
 
