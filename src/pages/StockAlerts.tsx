@@ -412,8 +412,49 @@ export default function StockAlerts() {
         title="유통기한 임박제품"
         description="유통기한 임박·재고 소진 대상 상품의 판매 독려 공지를 관리합니다"
         tone="red"
-        actions={canManage && (
+        actions={(
+          <div className="flex gap-2 shrink-0 flex-wrap">
+            <Button
+              variant="outline"
+              className="gap-2"
+              onClick={() => {
+                const rows = alerts
+                  .filter(a => (tab === 'active' ? a.status === 'active' : a.status === 'resolved'))
+                  .map(a => {
+                    const days = a.expiry_date ? differenceInDays(parseISO(a.expiry_date), new Date()) : null;
+                    return {
+                      '상품명': a.product_name,
+                      '재고수량': a.stock_qty ?? '',
+                      '유통기한': a.expiry_date ?? '',
+                      '잔여일': days ?? '',
+                      '긴급도': urgencyMeta[a.urgency]?.label ?? a.urgency,
+                      '판매채널': a.sales_channel ?? '',
+                      '인센티브/메모': a.incentive_note ?? '',
+                      '독려 메시지': a.message ?? '',
+                      '상태': a.status === 'active' ? '진행중' : '완료',
+                      '등록자': profiles.find(p => p.id === a.created_by)?.name_kr ?? '',
+                      '등록일': format(parseISO(a.created_at), 'yyyy-MM-dd HH:mm'),
+                    };
+                  });
+                if (rows.length === 0) {
+                  toast({ title: '다운로드할 데이터가 없습니다', variant: 'destructive' });
+                  return;
+                }
+                const ws = XLSX.utils.json_to_sheet(rows);
+                ws['!cols'] = [{ wch: 28 }, { wch: 10 }, { wch: 12 }, { wch: 8 }, { wch: 8 }, { wch: 14 }, { wch: 20 }, { wch: 40 }, { wch: 8 }, { wch: 10 }, { wch: 18 }];
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, '유통기한 임박제품');
+                XLSX.writeFile(wb, `유통기한임박제품_${format(new Date(), 'yyyyMMdd_HHmm')}.xlsx`);
+              }}
+            >
+              <Download className="h-4 w-4" />엑셀 다운로드
+            </Button>
+            {canManage && (<></>)}
+          </div>
+        )}
+        actionsExtra={canManage && (
           <div className="flex gap-2 shrink-0">
+
             <Dialog open={candidateDialogOpen} onOpenChange={setCandidateDialogOpen}>
               <DialogTrigger asChild>
                 <Button variant="outline" className="gap-2">
