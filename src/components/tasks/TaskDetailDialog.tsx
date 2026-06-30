@@ -283,6 +283,8 @@ export default function TaskDetailDialog({ task, profiles, allTasks, open, onOpe
           </div>
         </DialogHeader>
 
+        <ReactionBar targetType="task" targetId={task.id} className="mt-1" />
+
         <Tabs defaultValue="comments" className="mt-2">
           <TabsList className="w-full">
             <TabsTrigger value="comments" className="flex-1 gap-1.5">
