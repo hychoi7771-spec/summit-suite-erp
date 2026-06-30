@@ -133,14 +133,77 @@ export function CommandPalette({
     navigate(to);
   };
 
+  const [query, setQuery] = useState("");
+  const [hits, setHits] = useState<SearchHit[]>([]);
+  const [searching, setSearching] = useState(false);
+
+  useEffect(() => {
+    if (!open) {
+      setQuery("");
+      setHits([]);
+      return;
+    }
+  }, [open]);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (q.length < 2) {
+      setHits([]);
+      return;
+    }
+    let cancelled = false;
+    setSearching(true);
+    const t = setTimeout(async () => {
+      const { data } = await (supabase as any).rpc("global_search", { _q: q });
+      if (!cancelled) {
+        setHits((data as SearchHit[] | null) ?? []);
+        setSearching(false);
+      }
+    }, 200);
+    return () => {
+      cancelled = true;
+      clearTimeout(t);
+    };
+  }, [query]);
+
   const filterRole = (items: Cmd[]) =>
     items.filter((i) => !i.managerOnly || isManager);
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
-      <CommandInput placeholder="페이지 검색 또는 빠른 작업... (⌘K / Ctrl+K)" />
+      <CommandInput
+        placeholder="페이지·업무·결재·공지·파일 검색... (⌘K / Ctrl+K)"
+        value={query}
+        onValueChange={setQuery}
+      />
       <CommandList>
-        <CommandEmpty>검색 결과가 없습니다.</CommandEmpty>
+        <CommandEmpty>
+          {searching ? "검색 중..." : "검색 결과가 없습니다."}
+        </CommandEmpty>
+
+        {hits.length > 0 && (
+          <>
+            <CommandGroup heading="검색 결과">
+              {hits.map((h) => {
+                const m = hitMeta[h.kind];
+                return (
+                  <CommandItem
+                    key={`${h.kind}-${h.id}`}
+                    value={`${h.title} ${h.kind} ${h.id}`}
+                    onSelect={() => go(m.to(h.id))}
+                  >
+                    <m.icon className="mr-2 h-4 w-4 text-primary" />
+                    <span className="truncate">{h.title}</span>
+                    <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
+                      {m.label}
+                    </span>
+                  </CommandItem>
+                );
+              })}
+            </CommandGroup>
+            <CommandSeparator />
+          </>
+        )}
 
         <CommandGroup heading="빠른 작업">
           {quickActions.map((c) => (
@@ -154,6 +217,7 @@ export function CommandPalette({
             </CommandItem>
           ))}
         </CommandGroup>
+
 
         <CommandSeparator />
 
