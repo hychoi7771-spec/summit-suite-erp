@@ -8,6 +8,8 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { TrendingUp, ShoppingCart, Target, Activity, Plus, LineChart as LineChartIcon } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 

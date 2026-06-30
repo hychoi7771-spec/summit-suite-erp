@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { FolderKanban, Calendar, Users, ArrowRight } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';

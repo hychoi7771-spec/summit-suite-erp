@@ -13,6 +13,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Textarea } from '@/components/ui/textarea';
 import { Plus, Clock, CheckCircle, DollarSign, Upload, Image, Receipt } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';

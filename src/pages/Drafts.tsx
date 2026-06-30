@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { FileEdit, Trash2, ExternalLink, Clock } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';

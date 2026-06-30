@@ -14,6 +14,8 @@ import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
 import { Plus, FileText, Receipt, Briefcase, CalendarDays, CheckCircle2, XCircle, Clock, ChevronRight, Trash2, AlertCircle, Inbox, Send, ThumbsUp, ThumbsDown, Paperclip, Eye, X as XIcon, Upload, Stamp } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import { EmptyState } from '@/components/shared/EmptyState';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
