@@ -806,6 +806,51 @@ export type Database = {
           },
         ]
       }
+      kudos: {
+        Row: {
+          category: string
+          created_at: string
+          from_user_id: string
+          id: string
+          message: string
+          to_user_id: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string
+          created_at?: string
+          from_user_id: string
+          id?: string
+          message: string
+          to_user_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          from_user_id?: string
+          id?: string
+          message?: string
+          to_user_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "kudos_from_user_id_fkey"
+            columns: ["from_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "kudos_to_user_id_fkey"
+            columns: ["to_user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       leave_balances: {
         Row: {
           created_at: string
@@ -1112,6 +1157,51 @@ export type Database = {
         }
         Relationships: []
       }
+      one_on_one_feedback: {
+        Row: {
+          author_id: string
+          content: string
+          created_at: string
+          id: string
+          target_id: string
+          updated_at: string
+          visibility: string
+        }
+        Insert: {
+          author_id: string
+          content: string
+          created_at?: string
+          id?: string
+          target_id: string
+          updated_at?: string
+          visibility?: string
+        }
+        Update: {
+          author_id?: string
+          content?: string
+          created_at?: string
+          id?: string
+          target_id?: string
+          updated_at?: string
+          visibility?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "one_on_one_feedback_author_id_fkey"
+            columns: ["author_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "one_on_one_feedback_target_id_fkey"
+            columns: ["target_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       product_comments: {
         Row: {
           content: string
@@ -1236,6 +1326,7 @@ export type Database = {
           created_at: string
           hire_date: string | null
           id: string
+          manager_id: string | null
           name: string
           name_kr: string
           presence: Database["public"]["Enums"]["presence_status"]
@@ -1247,6 +1338,7 @@ export type Database = {
           created_at?: string
           hire_date?: string | null
           id?: string
+          manager_id?: string | null
           name: string
           name_kr: string
           presence?: Database["public"]["Enums"]["presence_status"]
@@ -1258,13 +1350,22 @@ export type Database = {
           created_at?: string
           hire_date?: string | null
           id?: string
+          manager_id?: string | null
           name?: string
           name_kr?: string
           presence?: Database["public"]["Enums"]["presence_status"]
           updated_at?: string
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "profiles_manager_id_fkey"
+            columns: ["manager_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       project_folders: {
         Row: {
