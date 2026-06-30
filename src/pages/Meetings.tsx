@@ -499,7 +499,7 @@ export default function Meetings() {
   };
 
   const handleUpdateMeetingField = async (meetingId: string, field: string, value: any) => {
-    const { error } = await supabase.from('meetings').update({ [field]: value }).eq('id', meetingId);
+    const { error } = await supabase.from('meetings').update({ [field]: value } as any).eq('id', meetingId);
     if (error) {
       toast({ title: '저장 실패', description: error.message, variant: 'destructive' });
     } else {
