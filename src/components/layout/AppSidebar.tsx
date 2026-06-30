@@ -35,6 +35,8 @@ import {
   Crown,
   Stamp,
   PackageX,
+  Sparkles,
+  MessagesSquare,
 } from 'lucide-react';
 import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
