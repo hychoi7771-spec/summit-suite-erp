@@ -10,6 +10,8 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Pin, Clock, Trash2, Megaphone, Pencil } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
@@ -166,7 +168,7 @@ export default function Notices() {
   };
 
   if (loading) {
-    return <div className="flex items-center justify-center py-20"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+    return <PageSkeleton variant="list" />;
   }
 
   return (
@@ -222,7 +224,7 @@ export default function Notices() {
 
       <div className="space-y-3">
         {notices.length === 0 && (
-          <Card><CardContent className="py-12 text-center text-muted-foreground">공지사항이 없습니다</CardContent></Card>
+          <EmptyState icon={Megaphone} title="공지사항이 없습니다" description="새 공지를 작성해 사내 소식을 공유하세요." tone="amber" />
         )}
         {notices.map(notice => {
           const author = getProfile(notice.author_id);

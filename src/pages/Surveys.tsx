@@ -9,6 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Plus, Copy, BarChart3, Trash2, ImagePlus, X, ExternalLink, ClipboardList } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { toast } from 'sonner';
 import { SurveyResults } from '@/components/surveys/SurveyResults';
 
@@ -322,9 +324,7 @@ export default function Surveys() {
       />
 
       {loading ? (
-        <div className="flex justify-center py-12">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" />
-        </div>
+        <PageSkeleton variant="list" />
       ) : surveys.length === 0 ? (
         <Card>
           <CardContent className="py-12 text-center text-muted-foreground">

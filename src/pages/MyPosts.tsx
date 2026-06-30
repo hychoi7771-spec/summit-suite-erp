@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { MessageSquare, FileText, Palette, ListTodo } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
+import { PageSkeleton } from '@/components/shared/PageSkeleton';
+import { EmptyState } from '@/components/shared/EmptyState';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -57,7 +59,7 @@ export default function MyPosts() {
   const typeFilter = (type?: string) => type ? posts.filter(p => p.type === type) : posts;
 
   if (loading) {
-    return <div className="flex items-center justify-center h-64"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary" /></div>;
+    return <PageSkeleton variant="list" />;
   }
 
   return (
@@ -81,10 +83,7 @@ export default function MyPosts() {
         {['all', 'task_comment', 'product_comment', 'design_comment', 'notice'].map(tab => (
           <TabsContent key={tab} value={tab} className="space-y-2 mt-4">
             {typeFilter(tab === 'all' ? undefined : tab).length === 0 ? (
-              <div className="text-center py-16">
-                <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground/30 mb-3" />
-                <p className="text-muted-foreground">게시물이 없습니다</p>
-              </div>
+              <EmptyState icon={MessageSquare} title="게시물이 없습니다" description="작성한 댓글이나 공지가 여기에 표시됩니다." tone="slate" />
             ) : (
               typeFilter(tab === 'all' ? undefined : tab).map(post => (
                 <Card key={post.id}>
