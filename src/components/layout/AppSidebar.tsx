@@ -63,14 +63,13 @@ type NavItem = { title: string; url: string; icon: any; managerOnly?: boolean; a
 const workspaceNavItems: NavItem[] = [
   { title: '대시보드', url: '/', icon: LayoutDashboard },
   { title: '업무', url: '/tasks', icon: ListTodo },
-  { title: '디자인 시안', url: '/design-reviews', icon: Palette },
   { title: '회의록', url: '/meetings', icon: ClipboardList },
   { title: '일정', url: '/calendar', icon: CalendarDays },
   { title: '공지 게시판', url: '/notices-board', icon: Megaphone },
   { title: '설문/투표', url: '/surveys', icon: Vote },
   { title: '유통기한 임박제품', url: '/stock-alerts', icon: PackageX },
-  
   { title: '파일', url: '/library', icon: FolderArchive },
+  { title: '디자인 시안', url: '/design-reviews', icon: Palette },
 ];
 
 // 결재·지출
