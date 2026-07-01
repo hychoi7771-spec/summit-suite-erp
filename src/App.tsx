@@ -32,7 +32,7 @@ import AssetsDailyReports from "./pages/AssetsDailyReports";
 import AssetsApprovals from "./pages/AssetsApprovals";
 import Executive from "./pages/Executive";
 import StockAlerts from "./pages/StockAlerts";
-import Kudos from "./pages/Kudos";
+
 import OneOnOne from "./pages/OneOnOne";
 
 import Attendance from "./pages/Attendance";
@@ -106,7 +106,7 @@ function AppRoutes() {
                 <Route path="/daily-report" element={<Navigate to="/tasks" replace />} />
                 <Route path="/attendance" element={<Attendance />} />
                 <Route path="/stock-alerts" element={<StockAlerts />} />
-                <Route path="/kudos" element={<Kudos />} />
+                
                 <Route path="/one-on-one" element={<OneOnOne />} />
                 <Route path="/account" element={<AccountSettings />} />
                 <Route path="/company-holidays" element={<CompanyHolidays />} />
