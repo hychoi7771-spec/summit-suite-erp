@@ -18,6 +18,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
 import { notifyUsers } from '@/lib/notifications';
 
 // Web Speech API type declarations
@@ -197,6 +198,8 @@ function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], ta
 
 export default function Meetings() {
   const { toast } = useToast();
+  const { userRole } = useAuth();
+  const canManageTemplates = ['ceo', 'general_director', 'managing_director'].includes(userRole || '');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
@@ -206,11 +209,15 @@ export default function Meetings() {
   const [actionDialog, setActionDialog] = useState<string | null>(null);
   const [actionForm, setActionForm] = useState({ title: '', assignee_id: '', priority: 'medium' });
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
+  const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
   const [meetingForm, setMeetingForm] = useState({
     title: '', date: '', category: '', notes: '', attendee_ids: [] as string[],
     goal: '', achievement_status: 'in_progress', achievement_comment: '',
     kpi_notes: '', roadmap_aligned: false, schedule_adjustment_needed: false,
     meeting_link: '',
+    template_data: {} as Record<string, string>,
   });
   const [editingUpdates, setEditingUpdates] = useState<Record<string, { done: string; todo: string; blockers: string }>>({});
 
@@ -250,20 +257,29 @@ export default function Meetings() {
     }
   };
 
-  const analyzeMeetingText = useCallback(async (meetingId: string, text: string) => {
+  const analyzeMeetingText = useCallback(async (meetingId: string, text: string, template?: any) => {
     const members = profiles.map(p => ({ name: p.name, name_kr: p.name_kr, id: p.id }));
+    const tpl = template ? {
+      name: template.name,
+      fields: Array.isArray(template.fields) ? template.fields : [],
+    } : undefined;
     const { data, error } = await supabase.functions.invoke('analyze-meeting', {
-      body: { transcript: text.trim(), members },
+      body: { transcript: text.trim(), members, template: tpl },
     });
     if (error) throw new Error(await getFunctionErrorMessage(error));
     if (data?.error) throw new Error(data.error);
 
-    await supabase.from('meetings').update({
+    const updatePayload: any = {
       notes: data.notes,
       goal: data.goal,
       kpi_notes: data.kpi_notes || null,
       achievement_comment: data.achievement_comment || null,
-    }).eq('id', meetingId);
+    };
+    if (template?.id) updatePayload.template_id = template.id;
+    if (data.template_fields && typeof data.template_fields === 'object') {
+      updatePayload.template_data = data.template_fields;
+    }
+    await supabase.from('meetings').update(updatePayload).eq('id', meetingId);
 
     if (data.action_items && data.action_items.length > 0) {
       const taskInserts = data.action_items.map((item: any) => {
@@ -504,16 +520,18 @@ export default function Meetings() {
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
-    const [meetRes, profRes, taskRes, updRes] = await Promise.all([
+    const [meetRes, profRes, taskRes, updRes, tplRes] = await Promise.all([
       supabase.from('meetings').select('*').order('date', { ascending: false }),
       supabase.from('profiles').select('id, name, name_kr, avatar, user_id'),
       supabase.from('tasks').select('*').not('meeting_id', 'is', null),
       supabase.from('meeting_updates').select('*'),
+      supabase.from('meeting_templates').select('*').order('sort_order', { ascending: true }),
     ]);
     setMeetings(meetRes.data || []);
     setProfiles(profRes.data || []);
     setTasks(taskRes.data || []);
     setMeetingUpdates(updRes.data || []);
+    setTemplates(tplRes.data || []);
     setLoading(false);
   };
 
@@ -576,15 +594,19 @@ export default function Meetings() {
       roadmap_aligned: meetingForm.roadmap_aligned,
       schedule_adjustment_needed: meetingForm.schedule_adjustment_needed,
       meeting_link: meetingForm.meeting_link || null,
-    }).select().single();
+      template_id: selectedTemplate?.id || null,
+      template_data: meetingForm.template_data || {},
+    } as any).select().single();
     if (error) {
       toast({ title: '회의 등록 실패', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: '회의 등록 완료' });
       setMeetingDialogOpen(false);
-      setMeetingForm({ title: '', date: '', category: '', notes: '', attendee_ids: [], goal: '', achievement_status: 'in_progress', achievement_comment: '', kpi_notes: '', roadmap_aligned: false, schedule_adjustment_needed: false, meeting_link: '' });
+      const templateForAnalysis = selectedTemplate;
+      setMeetingForm({ title: '', date: '', category: '', notes: '', attendee_ids: [], goal: '', achievement_status: 'in_progress', achievement_comment: '', kpi_notes: '', roadmap_aligned: false, schedule_adjustment_needed: false, meeting_link: '', template_data: {} });
+      setSelectedTemplate(null);
 
-      // If a file was attached, auto-trigger AI analysis
+      // If a file was attached, auto-trigger AI analysis (passing template so custom fields get filled)
       if ((dialogFileContent || dialogAudioFile) && inserted) {
         const meetingId = inserted.id;
         setExpandedId(meetingId);
@@ -593,11 +615,11 @@ export default function Meetings() {
           const sourceText = dialogAudioFile
             ? await transcribeAudioFile(meetingId, dialogAudioFile)
             : dialogFileContent;
-          const data = await analyzeMeetingText(meetingId, sourceText);
+          const data = await analyzeMeetingText(meetingId, sourceText, templateForAnalysis);
 
           toast({
             title: '✅ AI 분석 완료',
-            description: `회의록 자동 생성 완료. 액션 아이템 ${data.action_items?.length || 0}건`,
+            description: `회의록 자동 생성 완료. 액션 아이템 ${data.action_items?.length || 0}건${templateForAnalysis ? ` · "${templateForAnalysis.name}" 양식 필드 자동 채움` : ''}`,
           });
         } catch (err: any) {
           toast({ title: 'AI 분석 실패', description: err.message, variant: 'destructive' });
@@ -704,10 +726,16 @@ export default function Meetings() {
               // Auto-fill title as "n주차 주간회의" and default date to today
               const today = new Date();
               const iso = today.toISOString().split('T')[0];
+              // Default template: prefer is_default, then first available
+              const defaultTpl = templates.find(t => t.is_default) || templates[0] || null;
+              if (defaultTpl && !selectedTemplate) {
+                setSelectedTemplate(defaultTpl);
+              }
               setMeetingForm(f => ({
                 ...f,
                 title: f.title || `${getIsoWeekNumber(today)}주차 주간회의`,
                 date: f.date || iso,
+                category: f.category || (defaultTpl?.category ?? ''),
               }));
             }
           }}>
@@ -722,7 +750,6 @@ export default function Meetings() {
                 <div className="space-y-2"><Label>날짜</Label><Input type="date" value={meetingForm.date} onChange={e => {
                   const newDate = e.target.value;
                   setMeetingForm(f => {
-                    // If title still matches auto-pattern, update it to match the new date's week
                     const autoPattern = /^\d+주차 주간회의$/;
                     const nextTitle = autoPattern.test(f.title) && newDate
                       ? `${getIsoWeekNumber(new Date(newDate))}주차 주간회의`
@@ -730,10 +757,81 @@ export default function Meetings() {
                     return { ...f, date: newDate, title: nextTitle };
                   });
                 }} /></div>
-                <div className="space-y-2"><Label>카테고리</Label><Input placeholder="제품, 영업 등" value={meetingForm.category} onChange={e => setMeetingForm(f => ({ ...f, category: e.target.value }))} /></div>
+                <div className="space-y-2"><Label>카테고리</Label><Input placeholder="주간회의, 영업, 제품 등" value={meetingForm.category} onChange={e => {
+                  const val = e.target.value;
+                  setMeetingForm(f => ({ ...f, category: val }));
+                  // Auto-match template by category (case-insensitive contains match)
+                  const norm = val.trim().toLowerCase();
+                  if (!norm) return;
+                  const matched = templates.find(t => t.category && (t.category.toLowerCase() === norm || norm.includes(t.category.toLowerCase()) || t.category.toLowerCase().includes(norm)));
+                  if (matched && matched.id !== selectedTemplate?.id) {
+                    setSelectedTemplate(matched);
+                  }
+                }} /></div>
               </div>
+
+              {/* Template selector */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>📋 회의록 양식</Label>
+                  {canManageTemplates && (
+                    <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setTemplateManagerOpen(true)}>
+                      템플릿 관리
+                    </Button>
+                  )}
+                </div>
+                <Select value={selectedTemplate?.id || 'none'} onValueChange={(v) => {
+                  if (v === 'none') {
+                    setSelectedTemplate(null);
+                    setMeetingForm(f => ({ ...f, template_data: {} }));
+                  } else {
+                    const tpl = templates.find(t => t.id === v);
+                    setSelectedTemplate(tpl || null);
+                    // Sync category if template has one
+                    if (tpl?.category) setMeetingForm(f => ({ ...f, category: tpl.category }));
+                  }
+                }}>
+                  <SelectTrigger><SelectValue placeholder="양식 선택" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">양식 없음 (기본 필드만)</SelectItem>
+                    {templates.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}{t.category ? ` · ${t.category}` : ''}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedTemplate?.description && (
+                  <p className="text-xs text-muted-foreground">{selectedTemplate.description}</p>
+                )}
+              </div>
+
               <div className="space-y-2"><Label>🎯 목표</Label><Input placeholder="지난주 성과 복기, 이번 주 목표 동기화" value={meetingForm.goal} onChange={e => setMeetingForm(f => ({ ...f, goal: e.target.value }))} /></div>
               <div className="space-y-2"><Label>🎥 화상회의 링크</Label><Input placeholder="Google Meet / Zoom 링크 붙여넣기" value={meetingForm.meeting_link} onChange={e => setMeetingForm(f => ({ ...f, meeting_link: e.target.value }))} /></div>
+
+              {/* Dynamic template fields */}
+              {selectedTemplate && Array.isArray(selectedTemplate.fields) && selectedTemplate.fields.length > 0 && (
+                <div className="space-y-3 rounded-md border border-dashed p-3 bg-muted/30">
+                  <div className="text-xs font-medium text-muted-foreground">"{selectedTemplate.name}" 양식 필드 · 업로드 시 AI가 자동 채움</div>
+                  {selectedTemplate.fields.map((f: any) => (
+                    <div key={f.key} className="space-y-1">
+                      <Label className="text-xs">{f.label}</Label>
+                      {f.type === 'text' ? (
+                        <Input
+                          placeholder={f.description || ''}
+                          value={meetingForm.template_data[f.key] || ''}
+                          onChange={e => setMeetingForm(mf => ({ ...mf, template_data: { ...mf.template_data, [f.key]: e.target.value } }))}
+                        />
+                      ) : (
+                        <Textarea
+                          placeholder={f.description || ''}
+                          rows={2}
+                          value={meetingForm.template_data[f.key] || ''}
+                          onChange={e => setMeetingForm(mf => ({ ...mf, template_data: { ...mf.template_data, [f.key]: e.target.value } }))}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>달성 여부</Label>
                 <Select value={meetingForm.achievement_status} onValueChange={v => setMeetingForm(f => ({ ...f, achievement_status: v }))}>
