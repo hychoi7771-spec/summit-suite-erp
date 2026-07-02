@@ -285,6 +285,7 @@ export default function Meetings() {
       goal: data.goal,
       kpi_notes: data.kpi_notes || null,
       achievement_comment: data.achievement_comment || null,
+      raw_transcript: text.trim(),
     };
     if (template?.id) updatePayload.template_id = template.id;
     if (data.template_fields && typeof data.template_fields === 'object') {
