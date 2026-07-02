@@ -94,7 +94,7 @@ const statusLabelMap: Record<string, string> = {
 };
 
 // Open a new window with a formatted, print-ready meeting minutes view
-function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], tasks: any[], profiles: any[]) {
+function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], tasks: any[], profiles: any[], template?: any) {
   const esc = (s: any) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
   const nl2br = (s: any) => esc(s).replace(/\n/g, '<br/>');
   const status = statusLabelMap[meeting.achievement_status] || statusLabelMap.in_progress;
@@ -175,10 +175,21 @@ function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], ta
     <div class="box"><div class="k">로드맵 점검</div><div class="v">${meeting.roadmap_aligned ? '✅' : '⬜'} 로드맵 방향 일치<br/>${meeting.schedule_adjustment_needed ? '✅' : '⬜'} 일정 조정 필요</div></div>
   </div>
 
-  <h2>5. 회의 내용</h2>
+  ${(() => {
+    const fields = Array.isArray(template?.fields) ? template.fields : [];
+    const td = meeting.template_data || {};
+    if (!fields.length) return '';
+    const rows = fields.map((f: any) => `
+      <div class="box"><div class="k">${esc(f.label || f.key)}</div><div class="v">${nl2br(td[f.key] || '—')}</div></div>
+    `).join('');
+    return `<h2>5. ${esc(template?.name || '양식')} 상세</h2><div class="grid" style="grid-template-columns:1fr 1fr">${rows}</div>`;
+  })()}
+
+  <h2>6. 회의 내용 (원문/메모)</h2>
   <div class="notes">${nl2br(meeting.notes || '—')}</div>
 
-  <h2>6. 액션 아이템</h2>
+
+  <h2>7. 액션 아이템</h2>
   <table>
     <thead><tr><th>업무</th><th style="width:15%">담당자</th><th style="width:12%">우선순위</th><th style="width:12%">상태</th></tr></thead>
     <tbody>${taskRows}</tbody>
@@ -961,7 +972,8 @@ export default function Meetings() {
                     title="회의록 인쇄 / PDF"
                     onClick={e => {
                       e.stopPropagation();
-                      const ok = openMeetingPrintView(meeting, attendees, updates, meetingTasks, profiles);
+                      const tpl = templates.find(t => t.id === meeting.template_id) || null;
+                      const ok = openMeetingPrintView(meeting, attendees, updates, meetingTasks, profiles, tpl);
                       if (!ok) toast({ title: '팝업이 차단되었습니다', description: '브라우저 팝업 차단을 해제한 후 다시 시도해주세요.', variant: 'destructive' });
                     }}
                   >
@@ -1080,7 +1092,46 @@ export default function Meetings() {
                         </>
                       )}
                     </div>
+
+                    {/* 회의록 양식(템플릿) 상세 필드 */}
+                    {(() => {
+                      const tpl = templates.find(t => t.id === meeting.template_id);
+                      const fields = Array.isArray(tpl?.fields) ? tpl.fields : [];
+                      if (!fields.length) return null;
+                      const td = meeting.template_data || {};
+                      return (
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-bold text-primary uppercase tracking-wider">
+                              📋 {tpl.name} · 양식 상세
+                            </h4>
+                            <span className="text-[10px] text-muted-foreground">AI가 업로드 문서를 분석해 자동 채움 · 직접 편집 가능</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {fields.map((f: any) => (
+                              <div key={f.key} className="bg-background rounded-md p-3 border">
+                                <p className="text-[10px] text-muted-foreground uppercase font-medium mb-1.5">
+                                  {f.label || f.key}
+                                </p>
+                                <Textarea
+                                  className="text-sm min-h-[70px] resize-y"
+                                  placeholder={f.placeholder || `${f.label || f.key} 내용...`}
+                                  defaultValue={td[f.key] || ''}
+                                  onBlur={e => {
+                                    const v = e.target.value;
+                                    if (v !== (td[f.key] || '')) {
+                                      handleUpdateMeetingField(meeting.id, 'template_data', { ...td, [f.key]: v });
+                                    }
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
+
 
                   {/* Section: AI 회의록 녹음 & 분석 */}
                   <div className="space-y-3">
