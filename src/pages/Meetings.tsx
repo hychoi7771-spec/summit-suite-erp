@@ -1092,7 +1092,46 @@ export default function Meetings() {
                         </>
                       )}
                     </div>
+
+                    {/* 회의록 양식(템플릿) 상세 필드 */}
+                    {(() => {
+                      const tpl = templates.find(t => t.id === meeting.template_id);
+                      const fields = Array.isArray(tpl?.fields) ? tpl.fields : [];
+                      if (!fields.length) return null;
+                      const td = meeting.template_data || {};
+                      return (
+                        <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-3">
+                          <div className="flex items-center justify-between">
+                            <h4 className="text-xs font-bold text-primary uppercase tracking-wider">
+                              📋 {tpl.name} · 양식 상세
+                            </h4>
+                            <span className="text-[10px] text-muted-foreground">AI가 업로드 문서를 분석해 자동 채움 · 직접 편집 가능</span>
+                          </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                            {fields.map((f: any) => (
+                              <div key={f.key} className="bg-background rounded-md p-3 border">
+                                <p className="text-[10px] text-muted-foreground uppercase font-medium mb-1.5">
+                                  {f.label || f.key}
+                                </p>
+                                <Textarea
+                                  className="text-sm min-h-[70px] resize-y"
+                                  placeholder={f.placeholder || `${f.label || f.key} 내용...`}
+                                  defaultValue={td[f.key] || ''}
+                                  onBlur={e => {
+                                    const v = e.target.value;
+                                    if (v !== (td[f.key] || '')) {
+                                      handleUpdateMeetingField(meeting.id, 'template_data', { ...td, [f.key]: v });
+                                    }
+                                  }}
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      );
+                    })()}
                   </div>
+
 
                   {/* Section: AI 회의록 녹음 & 분석 */}
                   <div className="space-y-3">
