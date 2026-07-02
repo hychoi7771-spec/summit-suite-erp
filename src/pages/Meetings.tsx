@@ -972,7 +972,8 @@ export default function Meetings() {
                     title="회의록 인쇄 / PDF"
                     onClick={e => {
                       e.stopPropagation();
-                      const ok = openMeetingPrintView(meeting, attendees, updates, meetingTasks, profiles);
+                      const tpl = templates.find(t => t.id === meeting.template_id) || null;
+                      const ok = openMeetingPrintView(meeting, attendees, updates, meetingTasks, profiles, tpl);
                       if (!ok) toast({ title: '팝업이 차단되었습니다', description: '브라우저 팝업 차단을 해제한 후 다시 시도해주세요.', variant: 'destructive' });
                     }}
                   >
