@@ -1137,7 +1137,21 @@ export default function Meetings() {
                         </div>
                       );
                     })()}
+
+                    {/* 업로드 파일 원문 미리보기 */}
+                    {meeting.raw_transcript && (
+                      <details className="rounded-lg border bg-muted/30 p-3" open>
+                        <summary className="text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer flex items-center gap-1.5">
+                          📎 업로드 원문 미리보기 · {meeting.raw_transcript.length.toLocaleString()}자
+                        </summary>
+                        <div className="mt-3 bg-background rounded-md p-3 border max-h-[420px] overflow-y-auto">
+                          <pre className="text-[12.5px] leading-relaxed whitespace-pre-wrap font-sans text-foreground/90">{meeting.raw_transcript}</pre>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-2">AI 정리본과 별개로 첨부한 파일의 실제 내용을 그대로 보존합니다. 인쇄 시에도 함께 출력됩니다.</p>
+                      </details>
+                    )}
                   </div>
+
 
 
                   {/* Section: AI 회의록 녹음 & 분석 */}
