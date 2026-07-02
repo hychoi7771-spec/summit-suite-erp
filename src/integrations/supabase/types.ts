@@ -939,6 +939,53 @@ export type Database = {
           },
         ]
       }
+      meeting_templates: {
+        Row: {
+          category: string | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          fields: Json
+          id: string
+          is_default: boolean
+          name: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          is_default?: boolean
+          name: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          fields?: Json
+          id?: string
+          is_default?: boolean
+          name?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "meeting_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       meeting_updates: {
         Row: {
           blockers: string | null
@@ -999,6 +1046,8 @@ export type Database = {
           notes: string | null
           roadmap_aligned: boolean | null
           schedule_adjustment_needed: boolean | null
+          template_data: Json
+          template_id: string | null
           title: string
           updated_at: string
         }
@@ -1016,6 +1065,8 @@ export type Database = {
           notes?: string | null
           roadmap_aligned?: boolean | null
           schedule_adjustment_needed?: boolean | null
+          template_data?: Json
+          template_id?: string | null
           title: string
           updated_at?: string
         }
@@ -1033,10 +1084,20 @@ export type Database = {
           notes?: string | null
           roadmap_aligned?: boolean | null
           schedule_adjustment_needed?: boolean | null
+          template_data?: Json
+          template_id?: string | null
           title?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "meetings_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "meeting_templates"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       notices: {
         Row: {
