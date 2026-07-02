@@ -591,15 +591,19 @@ export default function Meetings() {
       roadmap_aligned: meetingForm.roadmap_aligned,
       schedule_adjustment_needed: meetingForm.schedule_adjustment_needed,
       meeting_link: meetingForm.meeting_link || null,
-    }).select().single();
+      template_id: selectedTemplate?.id || null,
+      template_data: meetingForm.template_data || {},
+    } as any).select().single();
     if (error) {
       toast({ title: '회의 등록 실패', description: error.message, variant: 'destructive' });
     } else {
       toast({ title: '회의 등록 완료' });
       setMeetingDialogOpen(false);
-      setMeetingForm({ title: '', date: '', category: '', notes: '', attendee_ids: [], goal: '', achievement_status: 'in_progress', achievement_comment: '', kpi_notes: '', roadmap_aligned: false, schedule_adjustment_needed: false, meeting_link: '' });
+      const templateForAnalysis = selectedTemplate;
+      setMeetingForm({ title: '', date: '', category: '', notes: '', attendee_ids: [], goal: '', achievement_status: 'in_progress', achievement_comment: '', kpi_notes: '', roadmap_aligned: false, schedule_adjustment_needed: false, meeting_link: '', template_data: {} });
+      setSelectedTemplate(null);
 
-      // If a file was attached, auto-trigger AI analysis
+      // If a file was attached, auto-trigger AI analysis (passing template so custom fields get filled)
       if ((dialogFileContent || dialogAudioFile) && inserted) {
         const meetingId = inserted.id;
         setExpandedId(meetingId);
@@ -608,11 +612,11 @@ export default function Meetings() {
           const sourceText = dialogAudioFile
             ? await transcribeAudioFile(meetingId, dialogAudioFile)
             : dialogFileContent;
-          const data = await analyzeMeetingText(meetingId, sourceText);
+          const data = await analyzeMeetingText(meetingId, sourceText, templateForAnalysis);
 
           toast({
             title: '✅ AI 분석 완료',
-            description: `회의록 자동 생성 완료. 액션 아이템 ${data.action_items?.length || 0}건`,
+            description: `회의록 자동 생성 완료. 액션 아이템 ${data.action_items?.length || 0}건${templateForAnalysis ? ` · "${templateForAnalysis.name}" 양식 필드 자동 채움` : ''}`,
           });
         } catch (err: any) {
           toast({ title: 'AI 분석 실패', description: err.message, variant: 'destructive' });
