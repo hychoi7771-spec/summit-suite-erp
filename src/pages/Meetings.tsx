@@ -198,6 +198,8 @@ function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], ta
 
 export default function Meetings() {
   const { toast } = useToast();
+  const { userRole } = useAuth();
+  const canManageTemplates = ['ceo', 'general_director', 'managing_director'].includes(userRole || '');
   const [expandedId, setExpandedId] = useState<string | null>(null);
   const [meetings, setMeetings] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
