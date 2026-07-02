@@ -175,8 +175,19 @@ function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], ta
     <div class="box"><div class="k">로드맵 점검</div><div class="v">${meeting.roadmap_aligned ? '✅' : '⬜'} 로드맵 방향 일치<br/>${meeting.schedule_adjustment_needed ? '✅' : '⬜'} 일정 조정 필요</div></div>
   </div>
 
-  <h2>5. 회의 내용</h2>
+  ${(() => {
+    const fields = Array.isArray(template?.fields) ? template.fields : [];
+    const td = meeting.template_data || {};
+    if (!fields.length) return '';
+    const rows = fields.map((f: any) => `
+      <div class="box"><div class="k">${esc(f.label || f.key)}</div><div class="v">${nl2br(td[f.key] || '—')}</div></div>
+    `).join('');
+    return `<h2>5. ${esc(template?.name || '양식')} 상세</h2><div class="grid" style="grid-template-columns:1fr 1fr">${rows}</div>`;
+  })()}
+
+  <h2>6. 회의 내용 (원문/메모)</h2>
   <div class="notes">${nl2br(meeting.notes || '—')}</div>
+
 
   <h2>6. 액션 아이템</h2>
   <table>
