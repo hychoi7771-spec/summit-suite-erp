@@ -94,7 +94,7 @@ const statusLabelMap: Record<string, string> = {
 };
 
 // Open a new window with a formatted, print-ready meeting minutes view
-function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], tasks: any[], profiles: any[]) {
+function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], tasks: any[], profiles: any[], template?: any) {
   const esc = (s: any) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
   const nl2br = (s: any) => esc(s).replace(/\n/g, '<br/>');
   const status = statusLabelMap[meeting.achievement_status] || statusLabelMap.in_progress;
