@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Calendar, Users, FileText, ChevronDown, ChevronUp, ArrowRight, Target, CheckCircle2, AlertCircle, Clock, BarChart3, Video, ExternalLink, Send, Mic, MicOff, Brain, Loader2, ClipboardPaste, Pencil, Trash2, Upload, NotebookPen } from 'lucide-react';
+import { Plus, Calendar, Users, FileText, ChevronDown, ChevronUp, ArrowRight, Target, CheckCircle2, AlertCircle, Clock, BarChart3, Video, ExternalLink, Send, Mic, MicOff, Brain, Loader2, ClipboardPaste, Pencil, Trash2, Upload, NotebookPen, Printer } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
