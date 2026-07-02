@@ -733,7 +733,7 @@ export default function Meetings() {
                   type="file"
                   ref={dialogFileInputRef}
                   className="hidden"
-                  accept=".txt,.md,.csv,.docx,audio/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.aac"
+                  accept=".txt,.md,.csv,.doc,.docx,audio/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.aac"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleDialogFileRead(file);
@@ -1040,7 +1040,7 @@ export default function Meetings() {
                             type="file"
                             ref={fileInputRef}
                             className="hidden"
-                            accept=".txt,.md,.csv,.docx,audio/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.aac"
+                            accept=".txt,.md,.csv,.doc,.docx,audio/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.aac"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) handleFileUpload(meeting.id, file);
