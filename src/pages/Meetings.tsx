@@ -508,16 +508,18 @@ export default function Meetings() {
   useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
-    const [meetRes, profRes, taskRes, updRes] = await Promise.all([
+    const [meetRes, profRes, taskRes, updRes, tplRes] = await Promise.all([
       supabase.from('meetings').select('*').order('date', { ascending: false }),
       supabase.from('profiles').select('id, name, name_kr, avatar, user_id'),
       supabase.from('tasks').select('*').not('meeting_id', 'is', null),
       supabase.from('meeting_updates').select('*'),
+      supabase.from('meeting_templates').select('*').order('sort_order', { ascending: true }),
     ]);
     setMeetings(meetRes.data || []);
     setProfiles(profRes.data || []);
     setTasks(taskRes.data || []);
     setMeetingUpdates(updRes.data || []);
+    setTemplates(tplRes.data || []);
     setLoading(false);
   };
 
