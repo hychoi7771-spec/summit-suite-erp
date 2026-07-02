@@ -305,18 +305,18 @@ export default function Meetings() {
       let text = '';
       if (isAudioFile(file)) {
         text = await transcribeAudioFile(meetingId, file);
-      } else if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
+      } else if (file.name.toLowerCase().endsWith('.doc') && !file.name.toLowerCase().endsWith('.docx')) {
+        toast({
+          title: '.doc 파일은 지원하지 않습니다',
+          description: 'Word에서 "다른 이름으로 저장 → .docx" 형식으로 변환 후 다시 업로드해주세요.',
+          variant: 'destructive',
+        });
+        setIsReadingFile(false);
+        return;
+      } else if (file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.md') || file.name.toLowerCase().endsWith('.csv')) {
         text = await file.text();
-      } else if (file.name.endsWith('.docx')) {
-        // Extract text from docx (ZIP containing XML)
-        const arrayBuffer = await file.arrayBuffer();
-        const JSZip = (await import('jszip')).default;
-        const zipData = await JSZip.loadAsync(arrayBuffer);
-        const docXml = await zipData.file('word/document.xml')?.async('string');
-        if (docXml) {
-          // Strip XML tags to get plain text
-          text = docXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        }
+      } else if (file.name.toLowerCase().endsWith('.docx')) {
+        text = await extractDocxText(file);
       } else {
         // Try reading as text for any other extension
         text = await file.text();
