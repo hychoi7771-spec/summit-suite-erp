@@ -189,7 +189,7 @@ function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], ta
   <div class="notes">${nl2br(meeting.notes || '—')}</div>
 
 
-  <h2>6. 액션 아이템</h2>
+  <h2>7. 액션 아이템</h2>
   <table>
     <thead><tr><th>업무</th><th style="width:15%">담당자</th><th style="width:12%">우선순위</th><th style="width:12%">상태</th></tr></thead>
     <tbody>${taskRows}</tbody>
