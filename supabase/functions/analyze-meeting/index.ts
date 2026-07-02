@@ -26,7 +26,7 @@ serve(async (req) => {
         status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
-    const { transcript, members } = await req.json();
+    const { transcript, members, template } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY is not configured");
 
@@ -40,6 +40,55 @@ serve(async (req) => {
     const memberList = Array.isArray(members) && members.length > 0
       ? `\n\n팀 멤버 목록 (이름으로 담당자 배정에 사용):\n${members.map((m: any) => `- ${m.name_kr} (${m.name})`).join('\n')}`
       : '';
+
+    // 템플릿 커스텀 필드가 있다면 tool schema 에 template_fields object 추가
+    const templateFields: Array<{ key: string; label: string; description?: string; type?: string }> =
+      Array.isArray(template?.fields) ? template.fields : [];
+    const templatePromptSection = templateFields.length > 0
+      ? `\n\n이 회의는 "${template.name}" 양식으로 작성됩니다. 아래 커스텀 필드도 반드시 template_fields 객체 안에 채워주세요:\n${templateFields.map(f => `- ${f.key} (${f.label}): ${f.description || ''}`).join('\n')}`
+      : '';
+
+    const parameters: any = {
+      type: "object",
+      properties: {
+        title: { type: "string", description: "회의 제목 (간결하게)" },
+        goal: { type: "string", description: "회의 목표 요약" },
+        notes: { type: "string", description: "회의 내용 요약 (핵심 논의 사항, 줄바꿈으로 구분)" },
+        kpi_notes: { type: "string", description: "언급된 핵심 지표/KPI (없으면 빈 문자열)" },
+        achievement_comment: { type: "string", description: "성과 또는 이슈 요약" },
+        action_items: {
+          type: "array",
+          description: "도출된 액션 아이템 목록",
+          items: {
+            type: "object",
+            properties: {
+              title: { type: "string", description: "액션 아이템 제목" },
+              priority: { type: "string", enum: ["low", "medium", "high", "urgent"], description: "우선순위" },
+              assignee_name: { type: "string", description: "담당자 한국어 이름 (팀 멤버 목록에서 매칭, 없으면 빈 문자열)" },
+            },
+            required: ["title", "priority", "assignee_name"],
+            additionalProperties: false,
+          },
+        },
+      },
+      required: ["title", "goal", "notes", "kpi_notes", "achievement_comment", "action_items"],
+      additionalProperties: false,
+    };
+
+    if (templateFields.length > 0) {
+      const fieldProps: Record<string, any> = {};
+      for (const f of templateFields) {
+        fieldProps[f.key] = { type: "string", description: `${f.label}: ${f.description || ''}` };
+      }
+      parameters.properties.template_fields = {
+        type: "object",
+        description: "회의록 템플릿의 커스텀 필드 값 (모두 문자열, 해당 정보가 녹취록에 없으면 빈 문자열)",
+        properties: fieldProps,
+        required: templateFields.map(f => f.key),
+        additionalProperties: false,
+      };
+      parameters.required.push("template_fields");
+    }
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",
@@ -59,7 +108,7 @@ serve(async (req) => {
           },
           {
             role: "user",
-            content: `다음 회의 녹취록을 분석하여 회의록을 작성해주세요:${memberList}\n\n녹취록:\n${transcript}`,
+            content: `다음 회의 녹취록을 분석하여 회의록을 작성해주세요:${memberList}${templatePromptSection}\n\n녹취록:\n${transcript}`,
           },
         ],
         tools: [
@@ -68,32 +117,7 @@ serve(async (req) => {
             function: {
               name: "create_meeting_summary",
               description: "회의 녹취록을 분석하여 구조화된 회의록을 생성합니다.",
-              parameters: {
-                type: "object",
-                properties: {
-                  title: { type: "string", description: "회의 제목 (간결하게)" },
-                  goal: { type: "string", description: "회의 목표 요약" },
-                  notes: { type: "string", description: "회의 내용 요약 (핵심 논의 사항, 줄바꿈으로 구분)" },
-                  kpi_notes: { type: "string", description: "언급된 핵심 지표/KPI (없으면 빈 문자열)" },
-                  achievement_comment: { type: "string", description: "성과 또는 이슈 요약" },
-                  action_items: {
-                    type: "array",
-                    description: "도출된 액션 아이템 목록",
-                    items: {
-                      type: "object",
-                      properties: {
-                        title: { type: "string", description: "액션 아이템 제목" },
-                        priority: { type: "string", enum: ["low", "medium", "high", "urgent"], description: "우선순위" },
-                        assignee_name: { type: "string", description: "담당자 한국어 이름 (팀 멤버 목록에서 매칭, 없으면 빈 문자열)" },
-                      },
-                      required: ["title", "priority", "assignee_name"],
-                      additionalProperties: false,
-                    },
-                  },
-                },
-                required: ["title", "goal", "notes", "kpi_notes", "achievement_comment", "action_items"],
-                additionalProperties: false,
-              },
+              parameters,
             },
           },
         ],
