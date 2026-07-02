@@ -825,6 +825,19 @@ export default function Meetings() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    title="회의록 인쇄 / PDF"
+                    onClick={e => {
+                      e.stopPropagation();
+                      const ok = openMeetingPrintView(meeting, attendees, updates, meetingTasks, profiles);
+                      if (!ok) toast({ title: '팝업이 차단되었습니다', description: '브라우저 팝업 차단을 해제한 후 다시 시도해주세요.', variant: 'destructive' });
+                    }}
+                  >
+                    <Printer className="h-4 w-4" />
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={e => e.stopPropagation()}>
