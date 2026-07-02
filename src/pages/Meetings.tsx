@@ -689,16 +689,38 @@ export default function Meetings() {
         description="실행 중심 회의 기록 · 주간 스탠드업"
         tone="violet"
         actions={
-          <Dialog open={meetingDialogOpen} onOpenChange={setMeetingDialogOpen}>
+          <Dialog open={meetingDialogOpen} onOpenChange={(open) => {
+            setMeetingDialogOpen(open);
+            if (open) {
+              // Auto-fill title as "n주차 주간회의" and default date to today
+              const today = new Date();
+              const iso = today.toISOString().split('T')[0];
+              setMeetingForm(f => ({
+                ...f,
+                title: f.title || `${getIsoWeekNumber(today)}주차 주간회의`,
+                date: f.date || iso,
+              }));
+            }
+          }}>
             <DialogTrigger asChild>
               <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />새 회의 등록</Button>
             </DialogTrigger>
           <DialogContent className="max-w-lg max-h-[85vh] overflow-y-auto">
             <DialogHeader><DialogTitle>새 회의 등록</DialogTitle></DialogHeader>
             <div className="space-y-4 mt-2">
-              <div className="space-y-2"><Label>회의 제목</Label><Input placeholder="주간 제품 스탠드업" value={meetingForm.title} onChange={e => setMeetingForm(f => ({ ...f, title: e.target.value }))} /></div>
+              <div className="space-y-2"><Label>회의 제목</Label><Input placeholder="1주차 주간회의" value={meetingForm.title} onChange={e => setMeetingForm(f => ({ ...f, title: e.target.value }))} /></div>
               <div className="grid grid-cols-2 gap-3">
-                <div className="space-y-2"><Label>날짜</Label><Input type="date" value={meetingForm.date} onChange={e => setMeetingForm(f => ({ ...f, date: e.target.value }))} /></div>
+                <div className="space-y-2"><Label>날짜</Label><Input type="date" value={meetingForm.date} onChange={e => {
+                  const newDate = e.target.value;
+                  setMeetingForm(f => {
+                    // If title still matches auto-pattern, update it to match the new date's week
+                    const autoPattern = /^\d+주차 주간회의$/;
+                    const nextTitle = autoPattern.test(f.title) && newDate
+                      ? `${getIsoWeekNumber(new Date(newDate))}주차 주간회의`
+                      : f.title;
+                    return { ...f, date: newDate, title: nextTitle };
+                  });
+                }} /></div>
                 <div className="space-y-2"><Label>카테고리</Label><Input placeholder="제품, 영업 등" value={meetingForm.category} onChange={e => setMeetingForm(f => ({ ...f, category: e.target.value }))} /></div>
               </div>
               <div className="space-y-2"><Label>🎯 목표</Label><Input placeholder="지난주 성과 복기, 이번 주 목표 동기화" value={meetingForm.goal} onChange={e => setMeetingForm(f => ({ ...f, goal: e.target.value }))} /></div>
