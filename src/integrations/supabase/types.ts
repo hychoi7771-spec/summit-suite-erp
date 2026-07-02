@@ -1044,6 +1044,7 @@ export type Database = {
           kpi_notes: string | null
           meeting_link: string | null
           notes: string | null
+          raw_transcript: string | null
           roadmap_aligned: boolean | null
           schedule_adjustment_needed: boolean | null
           template_data: Json
@@ -1063,6 +1064,7 @@ export type Database = {
           kpi_notes?: string | null
           meeting_link?: string | null
           notes?: string | null
+          raw_transcript?: string | null
           roadmap_aligned?: boolean | null
           schedule_adjustment_needed?: boolean | null
           template_data?: Json
@@ -1082,6 +1084,7 @@ export type Database = {
           kpi_notes?: string | null
           meeting_link?: string | null
           notes?: string | null
+          raw_transcript?: string | null
           roadmap_aligned?: boolean | null
           schedule_adjustment_needed?: boolean | null
           template_data?: Json
