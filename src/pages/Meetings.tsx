@@ -765,7 +765,7 @@ export default function Meetings() {
                   ) : (
                     <div className="flex flex-col items-center gap-1">
                       <Upload className="h-5 w-5 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">파일을 드래그하거나 클릭 (.txt, .md, .csv, .docx, 오디오)</p>
+                      <p className="text-xs text-muted-foreground">파일을 드래그하거나 클릭 (.txt, .md, .csv, .docx, 오디오) · .doc는 .docx로 변환 후 업로드</p>
                     </div>
                   )}
                 </div>
@@ -1068,7 +1068,7 @@ export default function Meetings() {
                               <div className="flex flex-col items-center gap-2">
                                 <Upload className="h-8 w-8 text-muted-foreground" />
                                 <p className="text-sm font-medium">파일을 드래그하거나 클릭하여 업로드</p>
-                                <p className="text-xs text-muted-foreground">지원 형식: .txt, .md, .csv, .docx, .mp3, .m4a, .wav</p>
+                                <p className="text-xs text-muted-foreground">지원 형식: .txt, .md, .csv, .docx(Word), .mp3, .m4a, .wav</p>
                               </div>
                             )}
                           </div>
