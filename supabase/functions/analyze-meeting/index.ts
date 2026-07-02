@@ -53,9 +53,9 @@ serve(async (req) => {
       properties: {
         title: { type: "string", description: "회의 제목 (간결하게)" },
         goal: { type: "string", description: "회의 목표 요약" },
-        notes: { type: "string", description: "회의 내용 요약 (핵심 논의 사항, 줄바꿈으로 구분)" },
-        kpi_notes: { type: "string", description: "언급된 핵심 지표/KPI (없으면 빈 문자열)" },
-        achievement_comment: { type: "string", description: "성과 또는 이슈 요약" },
+        notes: { type: "string", description: "업로드된 회의 문서의 원문을 최대한 그대로 보존하여 정리합니다. 요약하지 말고, 원문의 섹션/제목/불릿/번호 매김/발언자·항목 구조를 그대로 유지하세요. 마크다운(##, -, 1.)을 사용해 가독성을 유지하고, 불필요한 반복만 정리하되 실제 내용·수치·고유명사는 그대로 옮겨 적습니다. 원문에 표현된 뉘앙스와 표현을 최대한 유지하세요." },
+        kpi_notes: { type: "string", description: "언급된 핵심 지표/KPI (원문 표현 그대로, 없으면 빈 문자열)" },
+        achievement_comment: { type: "string", description: "성과 또는 이슈 (원문 표현 그대로 발췌, 요약 최소화)" },
         action_items: {
           type: "array",
           description: "도출된 액션 아이템 목록",
