@@ -206,11 +206,15 @@ export default function Meetings() {
   const [actionDialog, setActionDialog] = useState<string | null>(null);
   const [actionForm, setActionForm] = useState({ title: '', assignee_id: '', priority: 'medium' });
   const [meetingDialogOpen, setMeetingDialogOpen] = useState(false);
+  const [templates, setTemplates] = useState<any[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<any | null>(null);
+  const [templateManagerOpen, setTemplateManagerOpen] = useState(false);
   const [meetingForm, setMeetingForm] = useState({
     title: '', date: '', category: '', notes: '', attendee_ids: [] as string[],
     goal: '', achievement_status: 'in_progress', achievement_comment: '',
     kpi_notes: '', roadmap_aligned: false, schedule_adjustment_needed: false,
     meeting_link: '',
+    template_data: {} as Record<string, string>,
   });
   const [editingUpdates, setEditingUpdates] = useState<Record<string, { done: string; todo: string; blockers: string }>>({});
 
