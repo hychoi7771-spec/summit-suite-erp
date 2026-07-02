@@ -185,8 +185,14 @@ function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], ta
     return `<h2>5. ${esc(template?.name || '양식')} 상세</h2><div class="grid" style="grid-template-columns:1fr 1fr">${rows}</div>`;
   })()}
 
-  <h2>6. 회의 내용 (원문/메모)</h2>
+  <h2>6. 회의 내용 (AI 정리)</h2>
   <div class="notes">${nl2br(meeting.notes || '—')}</div>
+
+  ${meeting.raw_transcript ? `
+  <h2>6-1. 업로드 원문 (첨부 파일 내용 그대로)</h2>
+  <div class="notes" style="background:#fbfbfb;color:#333;font-size:12px;max-height:none;">${nl2br(meeting.raw_transcript)}</div>
+  ` : ''}
+
 
 
   <h2>7. 액션 아이템</h2>
