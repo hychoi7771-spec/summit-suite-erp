@@ -50,6 +50,142 @@ const getPreferredAudioMimeType = () => {
   return candidates.find(type => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(type)) || '';
 };
 
+// Extract text from a .docx file preserving paragraph breaks
+async function extractDocxText(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const JSZip = (await import('jszip')).default;
+  const zipData = await JSZip.loadAsync(arrayBuffer);
+  const docXml = await zipData.file('word/document.xml')?.async('string');
+  if (!docXml) return '';
+  const decode = (s: string) => s
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+  const paragraphs: string[] = [];
+  const pRegex = /<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g;
+  let m: RegExpExecArray | null;
+  while ((m = pRegex.exec(docXml)) !== null) {
+    const inner = m[1];
+    const texts: string[] = [];
+    const tRegex = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g;
+    let tm: RegExpExecArray | null;
+    while ((tm = tRegex.exec(inner)) !== null) texts.push(decode(tm[1]));
+    // handle line breaks inside paragraph
+    const hasBreak = /<w:br\b/.test(inner);
+    const line = texts.join('');
+    if (line.trim() || hasBreak) paragraphs.push(line);
+  }
+  return paragraphs.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+const statusLabelMap: Record<string, string> = {
+  completed: '✅ 완료',
+  in_progress: '⚠️ 진행 중',
+  delayed: '❌ 지연',
+};
+
+// Open a new window with a formatted, print-ready meeting minutes view
+function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], tasks: any[], profiles: any[]) {
+  const esc = (s: any) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+  const nl2br = (s: any) => esc(s).replace(/\n/g, '<br/>');
+  const status = statusLabelMap[meeting.achievement_status] || statusLabelMap.in_progress;
+  const getProfile = (id: string) => profiles.find(p => p.id === id);
+
+  const attendeeRows = attendees.map(a => {
+    const u = updates.find(x => x.profile_id === a.id) || {};
+    return `<tr>
+      <td>${esc(a.name_kr)} (${esc(a.name)})</td>
+      <td>${nl2br(u.done || '—')}</td>
+      <td>${nl2br(u.todo || '—')}</td>
+      <td>${nl2br(u.blockers || '없음')}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="4" style="text-align:center;color:#888">참석자 없음</td></tr>`;
+
+  const taskRows = tasks.length ? tasks.map(t => {
+    const a = getProfile(t.assignee_id);
+    return `<tr>
+      <td>${esc(t.title)}</td>
+      <td>${a ? esc(a.name_kr) : '—'}</td>
+      <td>${esc(t.priority || '')}</td>
+      <td>${esc(t.status || '')}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="4" style="text-align:center;color:#888">액션 아이템 없음</td></tr>`;
+
+  const html = `<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"/>
+<title>회의록 · ${esc(meeting.title)}</title>
+<style>
+  @page { size: A4; margin: 20mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif; color:#111; line-height:1.55; padding:24px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; border-bottom: 3px solid #111; padding-bottom: 10px; }
+  .meta { display:flex; flex-wrap:wrap; gap:16px; font-size:13px; color:#555; margin: 6px 0 20px; }
+  .meta b { color:#111; }
+  h2 { font-size: 15px; margin: 22px 0 8px; padding: 6px 10px; background:#f3f4f6; border-left: 4px solid #3b82f6; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .box { border:1px solid #e5e7eb; border-radius:6px; padding:10px; background:#fafafa; }
+  .box .k { font-size:11px; color:#6b7280; text-transform:uppercase; margin-bottom:4px; }
+  .box .v { font-size:13px; white-space:pre-wrap; min-height:20px; }
+  table { width:100%; border-collapse: collapse; font-size:13px; margin-top:6px; }
+  th, td { border:1px solid #d1d5db; padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#f9fafb; font-weight:600; }
+  .notes { white-space:pre-wrap; border:1px solid #e5e7eb; border-radius:6px; padding:12px; background:#fff; font-size:13px; }
+  .footer { margin-top:32px; font-size:11px; color:#888; text-align:right; border-top:1px solid #e5e7eb; padding-top:8px; }
+  .btn { position:fixed; top:12px; right:12px; padding:8px 14px; background:#3b82f6; color:#fff; border:none; border-radius:6px; font-size:13px; cursor:pointer; }
+  @media print { .btn { display:none; } body { padding:0; } }
+</style></head>
+<body>
+  <button class="btn" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
+  <h1>${esc(meeting.title)}</h1>
+  <div class="meta">
+    <span>📅 <b>${esc(meeting.date || '')}</b></span>
+    <span>🏷️ ${esc(meeting.category || '—')}</span>
+    <span>👥 참석자 ${attendees.length}명</span>
+    <span>상태: <b>${esc(status)}</b></span>
+  </div>
+
+  <h2>1. 개요 및 회고</h2>
+  <div class="grid">
+    <div class="box"><div class="k">🎯 목표</div><div class="v">${nl2br(meeting.goal || '—')}</div></div>
+    <div class="box"><div class="k">달성 여부</div><div class="v">${esc(status)}</div></div>
+    <div class="box"><div class="k">성과 코멘트</div><div class="v">${nl2br(meeting.achievement_comment || '—')}</div></div>
+  </div>
+
+  <h2>2. 참석자</h2>
+  <div class="notes">${attendees.map(a => `${esc(a.name_kr)} (${esc(a.name)})`).join(' · ') || '—'}</div>
+
+  <h2>3. 개인별 업데이트</h2>
+  <table>
+    <thead><tr><th style="width:18%">담당자</th><th>지난주 성과 (Done)</th><th>이번 주 목표 (Todo)</th><th>장애물 (Blockers)</th></tr></thead>
+    <tbody>${attendeeRows}</tbody>
+  </table>
+
+  <h2>4. 주요 지표(KPI) 및 로드맵</h2>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="box"><div class="k">핵심 지표(KPI)</div><div class="v">${nl2br(meeting.kpi_notes || '—')}</div></div>
+    <div class="box"><div class="k">로드맵 점검</div><div class="v">${meeting.roadmap_aligned ? '✅' : '⬜'} 로드맵 방향 일치<br/>${meeting.schedule_adjustment_needed ? '✅' : '⬜'} 일정 조정 필요</div></div>
+  </div>
+
+  <h2>5. 회의 내용</h2>
+  <div class="notes">${nl2br(meeting.notes || '—')}</div>
+
+  <h2>6. 액션 아이템</h2>
+  <table>
+    <thead><tr><th>업무</th><th style="width:15%">담당자</th><th style="width:12%">우선순위</th><th style="width:12%">상태</th></tr></thead>
+    <tbody>${taskRows}</tbody>
+  </table>
+
+  <div class="footer">회의록 출력 · ${new Date().toLocaleString('ko-KR')}</div>
+  <script>window.addEventListener('load',()=>setTimeout(()=>window.print(),400));</script>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) return false;
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  return true;
+}
+
 export default function Meetings() {
   const { toast } = useToast();
   const [expandedId, setExpandedId] = useState<string | null>(null);
