@@ -774,7 +774,7 @@ export default function Meetings() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label>📋 회의록 양식</Label>
-                  {(hasRole('ceo') || hasRole('general_director') || hasRole('managing_director')) && (
+                  {canManageTemplates && (
                     <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setTemplateManagerOpen(true)}>
                       템플릿 관리
                     </Button>
