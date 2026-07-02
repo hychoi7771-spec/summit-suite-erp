@@ -723,10 +723,16 @@ export default function Meetings() {
               // Auto-fill title as "n주차 주간회의" and default date to today
               const today = new Date();
               const iso = today.toISOString().split('T')[0];
+              // Default template: prefer is_default, then first available
+              const defaultTpl = templates.find(t => t.is_default) || templates[0] || null;
+              if (defaultTpl && !selectedTemplate) {
+                setSelectedTemplate(defaultTpl);
+              }
               setMeetingForm(f => ({
                 ...f,
                 title: f.title || `${getIsoWeekNumber(today)}주차 주간회의`,
                 date: f.date || iso,
+                category: f.category || (defaultTpl?.category ?? ''),
               }));
             }
           }}>
@@ -741,7 +747,6 @@ export default function Meetings() {
                 <div className="space-y-2"><Label>날짜</Label><Input type="date" value={meetingForm.date} onChange={e => {
                   const newDate = e.target.value;
                   setMeetingForm(f => {
-                    // If title still matches auto-pattern, update it to match the new date's week
                     const autoPattern = /^\d+주차 주간회의$/;
                     const nextTitle = autoPattern.test(f.title) && newDate
                       ? `${getIsoWeekNumber(new Date(newDate))}주차 주간회의`
@@ -749,10 +754,81 @@ export default function Meetings() {
                     return { ...f, date: newDate, title: nextTitle };
                   });
                 }} /></div>
-                <div className="space-y-2"><Label>카테고리</Label><Input placeholder="제품, 영업 등" value={meetingForm.category} onChange={e => setMeetingForm(f => ({ ...f, category: e.target.value }))} /></div>
+                <div className="space-y-2"><Label>카테고리</Label><Input placeholder="주간회의, 영업, 제품 등" value={meetingForm.category} onChange={e => {
+                  const val = e.target.value;
+                  setMeetingForm(f => ({ ...f, category: val }));
+                  // Auto-match template by category (case-insensitive contains match)
+                  const norm = val.trim().toLowerCase();
+                  if (!norm) return;
+                  const matched = templates.find(t => t.category && (t.category.toLowerCase() === norm || norm.includes(t.category.toLowerCase()) || t.category.toLowerCase().includes(norm)));
+                  if (matched && matched.id !== selectedTemplate?.id) {
+                    setSelectedTemplate(matched);
+                  }
+                }} /></div>
               </div>
+
+              {/* Template selector */}
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label>📋 회의록 양식</Label>
+                  {(hasRole('ceo') || hasRole('general_director') || hasRole('managing_director')) && (
+                    <Button type="button" variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setTemplateManagerOpen(true)}>
+                      템플릿 관리
+                    </Button>
+                  )}
+                </div>
+                <Select value={selectedTemplate?.id || 'none'} onValueChange={(v) => {
+                  if (v === 'none') {
+                    setSelectedTemplate(null);
+                    setMeetingForm(f => ({ ...f, template_data: {} }));
+                  } else {
+                    const tpl = templates.find(t => t.id === v);
+                    setSelectedTemplate(tpl || null);
+                    // Sync category if template has one
+                    if (tpl?.category) setMeetingForm(f => ({ ...f, category: tpl.category }));
+                  }
+                }}>
+                  <SelectTrigger><SelectValue placeholder="양식 선택" /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">양식 없음 (기본 필드만)</SelectItem>
+                    {templates.map(t => (
+                      <SelectItem key={t.id} value={t.id}>{t.name}{t.category ? ` · ${t.category}` : ''}</SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {selectedTemplate?.description && (
+                  <p className="text-xs text-muted-foreground">{selectedTemplate.description}</p>
+                )}
+              </div>
+
               <div className="space-y-2"><Label>🎯 목표</Label><Input placeholder="지난주 성과 복기, 이번 주 목표 동기화" value={meetingForm.goal} onChange={e => setMeetingForm(f => ({ ...f, goal: e.target.value }))} /></div>
               <div className="space-y-2"><Label>🎥 화상회의 링크</Label><Input placeholder="Google Meet / Zoom 링크 붙여넣기" value={meetingForm.meeting_link} onChange={e => setMeetingForm(f => ({ ...f, meeting_link: e.target.value }))} /></div>
+
+              {/* Dynamic template fields */}
+              {selectedTemplate && Array.isArray(selectedTemplate.fields) && selectedTemplate.fields.length > 0 && (
+                <div className="space-y-3 rounded-md border border-dashed p-3 bg-muted/30">
+                  <div className="text-xs font-medium text-muted-foreground">"{selectedTemplate.name}" 양식 필드 · 업로드 시 AI가 자동 채움</div>
+                  {selectedTemplate.fields.map((f: any) => (
+                    <div key={f.key} className="space-y-1">
+                      <Label className="text-xs">{f.label}</Label>
+                      {f.type === 'text' ? (
+                        <Input
+                          placeholder={f.description || ''}
+                          value={meetingForm.template_data[f.key] || ''}
+                          onChange={e => setMeetingForm(mf => ({ ...mf, template_data: { ...mf.template_data, [f.key]: e.target.value } }))}
+                        />
+                      ) : (
+                        <Textarea
+                          placeholder={f.description || ''}
+                          rows={2}
+                          value={meetingForm.template_data[f.key] || ''}
+                          onChange={e => setMeetingForm(mf => ({ ...mf, template_data: { ...mf.template_data, [f.key]: e.target.value } }))}
+                        />
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
               <div className="space-y-2">
                 <Label>달성 여부</Label>
                 <Select value={meetingForm.achievement_status} onValueChange={v => setMeetingForm(f => ({ ...f, achievement_status: v }))}>
