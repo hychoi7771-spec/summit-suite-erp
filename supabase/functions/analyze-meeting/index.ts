@@ -53,9 +53,9 @@ serve(async (req) => {
       properties: {
         title: { type: "string", description: "회의 제목 (간결하게)" },
         goal: { type: "string", description: "회의 목표 요약" },
-        notes: { type: "string", description: "회의 내용 요약 (핵심 논의 사항, 줄바꿈으로 구분)" },
-        kpi_notes: { type: "string", description: "언급된 핵심 지표/KPI (없으면 빈 문자열)" },
-        achievement_comment: { type: "string", description: "성과 또는 이슈 요약" },
+        notes: { type: "string", description: "업로드된 회의 문서의 원문을 최대한 그대로 보존하여 정리합니다. 요약하지 말고, 원문의 섹션/제목/불릿/번호 매김/발언자·항목 구조를 그대로 유지하세요. 마크다운(##, -, 1.)을 사용해 가독성을 유지하고, 불필요한 반복만 정리하되 실제 내용·수치·고유명사는 그대로 옮겨 적습니다. 원문에 표현된 뉘앙스와 표현을 최대한 유지하세요." },
+        kpi_notes: { type: "string", description: "언급된 핵심 지표/KPI (원문 표현 그대로, 없으면 빈 문자열)" },
+        achievement_comment: { type: "string", description: "성과 또는 이슈 (원문 표현 그대로 발췌, 요약 최소화)" },
         action_items: {
           type: "array",
           description: "도출된 액션 아이템 목록",
@@ -101,9 +101,10 @@ serve(async (req) => {
         messages: [
           {
             role: "system",
-            content: `당신은 한국어 회의록 분석 전문가입니다. 회의 녹취록을 분석하여 구조화된 회의록을 생성합니다.
-액션 아이템을 도출할 때, 녹취록에서 언급된 담당자를 팀 멤버 목록에서 찾아 assignee_name에 정확한 한국어 이름(name_kr)을 입력하세요.
-담당자가 명확하지 않으면 assignee_name을 빈 문자열로 두세요.
+            content: `당신은 한국어 회의록 편집자입니다. 사용자가 업로드한 회의 문서/녹취록을 요약하지 말고, **원문 내용을 최대한 그대로 보존**하여 구조화된 회의록으로 정리하세요.
+- notes 필드에는 원문의 섹션·제목·불릿·번호 매김·순서를 최대한 유지한 채 마크다운으로 옮겨 담습니다. 실제 수치, 고유명사, 인용문, 결정사항은 반드시 원문 그대로 남깁니다.
+- 템플릿 필드가 있으면 원문에서 해당 정보를 발췌해 그대로 채웁니다 (요약 아님).
+- 액션 아이템은 원문에서 명확히 도출된 항목만 생성하고 담당자 이름은 팀 멤버 목록에서 매칭된 정확한 한국어 이름(name_kr)만 사용하세요. 매칭이 안 되면 빈 문자열.
 반드시 아래 JSON 도구를 사용하여 응답하세요.`,
           },
           {

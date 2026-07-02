@@ -185,8 +185,14 @@ function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], ta
     return `<h2>5. ${esc(template?.name || '양식')} 상세</h2><div class="grid" style="grid-template-columns:1fr 1fr">${rows}</div>`;
   })()}
 
-  <h2>6. 회의 내용 (원문/메모)</h2>
+  <h2>6. 회의 내용 (AI 정리)</h2>
   <div class="notes">${nl2br(meeting.notes || '—')}</div>
+
+  ${meeting.raw_transcript ? `
+  <h2>6-1. 업로드 원문 (첨부 파일 내용 그대로)</h2>
+  <div class="notes" style="background:#fbfbfb;color:#333;font-size:12px;max-height:none;">${nl2br(meeting.raw_transcript)}</div>
+  ` : ''}
+
 
 
   <h2>7. 액션 아이템</h2>
@@ -285,6 +291,7 @@ export default function Meetings() {
       goal: data.goal,
       kpi_notes: data.kpi_notes || null,
       achievement_comment: data.achievement_comment || null,
+      raw_transcript: text.trim(),
     };
     if (template?.id) updatePayload.template_id = template.id;
     if (data.template_fields && typeof data.template_fields === 'object') {
@@ -1130,7 +1137,21 @@ export default function Meetings() {
                         </div>
                       );
                     })()}
+
+                    {/* 업로드 파일 원문 미리보기 */}
+                    {meeting.raw_transcript && (
+                      <details className="rounded-lg border bg-muted/30 p-3" open>
+                        <summary className="text-xs font-bold text-muted-foreground uppercase tracking-wider cursor-pointer flex items-center gap-1.5">
+                          📎 업로드 원문 미리보기 · {meeting.raw_transcript.length.toLocaleString()}자
+                        </summary>
+                        <div className="mt-3 bg-background rounded-md p-3 border max-h-[420px] overflow-y-auto">
+                          <pre className="text-[12.5px] leading-relaxed whitespace-pre-wrap font-sans text-foreground/90">{meeting.raw_transcript}</pre>
+                        </div>
+                        <p className="text-[10px] text-muted-foreground mt-2">AI 정리본과 별개로 첨부한 파일의 실제 내용을 그대로 보존합니다. 인쇄 시에도 함께 출력됩니다.</p>
+                      </details>
+                    )}
                   </div>
+
 
 
                   {/* Section: AI 회의록 녹음 & 분석 */}
