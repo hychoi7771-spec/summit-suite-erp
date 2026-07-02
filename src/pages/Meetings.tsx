@@ -43,6 +43,15 @@ const statusConfig: Record<string, { label: string; icon: typeof CheckCircle2; c
   delayed: { label: '❌ 지연', icon: AlertCircle, color: 'text-red-600' },
 };
 
+// ISO 8601 week number (1-53). Weeks start Monday; week 1 contains the year's first Thursday.
+function getIsoWeekNumber(date: Date): number {
+  const d = new Date(Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()));
+  const day = d.getUTCDay() || 7;
+  d.setUTCDate(d.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
+  return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+}
+
 const AUDIO_EXTENSIONS = ['.mp3', '.m4a', '.wav', '.webm', '.ogg', '.mp4', '.aac'];
 const isAudioFile = (file: File) => file.type.startsWith('audio/') || AUDIO_EXTENSIONS.some(ext => file.name.toLowerCase().endsWith(ext));
 const getPreferredAudioMimeType = () => {
