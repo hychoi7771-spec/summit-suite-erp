@@ -10,7 +10,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Plus, Calendar, Users, FileText, ChevronDown, ChevronUp, ArrowRight, Target, CheckCircle2, AlertCircle, Clock, BarChart3, Video, ExternalLink, Send, Mic, MicOff, Brain, Loader2, ClipboardPaste, Pencil, Trash2, Upload, NotebookPen } from 'lucide-react';
+import { Plus, Calendar, Users, FileText, ChevronDown, ChevronUp, ArrowRight, Target, CheckCircle2, AlertCircle, Clock, BarChart3, Video, ExternalLink, Send, Mic, MicOff, Brain, Loader2, ClipboardPaste, Pencil, Trash2, Upload, NotebookPen, Printer } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -49,6 +49,142 @@ const getPreferredAudioMimeType = () => {
   const candidates = ['audio/webm;codecs=opus', 'audio/webm', 'audio/mp4', 'audio/ogg;codecs=opus'];
   return candidates.find(type => typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(type)) || '';
 };
+
+// Extract text from a .docx file preserving paragraph breaks
+async function extractDocxText(file: File): Promise<string> {
+  const arrayBuffer = await file.arrayBuffer();
+  const JSZip = (await import('jszip')).default;
+  const zipData = await JSZip.loadAsync(arrayBuffer);
+  const docXml = await zipData.file('word/document.xml')?.async('string');
+  if (!docXml) return '';
+  const decode = (s: string) => s
+    .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+    .replace(/&quot;/g, '"').replace(/&apos;/g, "'");
+  const paragraphs: string[] = [];
+  const pRegex = /<w:p\b[^>]*>([\s\S]*?)<\/w:p>/g;
+  let m: RegExpExecArray | null;
+  while ((m = pRegex.exec(docXml)) !== null) {
+    const inner = m[1];
+    const texts: string[] = [];
+    const tRegex = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g;
+    let tm: RegExpExecArray | null;
+    while ((tm = tRegex.exec(inner)) !== null) texts.push(decode(tm[1]));
+    // handle line breaks inside paragraph
+    const hasBreak = /<w:br\b/.test(inner);
+    const line = texts.join('');
+    if (line.trim() || hasBreak) paragraphs.push(line);
+  }
+  return paragraphs.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+const statusLabelMap: Record<string, string> = {
+  completed: '✅ 완료',
+  in_progress: '⚠️ 진행 중',
+  delayed: '❌ 지연',
+};
+
+// Open a new window with a formatted, print-ready meeting minutes view
+function openMeetingPrintView(meeting: any, attendees: any[], updates: any[], tasks: any[], profiles: any[]) {
+  const esc = (s: any) => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]!));
+  const nl2br = (s: any) => esc(s).replace(/\n/g, '<br/>');
+  const status = statusLabelMap[meeting.achievement_status] || statusLabelMap.in_progress;
+  const getProfile = (id: string) => profiles.find(p => p.id === id);
+
+  const attendeeRows = attendees.map(a => {
+    const u = updates.find(x => x.profile_id === a.id) || {};
+    return `<tr>
+      <td>${esc(a.name_kr)} (${esc(a.name)})</td>
+      <td>${nl2br(u.done || '—')}</td>
+      <td>${nl2br(u.todo || '—')}</td>
+      <td>${nl2br(u.blockers || '없음')}</td>
+    </tr>`;
+  }).join('') || `<tr><td colspan="4" style="text-align:center;color:#888">참석자 없음</td></tr>`;
+
+  const taskRows = tasks.length ? tasks.map(t => {
+    const a = getProfile(t.assignee_id);
+    return `<tr>
+      <td>${esc(t.title)}</td>
+      <td>${a ? esc(a.name_kr) : '—'}</td>
+      <td>${esc(t.priority || '')}</td>
+      <td>${esc(t.status || '')}</td>
+    </tr>`;
+  }).join('') : `<tr><td colspan="4" style="text-align:center;color:#888">액션 아이템 없음</td></tr>`;
+
+  const html = `<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"/>
+<title>회의록 · ${esc(meeting.title)}</title>
+<style>
+  @page { size: A4; margin: 20mm; }
+  * { box-sizing: border-box; }
+  body { font-family: 'Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif; color:#111; line-height:1.55; padding:24px; max-width: 900px; margin: 0 auto; }
+  h1 { font-size: 24px; margin: 0 0 4px; border-bottom: 3px solid #111; padding-bottom: 10px; }
+  .meta { display:flex; flex-wrap:wrap; gap:16px; font-size:13px; color:#555; margin: 6px 0 20px; }
+  .meta b { color:#111; }
+  h2 { font-size: 15px; margin: 22px 0 8px; padding: 6px 10px; background:#f3f4f6; border-left: 4px solid #3b82f6; }
+  .grid { display:grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+  .box { border:1px solid #e5e7eb; border-radius:6px; padding:10px; background:#fafafa; }
+  .box .k { font-size:11px; color:#6b7280; text-transform:uppercase; margin-bottom:4px; }
+  .box .v { font-size:13px; white-space:pre-wrap; min-height:20px; }
+  table { width:100%; border-collapse: collapse; font-size:13px; margin-top:6px; }
+  th, td { border:1px solid #d1d5db; padding:8px 10px; text-align:left; vertical-align:top; }
+  th { background:#f9fafb; font-weight:600; }
+  .notes { white-space:pre-wrap; border:1px solid #e5e7eb; border-radius:6px; padding:12px; background:#fff; font-size:13px; }
+  .footer { margin-top:32px; font-size:11px; color:#888; text-align:right; border-top:1px solid #e5e7eb; padding-top:8px; }
+  .btn { position:fixed; top:12px; right:12px; padding:8px 14px; background:#3b82f6; color:#fff; border:none; border-radius:6px; font-size:13px; cursor:pointer; }
+  @media print { .btn { display:none; } body { padding:0; } }
+</style></head>
+<body>
+  <button class="btn" onclick="window.print()">🖨️ 인쇄 / PDF 저장</button>
+  <h1>${esc(meeting.title)}</h1>
+  <div class="meta">
+    <span>📅 <b>${esc(meeting.date || '')}</b></span>
+    <span>🏷️ ${esc(meeting.category || '—')}</span>
+    <span>👥 참석자 ${attendees.length}명</span>
+    <span>상태: <b>${esc(status)}</b></span>
+  </div>
+
+  <h2>1. 개요 및 회고</h2>
+  <div class="grid">
+    <div class="box"><div class="k">🎯 목표</div><div class="v">${nl2br(meeting.goal || '—')}</div></div>
+    <div class="box"><div class="k">달성 여부</div><div class="v">${esc(status)}</div></div>
+    <div class="box"><div class="k">성과 코멘트</div><div class="v">${nl2br(meeting.achievement_comment || '—')}</div></div>
+  </div>
+
+  <h2>2. 참석자</h2>
+  <div class="notes">${attendees.map(a => `${esc(a.name_kr)} (${esc(a.name)})`).join(' · ') || '—'}</div>
+
+  <h2>3. 개인별 업데이트</h2>
+  <table>
+    <thead><tr><th style="width:18%">담당자</th><th>지난주 성과 (Done)</th><th>이번 주 목표 (Todo)</th><th>장애물 (Blockers)</th></tr></thead>
+    <tbody>${attendeeRows}</tbody>
+  </table>
+
+  <h2>4. 주요 지표(KPI) 및 로드맵</h2>
+  <div class="grid" style="grid-template-columns:1fr 1fr">
+    <div class="box"><div class="k">핵심 지표(KPI)</div><div class="v">${nl2br(meeting.kpi_notes || '—')}</div></div>
+    <div class="box"><div class="k">로드맵 점검</div><div class="v">${meeting.roadmap_aligned ? '✅' : '⬜'} 로드맵 방향 일치<br/>${meeting.schedule_adjustment_needed ? '✅' : '⬜'} 일정 조정 필요</div></div>
+  </div>
+
+  <h2>5. 회의 내용</h2>
+  <div class="notes">${nl2br(meeting.notes || '—')}</div>
+
+  <h2>6. 액션 아이템</h2>
+  <table>
+    <thead><tr><th>업무</th><th style="width:15%">담당자</th><th style="width:12%">우선순위</th><th style="width:12%">상태</th></tr></thead>
+    <tbody>${taskRows}</tbody>
+  </table>
+
+  <div class="footer">회의록 출력 · ${new Date().toLocaleString('ko-KR')}</div>
+  <script>window.addEventListener('load',()=>setTimeout(()=>window.print(),400));</script>
+</body></html>`;
+
+  const w = window.open('', '_blank');
+  if (!w) return false;
+  w.document.open();
+  w.document.write(html);
+  w.document.close();
+  return true;
+}
 
 export default function Meetings() {
   const { toast } = useToast();
@@ -169,18 +305,18 @@ export default function Meetings() {
       let text = '';
       if (isAudioFile(file)) {
         text = await transcribeAudioFile(meetingId, file);
-      } else if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
+      } else if (file.name.toLowerCase().endsWith('.doc') && !file.name.toLowerCase().endsWith('.docx')) {
+        toast({
+          title: '.doc 파일은 지원하지 않습니다',
+          description: 'Word에서 "다른 이름으로 저장 → .docx" 형식으로 변환 후 다시 업로드해주세요.',
+          variant: 'destructive',
+        });
+        setIsReadingFile(false);
+        return;
+      } else if (file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.md') || file.name.toLowerCase().endsWith('.csv')) {
         text = await file.text();
-      } else if (file.name.endsWith('.docx')) {
-        // Extract text from docx (ZIP containing XML)
-        const arrayBuffer = await file.arrayBuffer();
-        const JSZip = (await import('jszip')).default;
-        const zipData = await JSZip.loadAsync(arrayBuffer);
-        const docXml = await zipData.file('word/document.xml')?.async('string');
-        if (docXml) {
-          // Strip XML tags to get plain text
-          text = docXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        }
+      } else if (file.name.toLowerCase().endsWith('.docx')) {
+        text = await extractDocxText(file);
       } else {
         // Try reading as text for any other extension
         text = await file.text();
@@ -384,22 +520,30 @@ export default function Meetings() {
         setDialogFileContent('');
         toast({ title: `🎧 "${file.name}" 녹음 파일 선택 완료`, description: '등록 시 Gemini AI가 자동으로 녹취 후 분석합니다.' });
         return;
-      } else if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
+      } else if (file.name.toLowerCase().endsWith('.doc') && !file.name.toLowerCase().endsWith('.docx')) {
+        toast({
+          title: '.doc 파일은 지원하지 않습니다',
+          description: 'Word에서 "다른 이름으로 저장 → .docx" 형식으로 변환 후 다시 업로드해주세요.',
+          variant: 'destructive',
+        });
+        setDialogFileName('');
+        return;
+      } else if (file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.md') || file.name.toLowerCase().endsWith('.csv')) {
         text = await file.text();
-      } else if (file.name.endsWith('.docx')) {
-        const arrayBuffer = await file.arrayBuffer();
-        const JSZip = (await import('jszip')).default;
-        const zipData = await JSZip.loadAsync(arrayBuffer);
-        const docXml = await zipData.file('word/document.xml')?.async('string');
-        if (docXml) {
-          text = docXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        }
+      } else if (file.name.toLowerCase().endsWith('.docx')) {
+        text = await extractDocxText(file);
       } else {
         text = await file.text();
       }
+      if (!text || text.trim().length < 10) {
+        toast({ title: '파일 내용이 너무 짧습니다', description: '최소 10자 이상의 텍스트가 필요합니다. .doc 파일은 .docx로 변환 후 업로드해주세요.', variant: 'destructive' });
+        setDialogFileName('');
+        setDialogFileContent('');
+        return;
+      }
       setDialogAudioFile(null);
       setDialogFileContent(text);
-      toast({ title: `📄 "${file.name}" 파일 로드 완료`, description: `${text.length}자 추출됨` });
+      toast({ title: `📄 "${file.name}" 파일 로드 완료`, description: `${text.length}자 추출됨. 등록 시 AI가 자동으로 회의록 양식에 반영합니다.` });
     } catch (err: any) {
       toast({ title: '파일 읽기 실패', description: err.message, variant: 'destructive' });
       setDialogFileName('');
@@ -589,7 +733,7 @@ export default function Meetings() {
                   type="file"
                   ref={dialogFileInputRef}
                   className="hidden"
-                  accept=".txt,.md,.csv,.docx,audio/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.aac"
+                  accept=".txt,.md,.csv,.doc,.docx,audio/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.aac"
                   onChange={(e) => {
                     const file = e.target.files?.[0];
                     if (file) handleDialogFileRead(file);
@@ -621,7 +765,7 @@ export default function Meetings() {
                   ) : (
                     <div className="flex flex-col items-center gap-1">
                       <Upload className="h-5 w-5 text-muted-foreground" />
-                      <p className="text-xs text-muted-foreground">파일을 드래그하거나 클릭 (.txt, .md, .csv, .docx, 오디오)</p>
+                      <p className="text-xs text-muted-foreground">파일을 드래그하거나 클릭 (.txt, .md, .csv, .docx, 오디오) · .doc는 .docx로 변환 후 업로드</p>
                     </div>
                   )}
                 </div>
@@ -681,6 +825,19 @@ export default function Meetings() {
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 text-muted-foreground hover:text-primary"
+                    title="회의록 인쇄 / PDF"
+                    onClick={e => {
+                      e.stopPropagation();
+                      const ok = openMeetingPrintView(meeting, attendees, updates, meetingTasks, profiles);
+                      if (!ok) toast({ title: '팝업이 차단되었습니다', description: '브라우저 팝업 차단을 해제한 후 다시 시도해주세요.', variant: 'destructive' });
+                    }}
+                  >
+                    <Printer className="h-4 w-4" />
+                  </Button>
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-destructive" onClick={e => e.stopPropagation()}>
@@ -896,7 +1053,7 @@ export default function Meetings() {
                             type="file"
                             ref={fileInputRef}
                             className="hidden"
-                            accept=".txt,.md,.csv,.docx,audio/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.aac"
+                            accept=".txt,.md,.csv,.doc,.docx,audio/*,.mp3,.m4a,.wav,.webm,.ogg,.mp4,.aac"
                             onChange={(e) => {
                               const file = e.target.files?.[0];
                               if (file) handleFileUpload(meeting.id, file);
@@ -924,7 +1081,7 @@ export default function Meetings() {
                               <div className="flex flex-col items-center gap-2">
                                 <Upload className="h-8 w-8 text-muted-foreground" />
                                 <p className="text-sm font-medium">파일을 드래그하거나 클릭하여 업로드</p>
-                                <p className="text-xs text-muted-foreground">지원 형식: .txt, .md, .csv, .docx, .mp3, .m4a, .wav</p>
+                                <p className="text-xs text-muted-foreground">지원 형식: .txt, .md, .csv, .docx(Word), .mp3, .m4a, .wav</p>
                               </div>
                             )}
                           </div>
