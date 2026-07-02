@@ -254,20 +254,29 @@ export default function Meetings() {
     }
   };
 
-  const analyzeMeetingText = useCallback(async (meetingId: string, text: string) => {
+  const analyzeMeetingText = useCallback(async (meetingId: string, text: string, template?: any) => {
     const members = profiles.map(p => ({ name: p.name, name_kr: p.name_kr, id: p.id }));
+    const tpl = template ? {
+      name: template.name,
+      fields: Array.isArray(template.fields) ? template.fields : [],
+    } : undefined;
     const { data, error } = await supabase.functions.invoke('analyze-meeting', {
-      body: { transcript: text.trim(), members },
+      body: { transcript: text.trim(), members, template: tpl },
     });
     if (error) throw new Error(await getFunctionErrorMessage(error));
     if (data?.error) throw new Error(data.error);
 
-    await supabase.from('meetings').update({
+    const updatePayload: any = {
       notes: data.notes,
       goal: data.goal,
       kpi_notes: data.kpi_notes || null,
       achievement_comment: data.achievement_comment || null,
-    }).eq('id', meetingId);
+    };
+    if (template?.id) updatePayload.template_id = template.id;
+    if (data.template_fields && typeof data.template_fields === 'object') {
+      updatePayload.template_data = data.template_fields;
+    }
+    await supabase.from('meetings').update(updatePayload).eq('id', meetingId);
 
     if (data.action_items && data.action_items.length > 0) {
       const taskInserts = data.action_items.map((item: any) => {
