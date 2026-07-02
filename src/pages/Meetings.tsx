@@ -520,22 +520,30 @@ export default function Meetings() {
         setDialogFileContent('');
         toast({ title: `🎧 "${file.name}" 녹음 파일 선택 완료`, description: '등록 시 Gemini AI가 자동으로 녹취 후 분석합니다.' });
         return;
-      } else if (file.name.endsWith('.txt') || file.name.endsWith('.md') || file.name.endsWith('.csv')) {
+      } else if (file.name.toLowerCase().endsWith('.doc') && !file.name.toLowerCase().endsWith('.docx')) {
+        toast({
+          title: '.doc 파일은 지원하지 않습니다',
+          description: 'Word에서 "다른 이름으로 저장 → .docx" 형식으로 변환 후 다시 업로드해주세요.',
+          variant: 'destructive',
+        });
+        setDialogFileName('');
+        return;
+      } else if (file.name.toLowerCase().endsWith('.txt') || file.name.toLowerCase().endsWith('.md') || file.name.toLowerCase().endsWith('.csv')) {
         text = await file.text();
-      } else if (file.name.endsWith('.docx')) {
-        const arrayBuffer = await file.arrayBuffer();
-        const JSZip = (await import('jszip')).default;
-        const zipData = await JSZip.loadAsync(arrayBuffer);
-        const docXml = await zipData.file('word/document.xml')?.async('string');
-        if (docXml) {
-          text = docXml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-        }
+      } else if (file.name.toLowerCase().endsWith('.docx')) {
+        text = await extractDocxText(file);
       } else {
         text = await file.text();
       }
+      if (!text || text.trim().length < 10) {
+        toast({ title: '파일 내용이 너무 짧습니다', description: '최소 10자 이상의 텍스트가 필요합니다. .doc 파일은 .docx로 변환 후 업로드해주세요.', variant: 'destructive' });
+        setDialogFileName('');
+        setDialogFileContent('');
+        return;
+      }
       setDialogAudioFile(null);
       setDialogFileContent(text);
-      toast({ title: `📄 "${file.name}" 파일 로드 완료`, description: `${text.length}자 추출됨` });
+      toast({ title: `📄 "${file.name}" 파일 로드 완료`, description: `${text.length}자 추출됨. 등록 시 AI가 자동으로 회의록 양식에 반영합니다.` });
     } catch (err: any) {
       toast({ title: '파일 읽기 실패', description: err.message, variant: 'destructive' });
       setDialogFileName('');
