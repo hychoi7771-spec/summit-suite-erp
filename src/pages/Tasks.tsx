@@ -134,10 +134,11 @@ export default function Tasks() {
   }, []);
 
   const fetchData = async () => {
-    const [taskRes, profRes, catRes] = await Promise.all([
+    const [taskRes, profRes, catRes, prodRes] = await Promise.all([
       supabase.from('tasks').select('*').order('position', { ascending: true }),
       supabase.from('profiles').select('id, name, name_kr, avatar'),
       supabase.from('task_categories').select('*').order('sort_order', { ascending: true }),
+      supabase.from('products').select('id, name'),
     ]);
     let tasks = taskRes.data || [];
 
