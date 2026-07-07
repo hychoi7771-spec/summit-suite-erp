@@ -438,6 +438,20 @@ export default function Tasks() {
                     </div>
                     <div className="space-y-2"><Label>마감일</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
                   </div>
+                  {(() => {
+                    const promoCat = (categories as any[]).find((c: any) => c.system_slug === 'promotion');
+                    if (promoCat && taskForm.category_id === promoCat.id) {
+                      return (
+                        <PromotionSubForm
+                          value={promotionSubForm}
+                          onChange={setPromotionSubForm}
+                          profiles={profiles}
+                          defaultMdId={profile?.id}
+                        />
+                      );
+                    }
+                    return null;
+                  })()}
                   <Button
                     onClick={handleAddTask}
                     disabled={submitting || !taskForm.title || (createMode === 'scheduled' && !taskForm.start_date)}
