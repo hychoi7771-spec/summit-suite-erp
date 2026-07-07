@@ -65,10 +65,13 @@ export default function DesignRequestDialog({ profiles, onSuccess }: DesignReque
         if (uploadError) {
           throw new Error(`파일 업로드 실패 (${file.name}): ${uploadError.message}`);
         }
-        const { data: urlData } = supabase.storage
+        const { data: urlData, error: signErr } = await supabase.storage
           .from('design-attachments')
-          .getPublicUrl(filePath);
-        attachmentUrls.push(urlData.publicUrl);
+          .createSignedUrl(filePath, 60 * 60 * 24 * 365 * 10); // 10년 서명 URL
+        if (signErr || !urlData?.signedUrl) {
+          throw new Error(`파일 URL 생성 실패 (${file.name}): ${signErr?.message ?? 'unknown'}`);
+        }
+        attachmentUrls.push(urlData.signedUrl);
       }
 
       // Create task
