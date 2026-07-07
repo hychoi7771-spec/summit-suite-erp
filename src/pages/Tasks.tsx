@@ -442,7 +442,7 @@ export default function Tasks() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label>시작일{createMode === 'scheduled' && <span className="text-destructive ml-0.5">*</span>}</Label>
+                      <Label>시작일{(createMode === 'scheduled' || createMode === 'promotion') && <span className="text-destructive ml-0.5">*</span>}</Label>
                       <Input
                         type="date"
                         value={taskForm.start_date}
@@ -450,11 +450,12 @@ export default function Tasks() {
                         min={createMode === 'scheduled' ? new Date(Date.now() + 86400000).toISOString().slice(0, 10) : undefined}
                       />
                     </div>
-                    <div className="space-y-2"><Label>마감일</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
+                    <div className="space-y-2"><Label>마감일{createMode === 'promotion' && <span className="text-destructive ml-0.5">*</span>}</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
                   </div>
                   {(() => {
                     const promoCat = (categories as any[]).find((c: any) => c.system_slug === 'promotion');
-                    if (promoCat && taskForm.category_id === promoCat.id) {
+                    const showPromo = createMode === 'promotion' || (promoCat && taskForm.category_id === promoCat.id);
+                    if (showPromo) {
                       return (
                         <PromotionSubForm
                           value={promotionSubForm}
