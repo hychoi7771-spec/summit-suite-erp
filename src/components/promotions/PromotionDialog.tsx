@@ -88,6 +88,13 @@ export function PromotionDialog({
     return Math.round((1 - p / r) * 100);
   }, [form.regular_price, form.promo_price]);
 
+  const buildTaskTitle = () => {
+    const prod = products.find(p => p.id === form.product_id);
+    const ch = channels.find(c => c.id === form.channel_id);
+    const base = form.title?.trim() || `${prod?.name || '품목'} · ${ch?.name || '채널'} 행사`;
+    return `[행사] ${base}`;
+  };
+
   const save = async () => {
     if (!form.product_id || !form.channel_id || !form.md_id || !form.start_date || !form.end_date || !form.promo_price) {
       toast({ title: '필수 항목을 입력해주세요', description: '품목·채널·MD·기간·행사가는 필수입니다', variant: 'destructive' });
@@ -116,18 +123,55 @@ export function PromotionDialog({
       status_override: form.status === 'cancelled' ? true : form.status_override,
     };
 
-    let error;
     if (promotion) {
-      ({ error } = await supabase.from('promotions').update(payload).eq('id', promotion.id));
+      const { error } = await supabase.from('promotions').update(payload).eq('id', promotion.id);
+      if (error) {
+        toast({ title: '저장 실패', description: error.message, variant: 'destructive' });
+        return;
+      }
+      // 연결된 업무 동기화
+      if (promotion.task_id) {
+        await supabase.from('tasks').update({
+          title: buildTaskTitle(),
+          start_date: form.start_date,
+          due_date: form.end_date,
+          assignee_id: form.md_id,
+        } as any).eq('id', promotion.task_id);
+      }
     } else {
       payload.created_by = profile?.id;
-      ({ error } = await supabase.from('promotions').insert(payload));
+      const { data: promoRow, error } = await supabase.from('promotions').insert(payload).select('id').single();
+      if (error || !promoRow) {
+        toast({ title: '저장 실패', description: error?.message, variant: 'destructive' });
+        return;
+      }
+      // 업무 자동 생성 및 연결
+      try {
+        const { data: cat } = await supabase
+          .from('task_categories')
+          .select('id')
+          .eq('system_slug', 'promotion')
+          .maybeSingle();
+        const { data: taskRow, error: taskErr } = await supabase.from('tasks').insert({
+          title: buildTaskTitle(),
+          description: form.memo || form.monitoring_note || null,
+          priority: 'medium',
+          assignee_id: form.md_id,
+          start_date: form.start_date,
+          due_date: form.end_date,
+          category_id: cat?.id || null,
+          status: 'todo',
+          promotion_id: promoRow.id,
+        } as any).select('id').single();
+        if (taskErr) throw taskErr;
+        if (taskRow?.id) {
+          await supabase.from('promotions').update({ task_id: taskRow.id }).eq('id', promoRow.id);
+        }
+      } catch (e: any) {
+        toast({ title: '업무 자동 생성 실패', description: e.message, variant: 'destructive' });
+      }
     }
-    if (error) {
-      toast({ title: '저장 실패', description: error.message, variant: 'destructive' });
-      return;
-    }
-    toast({ title: promotion ? '수정되었습니다' : '등록되었습니다' });
+    toast({ title: promotion ? '수정되었습니다' : '등록 및 업무 연동 완료' });
     onSaved();
     onOpenChange(false);
   };
