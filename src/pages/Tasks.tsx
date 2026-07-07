@@ -368,15 +368,21 @@ export default function Tasks() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>새 업무 등록</DialogTitle></DialogHeader>
-              <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'now' | 'scheduled')} className="mt-2">
-                <TabsList className="grid w-full grid-cols-2">
+              <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'now' | 'scheduled' | 'promotion')} className="mt-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="now" className="gap-1.5"><Plus className="h-3.5 w-3.5" />즉시 등록</TabsTrigger>
                   <TabsTrigger value="scheduled" className="gap-1.5"><Calendar className="h-3.5 w-3.5" />예약 등록</TabsTrigger>
+                  <TabsTrigger value="promotion" className="gap-1.5">🎉 행사 등록</TabsTrigger>
                 </TabsList>
                 <div className="space-y-4 mt-4">
                   {createMode === 'scheduled' && (
                     <div className="rounded-md bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/50 px-3 py-2 text-xs text-purple-700 dark:text-purple-300">
                       예약 업무는 <strong>시작일</strong>이 도래하면 자동으로 '할 일' 칸반으로 이동합니다.
+                    </div>
+                  )}
+                  {createMode === 'promotion' && (
+                    <div className="rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200 dark:border-fuchsia-800/50 px-3 py-2 text-xs text-fuchsia-700 dark:text-fuchsia-300">
+                      행사 업무로 등록되며 아래 <strong>행사 정보</strong>가 <strong>행사 현황</strong>에 자동 반영됩니다. (시작일·마감일 필수)
                     </div>
                   )}
                   <div className="space-y-2">
