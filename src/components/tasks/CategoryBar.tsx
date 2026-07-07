@@ -7,6 +7,7 @@ export interface TaskCategory {
   icon: string | null;
   color: string;
   sort_order: number;
+  system_slug?: string | null;
 }
 
 interface CategoryBarProps {
