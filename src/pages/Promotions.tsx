@@ -34,6 +34,8 @@ export default function Promotions() {
   const [dialogOpen, setDialogOpen] = useState(false);
   const [channelDialogOpen, setChannelDialogOpen] = useState(false);
   const [policyDialogOpen, setPolicyDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState('dashboard');
+  const [listFilter, setListFilter] = useState<{ mdId: string; channelId: string }>({ mdId: 'all', channelId: 'all' });
 
   const fetchAll = async () => {
     const [pRes, cRes, polRes, conRes, prodRes, profRes] = await Promise.all([
@@ -168,7 +170,7 @@ export default function Promotions() {
         <PastelStatCard icon={AlertTriangle} label="정책 위반" value={stats.violations} tone={stats.violations ? 'red' : 'emerald'} />
       </div>
 
-      <Tabs defaultValue="dashboard">
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
         <TabsList>
           <TabsTrigger value="dashboard"><LayoutDashboard className="h-4 w-4 mr-1.5" />현황판</TabsTrigger>
           <TabsTrigger value="list"><TableIcon className="h-4 w-4 mr-1.5" />목록</TabsTrigger>
@@ -181,6 +183,11 @@ export default function Promotions() {
             profiles={profiles}
             products={products}
             conflictMap={conflictMap}
+            onSelect={openEdit}
+            onFilterList={({ mdId, channelId }) => {
+              setListFilter({ mdId: mdId ?? 'all', channelId: channelId ?? 'all' });
+              setActiveTab('list');
+            }}
           />
         </TabsContent>
         <TabsContent value="list" className="mt-4">
@@ -193,6 +200,7 @@ export default function Promotions() {
             canEdit={canEditPromotion}
             onEdit={openEdit}
             onDelete={handleDelete}
+            initialFilter={listFilter}
           />
         </TabsContent>
         <TabsContent value="calendar" className="mt-4">

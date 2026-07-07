@@ -1504,6 +1504,7 @@ export type Database = {
           status: Database["public"]["Enums"]["promotion_status"]
           status_override: boolean
           stock_qty: number | null
+          task_id: string | null
           title: string | null
           updated_at: string
         }
@@ -1531,6 +1532,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["promotion_status"]
           status_override?: boolean
           stock_qty?: number | null
+          task_id?: string | null
           title?: string | null
           updated_at?: string
         }
@@ -1558,6 +1560,7 @@ export type Database = {
           status?: Database["public"]["Enums"]["promotion_status"]
           status_override?: boolean
           stock_qty?: number | null
+          task_id?: string | null
           title?: string | null
           updated_at?: string
         }
@@ -1588,6 +1591,13 @@ export type Database = {
             columns: ["product_id"]
             isOneToOne: false
             referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotions_task_id_fkey"
+            columns: ["task_id"]
+            isOneToOne: false
+            referencedRelation: "tasks"
             referencedColumns: ["id"]
           },
         ]
@@ -2046,6 +2056,7 @@ export type Database = {
           id: string
           name: string
           sort_order: number
+          system_slug: string | null
           updated_at: string
         }
         Insert: {
@@ -2055,6 +2066,7 @@ export type Database = {
           id?: string
           name: string
           sort_order?: number
+          system_slug?: string | null
           updated_at?: string
         }
         Update: {
@@ -2064,6 +2076,7 @@ export type Database = {
           id?: string
           name?: string
           sort_order?: number
+          system_slug?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -2206,6 +2219,7 @@ export type Database = {
           position: number
           priority: Database["public"]["Enums"]["task_priority"]
           project_name: string | null
+          promotion_id: string | null
           start_date: string | null
           status: Database["public"]["Enums"]["task_status"]
           tags: string[] | null
@@ -2226,6 +2240,7 @@ export type Database = {
           position?: number
           priority?: Database["public"]["Enums"]["task_priority"]
           project_name?: string | null
+          promotion_id?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           tags?: string[] | null
@@ -2246,6 +2261,7 @@ export type Database = {
           position?: number
           priority?: Database["public"]["Enums"]["task_priority"]
           project_name?: string | null
+          promotion_id?: string | null
           start_date?: string | null
           status?: Database["public"]["Enums"]["task_status"]
           tags?: string[] | null
@@ -2265,6 +2281,20 @@ export type Database = {
             columns: ["category_id"]
             isOneToOne: false
             referencedRelation: "task_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tasks_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotion_conflicts"
+            referencedColumns: ["promotion_id"]
+          },
+          {
+            foreignKeyName: "tasks_promotion_id_fkey"
+            columns: ["promotion_id"]
+            isOneToOne: false
+            referencedRelation: "promotions"
             referencedColumns: ["id"]
           },
         ]
