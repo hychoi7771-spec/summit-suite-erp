@@ -184,9 +184,16 @@ export default function Tasks() {
         createMode === 'scheduled' && taskForm.start_date && taskForm.start_date > today
           ? 'scheduled'
           : 'todo';
-      // 카테고리 미선택 시 AI 자동 분류
+      const promoCategory = categories.find((c: any) => c.system_slug === 'promotion');
+      // 카테고리 결정: 행사 모드면 강제, 아니면 사용자 선택 또는 AI 자동 분류
       let resolvedCategoryId: string | null = taskForm.category_id || null;
-      if (!resolvedCategoryId && categories.length > 0) {
+      if (createMode === 'promotion') {
+        if (!promoCategory) {
+          toast({ title: '행사 카테고리가 없습니다', description: '관리자에게 문의하세요.', variant: 'destructive' });
+          return;
+        }
+        resolvedCategoryId = promoCategory.id;
+      } else if (!resolvedCategoryId && categories.length > 0) {
         try {
           const { data: ai } = await supabase.functions.invoke('classify-task', {
             body: {
@@ -201,8 +208,7 @@ export default function Tasks() {
         }
       }
 
-      const promoCategory = categories.find((c: any) => c.system_slug === 'promotion');
-      const isPromo = resolvedCategoryId && promoCategory && resolvedCategoryId === promoCategory.id;
+      const isPromo = createMode === 'promotion' || (resolvedCategoryId && promoCategory && resolvedCategoryId === promoCategory.id);
 
       if (isPromo) {
         const missing = !promotionSubForm.product_id || !promotionSubForm.channel_id || !promotionSubForm.md_id || !promotionSubForm.promo_price;
