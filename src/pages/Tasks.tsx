@@ -241,16 +241,24 @@ export default function Tasks() {
       }
 
       const isPromo = createMode === 'promotion' || (resolvedCategoryId && promoCategory && resolvedCategoryId === promoCategory.id);
+      const parsedItems = isPromo ? parsePromoLinesFromDescription(taskForm.description) : [];
+      const useMulti = isPromo && parsedItems.length > 0;
 
       if (isPromo) {
-        const missing = !promotionSubForm.product_id || !promotionSubForm.channel_id || !promotionSubForm.md_id || !promotionSubForm.promo_price;
-        if (missing) {
-          toast({ title: '행사 정보를 입력해주세요', description: '품목·채널·담당 MD·행사가는 필수입니다.', variant: 'destructive' });
-          return;
-        }
         if (!taskForm.start_date || !taskForm.due_date) {
           toast({ title: '행사 업무는 시작일·마감일이 필요합니다', variant: 'destructive' });
           return;
+        }
+        if (!promotionSubForm.channel_id || !promotionSubForm.md_id) {
+          toast({ title: '채널·담당 MD를 선택해주세요', variant: 'destructive' });
+          return;
+        }
+        if (!useMulti) {
+          const missing = !promotionSubForm.product_id || !promotionSubForm.promo_price;
+          if (missing) {
+            toast({ title: '행사 정보를 입력해주세요', description: '품목·행사가는 필수입니다. (설명에 "상품명 가격" 형태로 여러 줄 입력 시 자동 인식됩니다)', variant: 'destructive' });
+            return;
+          }
         }
       }
 
@@ -272,17 +280,40 @@ export default function Tasks() {
 
       if (isPromo && inserted?.id) {
         try {
-          await upsertPromotionForTask({
-            taskId: inserted.id,
-            form: promotionSubForm,
-            startDate: taskForm.start_date,
-            endDate: taskForm.due_date,
-            createdBy: profile?.id,
-          });
+          if (useMulti) {
+            const rows = parsedItems.map(it => ({
+              product_id: it.product_id,
+              channel_id: promotionSubForm.channel_id,
+              md_id: promotionSubForm.md_id,
+              kind: promotionSubForm.kind || 'other',
+              placement: promotionSubForm.placement || null,
+              regular_price: it.regular_price,
+              promo_price: it.promo_price,
+              start_date: taskForm.start_date,
+              end_date: taskForm.due_date,
+              task_id: inserted.id,
+              created_by: profile?.id,
+            }));
+            const { data: promos, error: pErr } = await supabase.from('promotions').insert(rows as any).select('id');
+            if (pErr) throw pErr;
+            if (promos && promos[0]) {
+              await supabase.from('tasks').update({ promotion_id: promos[0].id } as any).eq('id', inserted.id);
+            }
+            toast({ title: `행사 ${rows.length}건이 자동 등록되었습니다` });
+          } else {
+            await upsertPromotionForTask({
+              taskId: inserted.id,
+              form: promotionSubForm,
+              startDate: taskForm.start_date,
+              endDate: taskForm.due_date,
+              createdBy: profile?.id,
+            });
+          }
         } catch (e: any) {
           toast({ title: '행사 정보 저장 실패', description: e.message, variant: 'destructive' });
         }
       }
+
 
       await notifyAdmins(
         finalStatus === 'scheduled' ? '새 예약 업무 등록' : '새 업무 등록',
