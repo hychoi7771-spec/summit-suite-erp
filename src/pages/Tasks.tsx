@@ -444,8 +444,29 @@ export default function Tasks() {
                     </div>
                   )}
                   {createMode === 'promotion' && (
-                    <div className="rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200 dark:border-fuchsia-800/50 px-3 py-2 text-xs text-fuchsia-700 dark:text-fuchsia-300">
-                      행사 업무로 등록되며 아래 <strong>행사 정보</strong>가 <strong>행사 현황</strong>에 자동 반영됩니다. (시작일·마감일 필수)
+                    <div className="rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200 dark:border-fuchsia-800/50 px-3 py-2 text-xs text-fuchsia-700 dark:text-fuchsia-300 space-y-1">
+                      <div>행사 업무로 등록되며 <strong>행사 현황</strong>에 자동 반영됩니다. (시작일·마감일 필수)</div>
+                      <div>💡 <strong>설명</strong>에 <code className="px-1 rounded bg-fuchsia-100">상품명 12000</code> 또는 <code className="px-1 rounded bg-fuchsia-100">상품명 15000 12000</code>처럼 한 줄에 하나씩 적으면 <strong>품목별로 자동 등록</strong>됩니다. (채널·MD는 아래에서 한 번만 선택)</div>
+                      {(() => {
+                        const parsed = parsePromoLinesFromDescription(taskForm.description);
+                        if (parsed.length === 0) return null;
+                        return (
+                          <div className="mt-1.5 pt-1.5 border-t border-fuchsia-200/60">
+                            <div className="font-medium mb-1">자동 인식된 품목 ({parsed.length}건):</div>
+                            <ul className="space-y-0.5">
+                              {parsed.map(it => (
+                                <li key={it.product_id} className="flex items-center gap-1.5">
+                                  <span className="font-medium">{it.product_name}</span>
+                                  <span className="text-fuchsia-600">
+                                    {it.regular_price ? `₩${it.regular_price.toLocaleString()} → ` : ''}
+                                    ₩{it.promo_price.toLocaleString()}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                   <div className="space-y-2">
