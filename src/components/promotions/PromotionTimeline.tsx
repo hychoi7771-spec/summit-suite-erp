@@ -5,10 +5,20 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 const DAY_MS = 86400000;
+const WEEK_MS = 7 * DAY_MS;
 
 function toDate(iso: string) { return new Date(iso + 'T00:00:00'); }
 function dateStr(d: Date) { return d.toISOString().slice(0, 10); }
-function dayIndex(d1: Date, d2: Date) { return Math.round((d2.getTime() - d1.getTime()) / DAY_MS); }
+function startOfWeek(d: Date) {
+  const x = new Date(d); x.setHours(0, 0, 0, 0);
+  const day = x.getDay();
+  const diff = (day === 0 ? -6 : 1 - day); // Monday start
+  x.setDate(x.getDate() + diff);
+  return x;
+}
+function weekIndex(start: Date, d: Date) {
+  return Math.floor((startOfWeek(d).getTime() - start.getTime()) / WEEK_MS);
+}
 
 const CHANNEL_COLORS = [
   'bg-blue-200/70', 'bg-emerald-200/70', 'bg-violet-200/70', 'bg-cyan-200/70',
@@ -28,13 +38,14 @@ export function PromotionTimeline({
   onSelect: (p: any) => void;
 }) {
   const [rangeStart, setRangeStart] = useState(() => {
-    const d = new Date(); d.setDate(d.getDate() - 7); d.setHours(0, 0, 0, 0); return d;
+    const d = new Date(); d.setDate(d.getDate() - 7);
+    return startOfWeek(d);
   });
   const [mdFilter, setMdFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
 
-  const days = 35;
-  const rangeEnd = new Date(rangeStart.getTime() + (days - 1) * DAY_MS);
+  const weeks = 12;
+  const rangeEnd = new Date(rangeStart.getTime() + weeks * WEEK_MS - DAY_MS);
   const startISO = dateStr(rangeStart);
   const endISO = dateStr(rangeEnd);
 
@@ -53,7 +64,6 @@ export function PromotionTimeline({
     return true;
   }), [promotions, startISO, endISO, mdFilter, typeFilter, channelMap]);
 
-  // Rows: only channels that have promotions in range, sorted by ongoing count
   const rowChannels = useMemo(() => {
     const counts = new Map<string, number>();
     filtered.forEach(p => counts.set(p.channel_id, (counts.get(p.channel_id) || 0) + 1));
@@ -73,10 +83,18 @@ export function PromotionTimeline({
   }, [filtered]);
 
   const today = new Date(); today.setHours(0, 0, 0, 0);
-  const todayIdx = dayIndex(rangeStart, today);
+  const todayWeekIdx = weekIndex(rangeStart, today);
 
-  const shift = (delta: number) => {
-    const d = new Date(rangeStart); d.setDate(d.getDate() + delta); setRangeStart(d);
+  const shift = (deltaWeeks: number) => {
+    const d = new Date(rangeStart); d.setDate(d.getDate() + deltaWeeks * 7); setRangeStart(startOfWeek(d));
+  };
+
+  // ISO week number (approx: week containing Thursday)
+  const isoWeek = (d: Date) => {
+    const t = new Date(d); t.setHours(0, 0, 0, 0);
+    t.setDate(t.getDate() + 3 - ((t.getDay() + 6) % 7));
+    const firstThursday = new Date(t.getFullYear(), 0, 4);
+    return 1 + Math.round(((t.getTime() - firstThursday.getTime()) / DAY_MS - 3 + ((firstThursday.getDay() + 6) % 7)) / 7);
   };
 
   return (
@@ -84,7 +102,7 @@ export function PromotionTimeline({
       <div className="flex flex-wrap items-center justify-between gap-2 mb-3">
         <div className="text-sm font-semibold">
           {rangeStart.getMonth() + 1}/{rangeStart.getDate()} ~ {rangeEnd.getMonth() + 1}/{rangeEnd.getDate()}
-          <span className="text-muted-foreground font-normal ml-2">({filtered.length}건)</span>
+          <span className="text-muted-foreground font-normal ml-2">주단위 · {weeks}주 · ({filtered.length}건)</span>
         </div>
         <div className="flex items-center gap-2">
           <Select value={mdFilter} onValueChange={setMdFilter}>
@@ -102,9 +120,9 @@ export function PromotionTimeline({
               <SelectItem value="offline">오프라인</SelectItem>
             </SelectContent>
           </Select>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shift(-7)}><ChevronLeft className="h-4 w-4" /></Button>
-          <Button variant="outline" size="sm" className="h-8" onClick={() => { const d = new Date(); d.setDate(d.getDate() - 7); d.setHours(0, 0, 0, 0); setRangeStart(d); }}>오늘</Button>
-          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shift(7)}><ChevronRight className="h-4 w-4" /></Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shift(-4)}><ChevronLeft className="h-4 w-4" /></Button>
+          <Button variant="outline" size="sm" className="h-8" onClick={() => { const d = new Date(); d.setDate(d.getDate() - 7); setRangeStart(startOfWeek(d)); }}>이번주</Button>
+          <Button variant="outline" size="icon" className="h-8 w-8" onClick={() => shift(4)}><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </div>
 
@@ -113,18 +131,17 @@ export function PromotionTimeline({
       ) : (
         <div className="overflow-x-auto">
           <div className="min-w-[900px]">
-            {/* Header day scale */}
+            {/* Header: week scale */}
             <div className="flex text-[10px] text-muted-foreground border-b pb-1 mb-1 sticky top-0 bg-card">
               <div className="w-32 shrink-0" />
-              <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${days}, minmax(0, 1fr))` }}>
-                {Array.from({ length: days }, (_, i) => {
-                  const d = new Date(rangeStart.getTime() + i * DAY_MS);
-                  const isToday = i === todayIdx;
-                  const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                  const showLabel = d.getDate() === 1 || i === 0 || i % 7 === 0;
+              <div className="flex-1 grid" style={{ gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))` }}>
+                {Array.from({ length: weeks }, (_, i) => {
+                  const wStart = new Date(rangeStart.getTime() + i * WEEK_MS);
+                  const isCurrent = i === todayWeekIdx;
                   return (
-                    <div key={i} className={`text-center border-l first:border-l-0 ${isToday ? 'text-primary font-bold' : ''} ${isWeekend ? 'bg-muted/30' : ''}`}>
-                      {showLabel ? `${d.getMonth() + 1}/${d.getDate()}` : ''}
+                    <div key={i} className={`text-center border-l first:border-l-0 leading-tight py-0.5 ${isCurrent ? 'text-primary font-bold bg-primary/5' : ''}`}>
+                      <div>{wStart.getMonth() + 1}/{wStart.getDate()}</div>
+                      <div className="text-[9px] opacity-70">W{isoWeek(wStart)}</div>
                     </div>
                   );
                 })}
@@ -134,7 +151,6 @@ export function PromotionTimeline({
             {/* Rows */}
             {rowChannels.map(channel => {
               const items = promosByChannel.get(channel.id) || [];
-              // Assign lanes to avoid overlap
               const lanes: any[][] = [];
               items.sort((a, b) => a.start_date.localeCompare(b.start_date));
               items.forEach((p) => {
@@ -151,26 +167,21 @@ export function PromotionTimeline({
                 <div key={channel.id} className="flex border-b last:border-b-0 hover:bg-muted/30 transition-colors">
                   <div className="w-32 shrink-0 py-2 pr-2 text-xs font-medium truncate">{channel.name}</div>
                   <div className="flex-1 relative" style={{ height: rowHeight }}>
-                    {/* Weekend & today background */}
-                    <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${days}, minmax(0, 1fr))` }}>
-                      {Array.from({ length: days }, (_, i) => {
-                        const d = new Date(rangeStart.getTime() + i * DAY_MS);
-                        const isToday = i === todayIdx;
-                        const isWeekend = d.getDay() === 0 || d.getDay() === 6;
-                        return <div key={i} className={`border-l first:border-l-0 border-border/40 ${isWeekend ? 'bg-muted/20' : ''} ${isToday ? 'bg-primary/5' : ''}`} />;
+                    {/* Week column background */}
+                    <div className="absolute inset-0 grid" style={{ gridTemplateColumns: `repeat(${weeks}, minmax(0, 1fr))` }}>
+                      {Array.from({ length: weeks }, (_, i) => {
+                        const isCurrent = i === todayWeekIdx;
+                        return <div key={i} className={`border-l first:border-l-0 border-border/40 ${isCurrent ? 'bg-primary/5' : ''}`} />;
                       })}
                     </div>
-                    {/* Today vertical line */}
-                    {todayIdx >= 0 && todayIdx < days && (
-                      <div className="absolute top-0 bottom-0 w-px bg-primary z-10 pointer-events-none" style={{ left: `${((todayIdx + 0.5) / days) * 100}%` }} />
-                    )}
-                    {/* Bars */}
+                    {/* Bars snapped to weeks */}
                     {lanes.map((lane, li) =>
                       lane.map(p => {
-                        const s = Math.max(0, dayIndex(rangeStart, toDate(p.start_date)));
-                        const e = Math.min(days - 1, dayIndex(rangeStart, toDate(p.end_date)));
-                        const left = (s / days) * 100;
-                        const width = ((e - s + 1) / days) * 100;
+                        const sWeek = Math.max(0, weekIndex(rangeStart, toDate(p.start_date)));
+                        const eWeek = Math.min(weeks - 1, weekIndex(rangeStart, toDate(p.end_date)));
+                        if (eWeek < 0 || sWeek > weeks - 1) return null;
+                        const left = (sWeek / weeks) * 100;
+                        const width = ((eWeek - sWeek + 1) / weeks) * 100;
                         const conflict = conflictMap.get(p.id);
                         const hasViolation = !!conflict?.policy_violation;
                         const hasCheaper = (conflict?.cheaper_overlap_count ?? 0) > 0;
