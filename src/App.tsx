@@ -12,6 +12,7 @@ import Tasks from "./pages/Tasks";
 import Meetings from "./pages/Meetings";
 import Expenses from "./pages/Expenses";
 import Sales from "./pages/Sales";
+import Promotions from "./pages/Promotions";
 import Library from "./pages/Library";
 import Notices from "./pages/Notices";
 import CalendarPage from "./pages/CalendarPage";
@@ -90,6 +91,7 @@ function AppRoutes() {
                 <Route path="/meetings" element={<Meetings />} />
                 <Route path="/expenses" element={<Expenses />} />
                 <Route path="/sales" element={<Sales />} />
+                <Route path="/promotions" element={<Promotions />} />
                 <Route path="/library" element={<Library />} />
                 <Route path="/notices" element={<Notices />} />
                 <Route path="/notices-board" element={<Notices />} />
