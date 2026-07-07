@@ -58,16 +58,13 @@ export default function TeamWorkloadSection({ profiles, roles, tasks, reportedTo
       new_value: newAssigneeId,
     });
     if (newAssigneeId && newAssigneeId !== profile.id) {
-      const targetUserId = profiles.find(p => p.id === newAssigneeId)?.user_id;
-      if (targetUserId) {
-        await supabase.from('notifications').insert({
-          user_id: targetUserId,
-          type: 'task',
-          title: '업무가 재배치되었습니다',
-          message: `「${task.title}」 업무가 회원님께 배정되었습니다`,
-          related_id: task.id,
-        });
-      }
+      await notifyUser(
+        newAssigneeId,
+        '업무가 재배치되었습니다',
+        `「${task.title}」 업무가 회원님께 배정되었습니다`,
+        'task',
+        task.id,
+      );
     }
     toast.success(`「${task.title}」 → ${newAssigneeName}`);
     setReassigningId(null);
