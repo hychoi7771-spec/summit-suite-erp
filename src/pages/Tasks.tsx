@@ -29,6 +29,7 @@ import CategoryBar, { TaskCategory } from '@/components/tasks/CategoryBar';
 import TaskFilterToolbar, { BoardToggles } from '@/components/tasks/TaskFilterToolbar';
 import CategoryManageDialog from '@/components/tasks/CategoryManageDialog';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
+import { PromotionSubForm, emptyPromotionSubForm, upsertPromotionForTask, type PromotionSubFormValue } from '@/components/promotions/PromotionSubForm';
 
 const TOGGLES_STORAGE_KEY = 'task-board-toggles';
 const DEFAULT_TOGGLES: BoardToggles = { hideDone: true, compact: false, myOnly: false, overdueOnly: false };
@@ -55,6 +56,7 @@ export default function Tasks() {
   const [submitting, setSubmitting] = useState(false);
   const [createMode, setCreateMode] = useState<'now' | 'scheduled'>('now');
   const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
+  const [promotionSubForm, setPromotionSubForm] = useState<PromotionSubFormValue>(emptyPromotionSubForm);
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [searchParams, setSearchParams] = useSearchParams();
   const [selectedAssignee, setSelectedAssignee] = useState<string>(searchParams.get('assignee') || 'all');
