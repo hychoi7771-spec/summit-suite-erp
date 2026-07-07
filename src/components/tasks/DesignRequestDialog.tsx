@@ -54,7 +54,11 @@ export default function DesignRequestDialog({ profiles, onSuccess }: DesignReque
       for (const file of files) {
         const ext = file.name.includes('.') ? file.name.split('.').pop() : '';
         const safeBase = file.name.replace(/\.[^.]+$/, '').replace(/[^a-zA-Z0-9]/g, '_').slice(0, 40) || 'file';
-        const filePath = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeBase}${ext ? '.' + ext : ''}`;
+        const ownerFolder = profile?.id;
+        if (!ownerFolder) {
+          throw new Error('로그인 정보를 확인할 수 없습니다.');
+        }
+        const filePath = `${ownerFolder}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}-${safeBase}${ext ? '.' + ext : ''}`;
         const { error: uploadError } = await supabase.storage
           .from('design-attachments')
           .upload(filePath, file, { contentType: file.type, upsert: false });
