@@ -16,27 +16,57 @@ export function PricePolicyDialog({
 }) {
   const { toast } = useToast();
   const [productId, setProductId] = useState('');
+  const [newProductName, setNewProductName] = useState('');
+  const [newProductCategory, setNewProductCategory] = useState<'건강기능식품' | '뷰티' | '의약외품'>('건강기능식품');
   const [channelId, setChannelId] = useState('all');
   const [minPrice, setMinPrice] = useState('');
   const [maxPrice, setMaxPrice] = useState('');
   const [note, setNote] = useState('');
+  const [saving, setSaving] = useState(false);
+
+  const isNew = productId === '__new__';
 
   const add = async () => {
     if (!productId) return;
-    const payload: any = {
-      product_id: productId,
-      channel_id: channelId === 'all' ? null : channelId,
-      min_price: minPrice ? Number(minPrice) : null,
-      max_price: maxPrice ? Number(maxPrice) : null,
-      note: note || null,
-    };
-    const { error } = await supabase.from('channel_price_policies')
-      .upsert(payload, { onConflict: 'product_id,channel_id' });
-    if (error) toast({ title: '저장 실패', description: error.message, variant: 'destructive' });
-    else {
+    setSaving(true);
+    try {
+      let pid = productId;
+      if (isNew) {
+        if (!newProductName.trim()) {
+          toast({ title: '상품명을 입력해주세요', variant: 'destructive' });
+          return;
+        }
+        const { data, error } = await supabase.from('products').insert({
+          name: newProductName.trim(),
+          category: newProductCategory as any,
+          stage: 'Launch' as any,
+          progress: 100,
+        } as any).select('id').single();
+        if (error || !data) {
+          toast({ title: '상품 등록 실패', description: error?.message, variant: 'destructive' });
+          return;
+        }
+        pid = data.id;
+      }
+      const payload: any = {
+        product_id: pid,
+        channel_id: channelId === 'all' ? null : channelId,
+        min_price: minPrice ? Number(minPrice) : null,
+        max_price: maxPrice ? Number(maxPrice) : null,
+        note: note || null,
+      };
+      const { error } = await supabase.from('channel_price_policies')
+        .upsert(payload, { onConflict: 'product_id,channel_id' });
+      if (error) {
+        toast({ title: '저장 실패', description: error.message, variant: 'destructive' });
+        return;
+      }
       setMinPrice(''); setMaxPrice(''); setNote('');
+      if (isNew) { setProductId(pid); setNewProductName(''); }
       onSaved();
       toast({ title: '정책이 저장되었습니다' });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -59,7 +89,10 @@ export function PricePolicyDialog({
             <Label className="text-xs">품목</Label>
             <Select value={productId} onValueChange={setProductId}>
               <SelectTrigger><SelectValue placeholder="품목 선택" /></SelectTrigger>
-              <SelectContent>{products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                <SelectItem value="__new__">+ 새 품목 등록</SelectItem>
+                {products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
           <div>
@@ -80,8 +113,30 @@ export function PricePolicyDialog({
             <Label className="text-xs">최고가</Label>
             <Input type="number" value={maxPrice} onChange={e => setMaxPrice(e.target.value)} />
           </div>
-          <Button onClick={add} className="gap-1"><Plus className="h-4 w-4" />저장</Button>
+          <Button onClick={add} disabled={saving} className="gap-1"><Plus className="h-4 w-4" />저장</Button>
         </div>
+
+        {isNew && (
+          <div className="grid grid-cols-6 gap-2 items-end mt-2 p-2 rounded-md bg-muted/40 border">
+            <div className="col-span-3">
+              <Label className="text-xs">새 상품명 *</Label>
+              <Input value={newProductName} onChange={e => setNewProductName(e.target.value)} placeholder="예: 콜라겐 프리미엄 30정" />
+            </div>
+            <div className="col-span-2">
+              <Label className="text-xs">카테고리</Label>
+              <Select value={newProductCategory} onValueChange={(v: any) => setNewProductCategory(v)}>
+                <SelectTrigger><SelectValue /></SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="건강기능식품">건강기능식품</SelectItem>
+                  <SelectItem value="뷰티">뷰티</SelectItem>
+                  <SelectItem value="의약외품">의약외품</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="text-[11px] text-muted-foreground pb-2">저장 시 상품이 함께 등록됩니다.</div>
+          </div>
+        )}
+
         <Input value={note} onChange={e => setNote(e.target.value)} placeholder="메모 (선택)" className="mt-2" />
 
         <div className="mt-4 max-h-[380px] overflow-y-auto divide-y">
