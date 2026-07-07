@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -19,18 +19,24 @@ const KIND_LABEL: Record<string, string> = {
 };
 
 export function PromotionTable({
-  promotions, channels, products, profiles, conflictMap, canEdit, onEdit, onDelete,
+  promotions, channels, products, profiles, conflictMap, canEdit, onEdit, onDelete, initialFilter,
 }: {
   promotions: any[]; channels: any[]; products: any[]; profiles: any[];
   conflictMap: Map<string, any>;
   canEdit: (p: any) => boolean;
   onEdit: (p: any) => void;
   onDelete: (p: any) => void;
+  initialFilter?: { mdId?: string; channelId?: string };
 }) {
   const [q, setQ] = useState('');
   const [status, setStatus] = useState('all');
   const [channelId, setChannelId] = useState('all');
   const [mdId, setMdId] = useState('all');
+
+  useEffect(() => {
+    if (initialFilter?.mdId) setMdId(initialFilter.mdId);
+    if (initialFilter?.channelId) setChannelId(initialFilter.channelId);
+  }, [initialFilter?.mdId, initialFilter?.channelId]);
 
   const productMap = useMemo(() => new Map(products.map(p => [p.id, p])), [products]);
   const channelMap = useMemo(() => new Map(channels.map(c => [c.id, c])), [channels]);
