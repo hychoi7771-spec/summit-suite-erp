@@ -51,6 +51,7 @@ export default function Tasks() {
   const [activeTab, setActiveTab] = useState('board');
   const [taskList, setTaskList] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
