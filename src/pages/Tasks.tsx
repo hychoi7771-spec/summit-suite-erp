@@ -51,6 +51,7 @@ export default function Tasks() {
   const [activeTab, setActiveTab] = useState('board');
   const [taskList, setTaskList] = useState<any[]>([]);
   const [profiles, setProfiles] = useState<any[]>([]);
+  const [products, setProducts] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -133,10 +134,11 @@ export default function Tasks() {
   }, []);
 
   const fetchData = async () => {
-    const [taskRes, profRes, catRes] = await Promise.all([
+    const [taskRes, profRes, catRes, prodRes] = await Promise.all([
       supabase.from('tasks').select('*').order('position', { ascending: true }),
       supabase.from('profiles').select('id, name, name_kr, avatar'),
       supabase.from('task_categories').select('*').order('sort_order', { ascending: true }),
+      supabase.from('products').select('id, name'),
     ]);
     let tasks = taskRes.data || [];
 
@@ -157,7 +159,37 @@ export default function Tasks() {
     setTaskList(tasks);
     setProfiles(profRes.data || []);
     setCategories((catRes.data || []) as TaskCategory[]);
+    setProducts(prodRes.data || []);
     setLoading(false);
+  };
+
+  // 설명 문구에서 "상품명 가격" 형태의 라인을 파싱해 품목별 행사 항목을 추출
+  const parsePromoLinesFromDescription = (desc: string) => {
+    if (!desc || products.length === 0) return [] as { product_id: string; product_name: string; promo_price: number; regular_price: number | null }[];
+    const sorted = [...products].sort((a, b) => (b.name?.length || 0) - (a.name?.length || 0));
+    const items: { product_id: string; product_name: string; promo_price: number; regular_price: number | null }[] = [];
+    const seen = new Set<string>();
+    for (const raw of desc.split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line) continue;
+      const matched = sorted.find(p => p.name && line.toLowerCase().includes(String(p.name).toLowerCase()));
+      if (!matched) continue;
+      const nums = (line.match(/\d[\d,]*/g) || []).map(n => Number(n.replace(/,/g, ''))).filter(n => n >= 100);
+      if (nums.length === 0) continue;
+      let promo: number, regular: number | null = null;
+      if (nums.length >= 2) {
+        const sortedNums = [...nums].sort((a, b) => a - b);
+        promo = sortedNums[0];
+        regular = sortedNums[sortedNums.length - 1];
+        if (regular === promo) regular = null;
+      } else {
+        promo = nums[0];
+      }
+      if (seen.has(matched.id)) continue;
+      seen.add(matched.id);
+      items.push({ product_id: matched.id, product_name: matched.name, promo_price: promo, regular_price: regular });
+    }
+    return items;
   };
 
   const handleDragEnd = async (result: DropResult) => {
@@ -209,16 +241,24 @@ export default function Tasks() {
       }
 
       const isPromo = createMode === 'promotion' || (resolvedCategoryId && promoCategory && resolvedCategoryId === promoCategory.id);
+      const parsedItems = isPromo ? parsePromoLinesFromDescription(taskForm.description) : [];
+      const useMulti = isPromo && parsedItems.length > 0;
 
       if (isPromo) {
-        const missing = !promotionSubForm.product_id || !promotionSubForm.channel_id || !promotionSubForm.md_id || !promotionSubForm.promo_price;
-        if (missing) {
-          toast({ title: '행사 정보를 입력해주세요', description: '품목·채널·담당 MD·행사가는 필수입니다.', variant: 'destructive' });
-          return;
-        }
         if (!taskForm.start_date || !taskForm.due_date) {
           toast({ title: '행사 업무는 시작일·마감일이 필요합니다', variant: 'destructive' });
           return;
+        }
+        if (!promotionSubForm.channel_id || !promotionSubForm.md_id) {
+          toast({ title: '채널·담당 MD를 선택해주세요', variant: 'destructive' });
+          return;
+        }
+        if (!useMulti) {
+          const missing = !promotionSubForm.product_id || !promotionSubForm.promo_price;
+          if (missing) {
+            toast({ title: '행사 정보를 입력해주세요', description: '품목·행사가는 필수입니다. (설명에 "상품명 가격" 형태로 여러 줄 입력 시 자동 인식됩니다)', variant: 'destructive' });
+            return;
+          }
         }
       }
 
@@ -240,17 +280,40 @@ export default function Tasks() {
 
       if (isPromo && inserted?.id) {
         try {
-          await upsertPromotionForTask({
-            taskId: inserted.id,
-            form: promotionSubForm,
-            startDate: taskForm.start_date,
-            endDate: taskForm.due_date,
-            createdBy: profile?.id,
-          });
+          if (useMulti) {
+            const rows = parsedItems.map(it => ({
+              product_id: it.product_id,
+              channel_id: promotionSubForm.channel_id,
+              md_id: promotionSubForm.md_id,
+              kind: promotionSubForm.kind || 'other',
+              placement: promotionSubForm.placement || null,
+              regular_price: it.regular_price,
+              promo_price: it.promo_price,
+              start_date: taskForm.start_date,
+              end_date: taskForm.due_date,
+              task_id: inserted.id,
+              created_by: profile?.id,
+            }));
+            const { data: promos, error: pErr } = await supabase.from('promotions').insert(rows as any).select('id');
+            if (pErr) throw pErr;
+            if (promos && promos[0]) {
+              await supabase.from('tasks').update({ promotion_id: promos[0].id } as any).eq('id', inserted.id);
+            }
+            toast({ title: `행사 ${rows.length}건이 자동 등록되었습니다` });
+          } else {
+            await upsertPromotionForTask({
+              taskId: inserted.id,
+              form: promotionSubForm,
+              startDate: taskForm.start_date,
+              endDate: taskForm.due_date,
+              createdBy: profile?.id,
+            });
+          }
         } catch (e: any) {
           toast({ title: '행사 정보 저장 실패', description: e.message, variant: 'destructive' });
         }
       }
+
 
       await notifyAdmins(
         finalStatus === 'scheduled' ? '새 예약 업무 등록' : '새 업무 등록',
@@ -381,8 +444,29 @@ export default function Tasks() {
                     </div>
                   )}
                   {createMode === 'promotion' && (
-                    <div className="rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200 dark:border-fuchsia-800/50 px-3 py-2 text-xs text-fuchsia-700 dark:text-fuchsia-300">
-                      행사 업무로 등록되며 아래 <strong>행사 정보</strong>가 <strong>행사 현황</strong>에 자동 반영됩니다. (시작일·마감일 필수)
+                    <div className="rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200 dark:border-fuchsia-800/50 px-3 py-2 text-xs text-fuchsia-700 dark:text-fuchsia-300 space-y-1">
+                      <div>행사 업무로 등록되며 <strong>행사 현황</strong>에 자동 반영됩니다. (시작일·마감일 필수)</div>
+                      <div>💡 <strong>설명</strong>에 <code className="px-1 rounded bg-fuchsia-100">상품명 12000</code> 또는 <code className="px-1 rounded bg-fuchsia-100">상품명 15000 12000</code>처럼 한 줄에 하나씩 적으면 <strong>품목별로 자동 등록</strong>됩니다. (채널·MD는 아래에서 한 번만 선택)</div>
+                      {(() => {
+                        const parsed = parsePromoLinesFromDescription(taskForm.description);
+                        if (parsed.length === 0) return null;
+                        return (
+                          <div className="mt-1.5 pt-1.5 border-t border-fuchsia-200/60">
+                            <div className="font-medium mb-1">자동 인식된 품목 ({parsed.length}건):</div>
+                            <ul className="space-y-0.5">
+                              {parsed.map(it => (
+                                <li key={it.product_id} className="flex items-center gap-1.5">
+                                  <span className="font-medium">{it.product_name}</span>
+                                  <span className="text-fuchsia-600">
+                                    {it.regular_price ? `₩${it.regular_price.toLocaleString()} → ` : ''}
+                                    ₩{it.promo_price.toLocaleString()}
+                                  </span>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        );
+                      })()}
                     </div>
                   )}
                   <div className="space-y-2">
