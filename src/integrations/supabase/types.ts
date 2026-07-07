@@ -216,6 +216,64 @@ export type Database = {
           },
         ]
       }
+      channel_price_policies: {
+        Row: {
+          channel_id: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          max_price: number | null
+          min_price: number | null
+          note: string | null
+          product_id: string
+          updated_at: string
+        }
+        Insert: {
+          channel_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          max_price?: number | null
+          min_price?: number | null
+          note?: string | null
+          product_id: string
+          updated_at?: string
+        }
+        Update: {
+          channel_id?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          max_price?: number | null
+          min_price?: number | null
+          note?: string | null
+          product_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "channel_price_policies_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "sales_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_price_policies_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "channel_price_policies_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       company_holidays: {
         Row: {
           color: string | null
@@ -1421,6 +1479,119 @@ export type Database = {
           },
         ]
       }
+      promotions: {
+        Row: {
+          actual_revenue: number | null
+          attachment_url: string | null
+          channel_id: string
+          competitor_price: number | null
+          created_at: string
+          created_by: string | null
+          end_date: string
+          expected_revenue: number | null
+          id: string
+          kind: Database["public"]["Enums"]["promotion_kind"]
+          market_lowest_price: number | null
+          md_id: string
+          memo: string | null
+          monitoring_note: string | null
+          placement: string | null
+          planned_qty: number | null
+          product_id: string
+          promo_price: number
+          regular_price: number | null
+          start_date: string
+          status: Database["public"]["Enums"]["promotion_status"]
+          status_override: boolean
+          stock_qty: number | null
+          title: string | null
+          updated_at: string
+        }
+        Insert: {
+          actual_revenue?: number | null
+          attachment_url?: string | null
+          channel_id: string
+          competitor_price?: number | null
+          created_at?: string
+          created_by?: string | null
+          end_date: string
+          expected_revenue?: number | null
+          id?: string
+          kind?: Database["public"]["Enums"]["promotion_kind"]
+          market_lowest_price?: number | null
+          md_id: string
+          memo?: string | null
+          monitoring_note?: string | null
+          placement?: string | null
+          planned_qty?: number | null
+          product_id: string
+          promo_price: number
+          regular_price?: number | null
+          start_date: string
+          status?: Database["public"]["Enums"]["promotion_status"]
+          status_override?: boolean
+          stock_qty?: number | null
+          title?: string | null
+          updated_at?: string
+        }
+        Update: {
+          actual_revenue?: number | null
+          attachment_url?: string | null
+          channel_id?: string
+          competitor_price?: number | null
+          created_at?: string
+          created_by?: string | null
+          end_date?: string
+          expected_revenue?: number | null
+          id?: string
+          kind?: Database["public"]["Enums"]["promotion_kind"]
+          market_lowest_price?: number | null
+          md_id?: string
+          memo?: string | null
+          monitoring_note?: string | null
+          placement?: string | null
+          planned_qty?: number | null
+          product_id?: string
+          promo_price?: number
+          regular_price?: number | null
+          start_date?: string
+          status?: Database["public"]["Enums"]["promotion_status"]
+          status_override?: boolean
+          stock_qty?: number | null
+          title?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "promotions_channel_id_fkey"
+            columns: ["channel_id"]
+            isOneToOne: false
+            referencedRelation: "sales_channels"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotions_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotions_md_id_fkey"
+            columns: ["md_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "promotions_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       reactions: {
         Row: {
           created_at: string
@@ -1550,6 +1721,57 @@ export type Database = {
           weekdays?: number[] | null
         }
         Relationships: []
+      }
+      sales_channels: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          default_md_id: string | null
+          id: string
+          is_active: boolean
+          name: string
+          note: string | null
+          type: Database["public"]["Enums"]["channel_type"]
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          default_md_id?: string | null
+          id?: string
+          is_active?: boolean
+          name: string
+          note?: string | null
+          type?: Database["public"]["Enums"]["channel_type"]
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          default_md_id?: string | null
+          id?: string
+          is_active?: boolean
+          name?: string
+          note?: string | null
+          type?: Database["public"]["Enums"]["channel_type"]
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sales_channels_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sales_channels_default_md_id_fkey"
+            columns: ["default_md_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sales_data: {
         Row: {
@@ -2067,7 +2289,16 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      promotion_conflicts: {
+        Row: {
+          cheaper_overlap_count: number | null
+          policy_max: number | null
+          policy_min: number | null
+          policy_violation: string | null
+          promotion_id: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       approval_meta: {
@@ -2136,6 +2367,7 @@ export type Database = {
         | "managing_director"
       approval_status: "pending" | "approved" | "rejected"
       approval_type: "document" | "expense" | "project" | "leave"
+      channel_type: "online" | "offline"
       expense_category: "샘플링" | "마케팅" | "일반" | "출장" | "장비"
       expense_status: "Pending" | "Approved" | "Reimbursed" | "Rejected"
       leave_status: "pending" | "approved" | "rejected" | "cancelled"
@@ -2164,6 +2396,15 @@ export type Database = {
         | "Production"
         | "Launch"
       project_status: "active" | "on_hold" | "completed"
+      promotion_kind:
+        | "coupon"
+        | "deal"
+        | "plan_exhibit"
+        | "live"
+        | "timesale"
+        | "bundle"
+        | "other"
+      promotion_status: "planned" | "ongoing" | "ended" | "cancelled"
       task_priority: "low" | "medium" | "high" | "urgent"
       task_status: "todo" | "in-progress" | "review" | "done" | "scheduled"
     }
@@ -2305,6 +2546,7 @@ export const Constants = {
       ],
       approval_status: ["pending", "approved", "rejected"],
       approval_type: ["document", "expense", "project", "leave"],
+      channel_type: ["online", "offline"],
       expense_category: ["샘플링", "마케팅", "일반", "출장", "장비"],
       expense_status: ["Pending", "Approved", "Reimbursed", "Rejected"],
       leave_status: ["pending", "approved", "rejected", "cancelled"],
@@ -2336,6 +2578,16 @@ export const Constants = {
         "Launch",
       ],
       project_status: ["active", "on_hold", "completed"],
+      promotion_kind: [
+        "coupon",
+        "deal",
+        "plan_exhibit",
+        "live",
+        "timesale",
+        "bundle",
+        "other",
+      ],
+      promotion_status: ["planned", "ongoing", "ended", "cancelled"],
       task_priority: ["low", "medium", "high", "urgent"],
       task_status: ["todo", "in-progress", "review", "done", "scheduled"],
     },
