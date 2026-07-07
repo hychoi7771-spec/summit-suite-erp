@@ -92,6 +92,7 @@ const approvalDocItems: NavItem[] = [
 // 분석
 const insightsNavItems: NavItem[] = [
   { title: '매출/KPI', url: '/sales', icon: BarChart3 },
+  { title: '행사 현황', url: '/promotions', icon: PartyPopper },
 ];
 
 const assetNavItems: NavItem[] = [
