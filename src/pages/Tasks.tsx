@@ -201,7 +201,22 @@ export default function Tasks() {
         }
       }
 
-      const { error } = await supabase.from('tasks').insert({
+      const promoCategory = categories.find((c: any) => c.system_slug === 'promotion');
+      const isPromo = resolvedCategoryId && promoCategory && resolvedCategoryId === promoCategory.id;
+
+      if (isPromo) {
+        const missing = !promotionSubForm.product_id || !promotionSubForm.channel_id || !promotionSubForm.md_id || !promotionSubForm.promo_price;
+        if (missing) {
+          toast({ title: '행사 정보를 입력해주세요', description: '품목·채널·담당 MD·행사가는 필수입니다.', variant: 'destructive' });
+          return;
+        }
+        if (!taskForm.start_date || !taskForm.due_date) {
+          toast({ title: '행사 업무는 시작일·마감일이 필요합니다', variant: 'destructive' });
+          return;
+        }
+      }
+
+      const { data: inserted, error } = await supabase.from('tasks').insert({
         title: taskForm.title,
         description: taskForm.description || null,
         priority: taskForm.priority as any,
@@ -211,11 +226,26 @@ export default function Tasks() {
         project_name: taskForm.project_name || null,
         category_id: resolvedCategoryId,
         status: finalStatus as any,
-      } as any);
+      } as any).select('id').single();
       if (error) {
         toast({ title: '업무 등록 실패', description: error.message, variant: 'destructive' });
         return;
       }
+
+      if (isPromo && inserted?.id) {
+        try {
+          await upsertPromotionForTask({
+            taskId: inserted.id,
+            form: promotionSubForm,
+            startDate: taskForm.start_date,
+            endDate: taskForm.due_date,
+            createdBy: profile?.id,
+          });
+        } catch (e: any) {
+          toast({ title: '행사 정보 저장 실패', description: e.message, variant: 'destructive' });
+        }
+      }
+
       await notifyAdmins(
         finalStatus === 'scheduled' ? '새 예약 업무 등록' : '새 업무 등록',
         `"${taskForm.title}" 업무가 ${finalStatus === 'scheduled' ? `${taskForm.start_date}에 예약` : '등록'}되었습니다.`,
@@ -227,6 +257,7 @@ export default function Tasks() {
       toast({ title: finalStatus === 'scheduled' ? '예약 업무 등록 완료' : '업무 등록 완료' });
       setTaskDialogOpen(false);
       setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
+      setPromotionSubForm(emptyPromotionSubForm);
       setCreateMode('now');
       fetchData();
     } finally {
