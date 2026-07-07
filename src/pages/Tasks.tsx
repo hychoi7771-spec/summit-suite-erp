@@ -159,7 +159,37 @@ export default function Tasks() {
     setTaskList(tasks);
     setProfiles(profRes.data || []);
     setCategories((catRes.data || []) as TaskCategory[]);
+    setProducts(prodRes.data || []);
     setLoading(false);
+  };
+
+  // 설명 문구에서 "상품명 가격" 형태의 라인을 파싱해 품목별 행사 항목을 추출
+  const parsePromoLinesFromDescription = (desc: string) => {
+    if (!desc || products.length === 0) return [] as { product_id: string; product_name: string; promo_price: number; regular_price: number | null }[];
+    const sorted = [...products].sort((a, b) => (b.name?.length || 0) - (a.name?.length || 0));
+    const items: { product_id: string; product_name: string; promo_price: number; regular_price: number | null }[] = [];
+    const seen = new Set<string>();
+    for (const raw of desc.split(/\r?\n/)) {
+      const line = raw.trim();
+      if (!line) continue;
+      const matched = sorted.find(p => p.name && line.toLowerCase().includes(String(p.name).toLowerCase()));
+      if (!matched) continue;
+      const nums = (line.match(/\d[\d,]*/g) || []).map(n => Number(n.replace(/,/g, ''))).filter(n => n >= 100);
+      if (nums.length === 0) continue;
+      let promo: number, regular: number | null = null;
+      if (nums.length >= 2) {
+        const sortedNums = [...nums].sort((a, b) => a - b);
+        promo = sortedNums[0];
+        regular = sortedNums[sortedNums.length - 1];
+        if (regular === promo) regular = null;
+      } else {
+        promo = nums[0];
+      }
+      if (seen.has(matched.id)) continue;
+      seen.add(matched.id);
+      items.push({ product_id: matched.id, product_name: matched.name, promo_price: promo, regular_price: regular });
+    }
+    return items;
   };
 
   const handleDragEnd = async (result: DropResult) => {
