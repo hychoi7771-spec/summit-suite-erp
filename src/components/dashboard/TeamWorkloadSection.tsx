@@ -13,6 +13,7 @@ import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
+import { notifyUser } from '@/lib/notifications';
 
 const roleLabels: Record<string, string> = {
   ceo: '대표이사', general_director: '이사', managing_director: '실장', deputy_gm: '부장',
