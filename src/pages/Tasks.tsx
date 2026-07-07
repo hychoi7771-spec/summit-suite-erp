@@ -54,7 +54,7 @@ export default function Tasks() {
   const [loading, setLoading] = useState(true);
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [createMode, setCreateMode] = useState<'now' | 'scheduled'>('now');
+  const [createMode, setCreateMode] = useState<'now' | 'scheduled' | 'promotion'>('now');
   const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
   const [promotionSubForm, setPromotionSubForm] = useState<PromotionSubFormValue>(emptyPromotionSubForm);
   const [selectedProject, setSelectedProject] = useState<string>('all');
@@ -184,9 +184,16 @@ export default function Tasks() {
         createMode === 'scheduled' && taskForm.start_date && taskForm.start_date > today
           ? 'scheduled'
           : 'todo';
-      // 카테고리 미선택 시 AI 자동 분류
+      const promoCategory = categories.find((c: any) => c.system_slug === 'promotion');
+      // 카테고리 결정: 행사 모드면 강제, 아니면 사용자 선택 또는 AI 자동 분류
       let resolvedCategoryId: string | null = taskForm.category_id || null;
-      if (!resolvedCategoryId && categories.length > 0) {
+      if (createMode === 'promotion') {
+        if (!promoCategory) {
+          toast({ title: '행사 카테고리가 없습니다', description: '관리자에게 문의하세요.', variant: 'destructive' });
+          return;
+        }
+        resolvedCategoryId = promoCategory.id;
+      } else if (!resolvedCategoryId && categories.length > 0) {
         try {
           const { data: ai } = await supabase.functions.invoke('classify-task', {
             body: {
@@ -201,8 +208,7 @@ export default function Tasks() {
         }
       }
 
-      const promoCategory = categories.find((c: any) => c.system_slug === 'promotion');
-      const isPromo = resolvedCategoryId && promoCategory && resolvedCategoryId === promoCategory.id;
+      const isPromo = createMode === 'promotion' || (resolvedCategoryId && promoCategory && resolvedCategoryId === promoCategory.id);
 
       if (isPromo) {
         const missing = !promotionSubForm.product_id || !promotionSubForm.channel_id || !promotionSubForm.md_id || !promotionSubForm.promo_price;
@@ -362,15 +368,21 @@ export default function Tasks() {
             </DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>새 업무 등록</DialogTitle></DialogHeader>
-              <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'now' | 'scheduled')} className="mt-2">
-                <TabsList className="grid w-full grid-cols-2">
+              <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'now' | 'scheduled' | 'promotion')} className="mt-2">
+                <TabsList className="grid w-full grid-cols-3">
                   <TabsTrigger value="now" className="gap-1.5"><Plus className="h-3.5 w-3.5" />즉시 등록</TabsTrigger>
                   <TabsTrigger value="scheduled" className="gap-1.5"><Calendar className="h-3.5 w-3.5" />예약 등록</TabsTrigger>
+                  <TabsTrigger value="promotion" className="gap-1.5">🎉 행사 등록</TabsTrigger>
                 </TabsList>
                 <div className="space-y-4 mt-4">
                   {createMode === 'scheduled' && (
                     <div className="rounded-md bg-purple-50 dark:bg-purple-900/20 border border-purple-200 dark:border-purple-800/50 px-3 py-2 text-xs text-purple-700 dark:text-purple-300">
                       예약 업무는 <strong>시작일</strong>이 도래하면 자동으로 '할 일' 칸반으로 이동합니다.
+                    </div>
+                  )}
+                  {createMode === 'promotion' && (
+                    <div className="rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200 dark:border-fuchsia-800/50 px-3 py-2 text-xs text-fuchsia-700 dark:text-fuchsia-300">
+                      행사 업무로 등록되며 아래 <strong>행사 정보</strong>가 <strong>행사 현황</strong>에 자동 반영됩니다. (시작일·마감일 필수)
                     </div>
                   )}
                   <div className="space-y-2">
@@ -407,18 +419,20 @@ export default function Tasks() {
                       </SelectContent>
                     </Select>
                   </div>
-                  <div className="space-y-2">
-                    <Label>카테고리 (선택)</Label>
-                    <Select value={taskForm.category_id || '__none__'} onValueChange={v => setTaskForm(f => ({ ...f, category_id: v === '__none__' ? '' : v }))}>
-                      <SelectTrigger><SelectValue placeholder="카테고리 선택" /></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="__none__">미분류</SelectItem>
-                        {categories.map(c => (
-                          <SelectItem key={c.id} value={c.id}>{c.icon ? `${c.icon} ` : ''}{c.name}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  {createMode !== 'promotion' && (
+                    <div className="space-y-2">
+                      <Label>카테고리 (선택)</Label>
+                      <Select value={taskForm.category_id || '__none__'} onValueChange={v => setTaskForm(f => ({ ...f, category_id: v === '__none__' ? '' : v }))}>
+                        <SelectTrigger><SelectValue placeholder="카테고리 선택" /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="__none__">미분류</SelectItem>
+                          {categories.map(c => (
+                            <SelectItem key={c.id} value={c.id}>{c.icon ? `${c.icon} ` : ''}{c.name}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
                   <div className="space-y-2">
                     <Label>담당자</Label>
                     <Select value={taskForm.assignee_id} onValueChange={v => setTaskForm(f => ({ ...f, assignee_id: v }))}>
@@ -428,7 +442,7 @@ export default function Tasks() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label>시작일{createMode === 'scheduled' && <span className="text-destructive ml-0.5">*</span>}</Label>
+                      <Label>시작일{(createMode === 'scheduled' || createMode === 'promotion') && <span className="text-destructive ml-0.5">*</span>}</Label>
                       <Input
                         type="date"
                         value={taskForm.start_date}
@@ -436,11 +450,12 @@ export default function Tasks() {
                         min={createMode === 'scheduled' ? new Date(Date.now() + 86400000).toISOString().slice(0, 10) : undefined}
                       />
                     </div>
-                    <div className="space-y-2"><Label>마감일</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
+                    <div className="space-y-2"><Label>마감일{createMode === 'promotion' && <span className="text-destructive ml-0.5">*</span>}</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
                   </div>
                   {(() => {
                     const promoCat = (categories as any[]).find((c: any) => c.system_slug === 'promotion');
-                    if (promoCat && taskForm.category_id === promoCat.id) {
+                    const showPromo = createMode === 'promotion' || (promoCat && taskForm.category_id === promoCat.id);
+                    if (showPromo) {
                       return (
                         <PromotionSubForm
                           value={promotionSubForm}
@@ -454,10 +469,10 @@ export default function Tasks() {
                   })()}
                   <Button
                     onClick={handleAddTask}
-                    disabled={submitting || !taskForm.title || (createMode === 'scheduled' && !taskForm.start_date)}
+                    disabled={submitting || !taskForm.title || (createMode === 'scheduled' && !taskForm.start_date) || (createMode === 'promotion' && (!taskForm.start_date || !taskForm.due_date))}
                     className="w-full"
                   >
-                    {submitting ? '등록 중...' : (createMode === 'scheduled' ? '예약 등록' : '등록')}
+                    {submitting ? '등록 중...' : (createMode === 'scheduled' ? '예약 등록' : createMode === 'promotion' ? '행사 + 업무 등록' : '등록')}
                   </Button>
                 </div>
               </Tabs>
