@@ -429,10 +429,10 @@ export default function Tasks() {
             <DialogTrigger asChild>
               <Button className="gap-2 shrink-0"><Plus className="h-4 w-4" />새 업무 등록</Button>
             </DialogTrigger>
-            <DialogContent>
-              <DialogHeader><DialogTitle>새 업무 등록</DialogTitle></DialogHeader>
+            <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
+              <DialogHeader className="sticky top-0 bg-background z-10 pb-2"><DialogTitle>새 업무 등록</DialogTitle></DialogHeader>
               <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'now' | 'scheduled' | 'promotion')} className="mt-2">
-                <TabsList className="grid w-full grid-cols-3">
+                <TabsList className="grid w-full grid-cols-3 sticky top-12 bg-background z-10">
                   <TabsTrigger value="now" className="gap-1.5"><Plus className="h-3.5 w-3.5" />즉시 등록</TabsTrigger>
                   <TabsTrigger value="scheduled" className="gap-1.5"><Calendar className="h-3.5 w-3.5" />예약 등록</TabsTrigger>
                   <TabsTrigger value="promotion" className="gap-1.5">🎉 행사 등록</TabsTrigger>
