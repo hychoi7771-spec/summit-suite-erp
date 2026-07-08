@@ -203,20 +203,50 @@ export function PromotionDialog({
           <DialogTitle>{promotion ? '행사 수정' : '행사 등록'}</DialogTitle>
         </DialogHeader>
 
+        <datalist id="promo-dialog-products">
+          {products.map(p => <option key={p.id} value={p.name} />)}
+        </datalist>
+        <datalist id="promo-dialog-channels">
+          {channels.filter(c => c.is_active).map(c => <option key={c.id} value={c.name} />)}
+        </datalist>
+
         <div className="grid grid-cols-2 gap-3 mt-2">
           <div className="space-y-1.5">
             <Label>품목 *</Label>
-            <Select value={form.product_id} onValueChange={v => set('product_id', v)}>
-              <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
-              <SelectContent>{products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <Input
+              list="promo-dialog-products"
+              value={form.product_name}
+              onChange={e => {
+                const name = e.target.value;
+                const match = products.find(p => p.name.trim().toLowerCase() === name.trim().toLowerCase());
+                setForm((f: any) => ({ ...f, product_name: name, product_id: match?.id || '' }));
+              }}
+              placeholder="선택 또는 직접 입력 (없으면 자동 등록)"
+            />
+            {form.product_name && !form.product_id && (
+              <p className="text-[11px] text-fuchsia-700">신규 품목으로 자동 등록됩니다</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>채널 *</Label>
-            <Select value={form.channel_id} onValueChange={v => set('channel_id', v)}>
-              <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
-              <SelectContent>{channels.filter(c => c.is_active).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <Input
+              list="promo-dialog-channels"
+              value={form.channel_name}
+              onChange={e => {
+                const name = e.target.value;
+                const match = channels.find(c => c.name.trim().toLowerCase() === name.trim().toLowerCase());
+                setForm((f: any) => ({
+                  ...f,
+                  channel_name: name,
+                  channel_id: match?.id || '',
+                  md_id: f.md_id || match?.default_md_id || '',
+                }));
+              }}
+              placeholder="선택 또는 직접 입력 (없으면 자동 등록)"
+            />
+            {form.channel_name && !form.channel_id && (
+              <p className="text-[11px] text-fuchsia-700">신규 채널로 자동 등록됩니다</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>담당 MD *</Label>
