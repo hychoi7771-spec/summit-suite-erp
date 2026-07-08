@@ -29,7 +29,7 @@ import CategoryBar, { TaskCategory } from '@/components/tasks/CategoryBar';
 import TaskFilterToolbar, { BoardToggles } from '@/components/tasks/TaskFilterToolbar';
 import CategoryManageDialog from '@/components/tasks/CategoryManageDialog';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
-import { PromotionSubForm, emptyPromotionSubForm, upsertPromotionForTask, type PromotionSubFormValue } from '@/components/promotions/PromotionSubForm';
+import { PromotionSubForm, emptyPromotionSubForm, upsertPromotionForTask, resolveOrCreateProduct, resolveOrCreateChannel, type PromotionSubFormValue } from '@/components/promotions/PromotionSubForm';
 
 const TOGGLES_STORAGE_KEY = 'task-board-toggles';
 const DEFAULT_TOGGLES: BoardToggles = { hideDone: true, compact: false, myOnly: false, overdueOnly: false };
@@ -249,12 +249,12 @@ export default function Tasks() {
           toast({ title: '행사 업무는 시작일·마감일이 필요합니다', variant: 'destructive' });
           return;
         }
-        if (!promotionSubForm.channel_id || !promotionSubForm.md_id) {
-          toast({ title: '채널·담당 MD를 선택해주세요', variant: 'destructive' });
+        if (!promotionSubForm.channel_name.trim() || !promotionSubForm.md_id) {
+          toast({ title: '채널·담당 MD를 입력해주세요', variant: 'destructive' });
           return;
         }
         if (!useMulti) {
-          const missing = !promotionSubForm.product_id || !promotionSubForm.promo_price;
+          const missing = !promotionSubForm.product_name.trim() || !promotionSubForm.promo_price;
           if (missing) {
             toast({ title: '행사 정보를 입력해주세요', description: '품목·행사가는 필수입니다. (설명에 "상품명 가격" 형태로 여러 줄 입력 시 자동 인식됩니다)', variant: 'destructive' });
             return;
@@ -281,9 +281,11 @@ export default function Tasks() {
       if (isPromo && inserted?.id) {
         try {
           if (useMulti) {
+            const resolvedChannelId = promotionSubForm.channel_id
+              || await resolveOrCreateChannel(promotionSubForm.channel_name, promotionSubForm.md_id);
             const rows = parsedItems.map(it => ({
               product_id: it.product_id,
-              channel_id: promotionSubForm.channel_id,
+              channel_id: resolvedChannelId,
               md_id: promotionSubForm.md_id,
               kind: promotionSubForm.kind || 'other',
               placement: promotionSubForm.placement || null,
