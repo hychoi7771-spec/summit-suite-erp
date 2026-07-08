@@ -29,7 +29,7 @@ import CategoryBar, { TaskCategory } from '@/components/tasks/CategoryBar';
 import TaskFilterToolbar, { BoardToggles } from '@/components/tasks/TaskFilterToolbar';
 import CategoryManageDialog from '@/components/tasks/CategoryManageDialog';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
-import { PromotionSubForm, emptyPromotionSubForm, upsertPromotionForTask, type PromotionSubFormValue } from '@/components/promotions/PromotionSubForm';
+import { PromotionSubForm, emptyPromotionSubForm, upsertPromotionForTask, resolveOrCreateProduct, resolveOrCreateChannel, type PromotionSubFormValue } from '@/components/promotions/PromotionSubForm';
 
 const TOGGLES_STORAGE_KEY = 'task-board-toggles';
 const DEFAULT_TOGGLES: BoardToggles = { hideDone: true, compact: false, myOnly: false, overdueOnly: false };
