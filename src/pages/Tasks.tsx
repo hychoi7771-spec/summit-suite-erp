@@ -249,12 +249,12 @@ export default function Tasks() {
           toast({ title: '행사 업무는 시작일·마감일이 필요합니다', variant: 'destructive' });
           return;
         }
-        if (!promotionSubForm.channel_id || !promotionSubForm.md_id) {
-          toast({ title: '채널·담당 MD를 선택해주세요', variant: 'destructive' });
+        if (!promotionSubForm.channel_name.trim() || !promotionSubForm.md_id) {
+          toast({ title: '채널·담당 MD를 입력해주세요', variant: 'destructive' });
           return;
         }
         if (!useMulti) {
-          const missing = !promotionSubForm.product_id || !promotionSubForm.promo_price;
+          const missing = !promotionSubForm.product_name.trim() || !promotionSubForm.promo_price;
           if (missing) {
             toast({ title: '행사 정보를 입력해주세요', description: '품목·행사가는 필수입니다. (설명에 "상품명 가격" 형태로 여러 줄 입력 시 자동 인식됩니다)', variant: 'destructive' });
             return;
