@@ -9,6 +9,7 @@ import { AlertTriangle } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { resolveOrCreateProduct, resolveOrCreateChannel } from './PromotionSubForm';
 
 const KIND_OPTIONS = [
   { v: 'coupon', l: '쿠폰' },
@@ -33,7 +34,9 @@ export function PromotionDialog({
   const { toast } = useToast();
   const { profile } = useAuth();
   const emptyForm = {
-    product_id: '', channel_id: '', md_id: defaultMdId || '',
+    product_id: '', product_name: '',
+    channel_id: '', channel_name: '',
+    md_id: defaultMdId || '',
     title: '', kind: 'other', placement: '',
     start_date: '', end_date: '',
     regular_price: '', promo_price: '',
@@ -47,8 +50,12 @@ export function PromotionDialog({
 
   useEffect(() => {
     if (promotion) {
+      const prod = products.find(p => p.id === promotion.product_id);
+      const ch = channels.find(c => c.id === promotion.channel_id);
       setForm({
         ...emptyForm, ...promotion,
+        product_name: prod?.name || '',
+        channel_name: ch?.name || '',
         regular_price: promotion.regular_price ?? '',
         promo_price: promotion.promo_price ?? '',
         planned_qty: promotion.planned_qty ?? '',
@@ -96,13 +103,26 @@ export function PromotionDialog({
   };
 
   const save = async () => {
-    if (!form.product_id || !form.channel_id || !form.md_id || !form.start_date || !form.end_date || !form.promo_price) {
+    const hasProduct = form.product_id || form.product_name?.trim();
+    const hasChannel = form.channel_id || form.channel_name?.trim();
+    if (!hasProduct || !hasChannel || !form.md_id || !form.start_date || !form.end_date || !form.promo_price) {
       toast({ title: '필수 항목을 입력해주세요', description: '품목·채널·MD·기간·행사가는 필수입니다', variant: 'destructive' });
       return;
     }
+
+    let productId = form.product_id;
+    let channelId = form.channel_id;
+    try {
+      if (!productId) productId = await resolveOrCreateProduct(form.product_name);
+      if (!channelId) channelId = await resolveOrCreateChannel(form.channel_name, form.md_id);
+    } catch (e: any) {
+      toast({ title: '품목/채널 등록 실패', description: e.message, variant: 'destructive' });
+      return;
+    }
+
     const payload: any = {
-      product_id: form.product_id,
-      channel_id: form.channel_id,
+      product_id: productId,
+      channel_id: channelId,
       md_id: form.md_id,
       title: form.title || null,
       kind: form.kind,
@@ -183,20 +203,50 @@ export function PromotionDialog({
           <DialogTitle>{promotion ? '행사 수정' : '행사 등록'}</DialogTitle>
         </DialogHeader>
 
+        <datalist id="promo-dialog-products">
+          {products.map(p => <option key={p.id} value={p.name} />)}
+        </datalist>
+        <datalist id="promo-dialog-channels">
+          {channels.filter(c => c.is_active).map(c => <option key={c.id} value={c.name} />)}
+        </datalist>
+
         <div className="grid grid-cols-2 gap-3 mt-2">
           <div className="space-y-1.5">
             <Label>품목 *</Label>
-            <Select value={form.product_id} onValueChange={v => set('product_id', v)}>
-              <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
-              <SelectContent>{products.map(p => <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <Input
+              list="promo-dialog-products"
+              value={form.product_name}
+              onChange={e => {
+                const name = e.target.value;
+                const match = products.find(p => p.name.trim().toLowerCase() === name.trim().toLowerCase());
+                setForm((f: any) => ({ ...f, product_name: name, product_id: match?.id || '' }));
+              }}
+              placeholder="선택 또는 직접 입력 (없으면 자동 등록)"
+            />
+            {form.product_name && !form.product_id && (
+              <p className="text-[11px] text-fuchsia-700">신규 품목으로 자동 등록됩니다</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>채널 *</Label>
-            <Select value={form.channel_id} onValueChange={v => set('channel_id', v)}>
-              <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
-              <SelectContent>{channels.filter(c => c.is_active).map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}</SelectContent>
-            </Select>
+            <Input
+              list="promo-dialog-channels"
+              value={form.channel_name}
+              onChange={e => {
+                const name = e.target.value;
+                const match = channels.find(c => c.name.trim().toLowerCase() === name.trim().toLowerCase());
+                setForm((f: any) => ({
+                  ...f,
+                  channel_name: name,
+                  channel_id: match?.id || '',
+                  md_id: f.md_id || match?.default_md_id || '',
+                }));
+              }}
+              placeholder="선택 또는 직접 입력 (없으면 자동 등록)"
+            />
+            {form.channel_name && !form.channel_id && (
+              <p className="text-[11px] text-fuchsia-700">신규 채널로 자동 등록됩니다</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label>담당 MD *</Label>
