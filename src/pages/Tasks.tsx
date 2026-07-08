@@ -281,9 +281,11 @@ export default function Tasks() {
       if (isPromo && inserted?.id) {
         try {
           if (useMulti) {
+            const resolvedChannelId = promotionSubForm.channel_id
+              || await resolveOrCreateChannel(promotionSubForm.channel_name, promotionSubForm.md_id);
             const rows = parsedItems.map(it => ({
               product_id: it.product_id,
-              channel_id: promotionSubForm.channel_id,
+              channel_id: resolvedChannelId,
               md_id: promotionSubForm.md_id,
               kind: promotionSubForm.kind || 'other',
               placement: promotionSubForm.placement || null,
