@@ -34,7 +34,9 @@ export function PromotionDialog({
   const { toast } = useToast();
   const { profile } = useAuth();
   const emptyForm = {
-    product_id: '', channel_id: '', md_id: defaultMdId || '',
+    product_id: '', product_name: '',
+    channel_id: '', channel_name: '',
+    md_id: defaultMdId || '',
     title: '', kind: 'other', placement: '',
     start_date: '', end_date: '',
     regular_price: '', promo_price: '',
@@ -48,8 +50,12 @@ export function PromotionDialog({
 
   useEffect(() => {
     if (promotion) {
+      const prod = products.find(p => p.id === promotion.product_id);
+      const ch = channels.find(c => c.id === promotion.channel_id);
       setForm({
         ...emptyForm, ...promotion,
+        product_name: prod?.name || '',
+        channel_name: ch?.name || '',
         regular_price: promotion.regular_price ?? '',
         promo_price: promotion.promo_price ?? '',
         planned_qty: promotion.planned_qty ?? '',
