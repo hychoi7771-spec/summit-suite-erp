@@ -103,13 +103,26 @@ export function PromotionDialog({
   };
 
   const save = async () => {
-    if (!form.product_id || !form.channel_id || !form.md_id || !form.start_date || !form.end_date || !form.promo_price) {
+    const hasProduct = form.product_id || form.product_name?.trim();
+    const hasChannel = form.channel_id || form.channel_name?.trim();
+    if (!hasProduct || !hasChannel || !form.md_id || !form.start_date || !form.end_date || !form.promo_price) {
       toast({ title: '필수 항목을 입력해주세요', description: '품목·채널·MD·기간·행사가는 필수입니다', variant: 'destructive' });
       return;
     }
+
+    let productId = form.product_id;
+    let channelId = form.channel_id;
+    try {
+      if (!productId) productId = await resolveOrCreateProduct(form.product_name);
+      if (!channelId) channelId = await resolveOrCreateChannel(form.channel_name, form.md_id);
+    } catch (e: any) {
+      toast({ title: '품목/채널 등록 실패', description: e.message, variant: 'destructive' });
+      return;
+    }
+
     const payload: any = {
-      product_id: form.product_id,
-      channel_id: form.channel_id,
+      product_id: productId,
+      channel_id: channelId,
       md_id: form.md_id,
       title: form.title || null,
       kind: form.kind,
