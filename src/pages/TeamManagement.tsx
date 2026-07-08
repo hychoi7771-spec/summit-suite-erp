@@ -174,7 +174,7 @@ export default function TeamManagement() {
                 </div>
                 <div className="space-y-1.5">
                   <Label>초기 비밀번호</Label>
-                  <Input type="text" value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} placeholder="6자 이상" />
+                  <Input type="password" autoComplete="new-password" value={newUser.password} onChange={e => setNewUser(p => ({ ...p, password: e.target.value }))} placeholder="6자 이상" />
                 </div>
                 <div className="space-y-1.5">
                   <Label>직급</Label>
