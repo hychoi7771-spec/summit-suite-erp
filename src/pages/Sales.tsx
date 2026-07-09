@@ -127,7 +127,7 @@ export default function Sales() {
             <CardContent>
               <div className="h-72">
                 {monthSummary.length === 0 ? (
-                  <EmptyState title="데이터 없음" description="이번 달 등록된 MD 목표가 없습니다." />
+                  <EmptyState icon={BarChart3} title="데이터 없음" description="이번 달 등록된 MD 목표가 없습니다." />
                 ) : (
                   <ResponsiveContainer>
                     <ComposedChart data={monthSummary.map(m => ({
@@ -299,7 +299,7 @@ function MDDetailTab({ channels, ym }: { channels: ChRow[]; ym: string }) {
         <CardHeader className="pb-2"><CardTitle className="text-base">{md} · {ym} · 채널별 목표 vs 실적</CardTitle></CardHeader>
         <CardContent>
           {rows.length === 0 ? (
-            <EmptyState title="데이터 없음" description="선택된 MD의 채널 데이터가 없습니다." />
+            <EmptyState icon={Users} title="데이터 없음" description="선택된 MD의 채널 데이터가 없습니다." />
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
