@@ -1732,6 +1732,51 @@ export type Database = {
         }
         Relationships: []
       }
+      sales_channel_actuals: {
+        Row: {
+          actual_profit: number | null
+          actual_revenue: number | null
+          channel_name: string
+          created_at: string
+          created_by: string | null
+          id: string
+          md_name: string
+          note: string | null
+          target_profit: number | null
+          target_revenue: number | null
+          updated_at: string
+          year_month: string
+        }
+        Insert: {
+          actual_profit?: number | null
+          actual_revenue?: number | null
+          channel_name: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          md_name: string
+          note?: string | null
+          target_profit?: number | null
+          target_revenue?: number | null
+          updated_at?: string
+          year_month: string
+        }
+        Update: {
+          actual_profit?: number | null
+          actual_revenue?: number | null
+          channel_name?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          md_name?: string
+          note?: string | null
+          target_profit?: number | null
+          target_revenue?: number | null
+          updated_at?: string
+          year_month?: string
+        }
+        Relationships: []
+      }
       sales_channels: {
         Row: {
           created_at: string
@@ -1813,6 +1858,48 @@ export type Database = {
           revenue?: number
           roas?: number
           target?: number
+        }
+        Relationships: []
+      }
+      sales_md_targets: {
+        Row: {
+          channel_count: number | null
+          created_at: string
+          created_by: string | null
+          growth_rate: number | null
+          id: string
+          md_name: string
+          note: string | null
+          target_profit: number
+          target_revenue: number
+          updated_at: string
+          year_month: string
+        }
+        Insert: {
+          channel_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          growth_rate?: number | null
+          id?: string
+          md_name: string
+          note?: string | null
+          target_profit?: number
+          target_revenue?: number
+          updated_at?: string
+          year_month: string
+        }
+        Update: {
+          channel_count?: number | null
+          created_at?: string
+          created_by?: string | null
+          growth_rate?: number | null
+          id?: string
+          md_name?: string
+          note?: string | null
+          target_profit?: number
+          target_revenue?: number
+          updated_at?: string
+          year_month?: string
         }
         Relationships: []
       }
@@ -2317,6 +2404,77 @@ export type Database = {
         }
         Relationships: []
       }
+      weekly_sales_meetings: {
+        Row: {
+          ai_summary: string | null
+          attendees: string | null
+          channel_review: string | null
+          checklist: Json | null
+          created_at: string
+          created_by: string | null
+          event_review: string | null
+          highlights: Json | null
+          id: string
+          inventory_review: string | null
+          marketing_review: string | null
+          md_review: string | null
+          meeting_date: string
+          season_calendar: Json | null
+          source_file_id: string | null
+          title: string | null
+          updated_at: string
+          weather_note: string | null
+        }
+        Insert: {
+          ai_summary?: string | null
+          attendees?: string | null
+          channel_review?: string | null
+          checklist?: Json | null
+          created_at?: string
+          created_by?: string | null
+          event_review?: string | null
+          highlights?: Json | null
+          id?: string
+          inventory_review?: string | null
+          marketing_review?: string | null
+          md_review?: string | null
+          meeting_date: string
+          season_calendar?: Json | null
+          source_file_id?: string | null
+          title?: string | null
+          updated_at?: string
+          weather_note?: string | null
+        }
+        Update: {
+          ai_summary?: string | null
+          attendees?: string | null
+          channel_review?: string | null
+          checklist?: Json | null
+          created_at?: string
+          created_by?: string | null
+          event_review?: string | null
+          highlights?: Json | null
+          id?: string
+          inventory_review?: string | null
+          marketing_review?: string | null
+          md_review?: string | null
+          meeting_date?: string
+          season_calendar?: Json | null
+          source_file_id?: string | null
+          title?: string | null
+          updated_at?: string
+          weather_note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "weekly_sales_meetings_source_file_id_fkey"
+            columns: ["source_file_id"]
+            isOneToOne: false
+            referencedRelation: "asset_files"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       promotion_conflicts: {
@@ -2326,6 +2484,22 @@ export type Database = {
           policy_min: number | null
           policy_violation: string | null
           promotion_id: string | null
+        }
+        Relationships: []
+      }
+      v_sales_md_summary: {
+        Row: {
+          actual_profit: number | null
+          actual_revenue: number | null
+          channel_count: number | null
+          growth_rate: number | null
+          md_name: string | null
+          profit_achievement_pct: number | null
+          profit_rate_pct: number | null
+          revenue_achievement_pct: number | null
+          target_profit: number | null
+          target_revenue: number | null
+          year_month: string | null
         }
         Relationships: []
       }
@@ -2364,6 +2538,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_sales_admin: { Args: { _uid: string }; Returns: boolean }
       is_step_approver: {
         Args: { _approval_id: string; _user_id: string }
         Returns: boolean
