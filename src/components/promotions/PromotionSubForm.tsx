@@ -116,7 +116,7 @@ export function PromotionSubForm({
 
       <div className="grid grid-cols-2 gap-2">
         <div className="space-y-1">
-          <Label className="text-xs">품목 *</Label>
+          <Label className="text-xs">품목</Label>
           <Input
             list="promo-products-datalist"
             className="h-9"
@@ -129,7 +129,7 @@ export function PromotionSubForm({
           )}
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">채널 *</Label>
+          <Label className="text-xs">채널</Label>
           <Input
             list="promo-channels-datalist"
             className="h-9"
@@ -142,10 +142,13 @@ export function PromotionSubForm({
           )}
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">담당 MD *</Label>
-          <Select value={value.md_id} onValueChange={v => set({ md_id: v })}>
-            <SelectTrigger className="h-9"><SelectValue placeholder="선택" /></SelectTrigger>
-            <SelectContent>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.name_kr || p.name}</SelectItem>)}</SelectContent>
+          <Label className="text-xs">담당 MD</Label>
+          <Select value={value.md_id || '__none__'} onValueChange={v => set({ md_id: v === '__none__' ? '' : v })}>
+            <SelectTrigger className="h-9"><SelectValue placeholder="선택 (선택 사항)" /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="__none__">미지정</SelectItem>
+              {profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.name_kr || p.name}</SelectItem>)}
+            </SelectContent>
           </Select>
         </div>
         <div className="space-y-1">
@@ -160,7 +163,7 @@ export function PromotionSubForm({
           <Input type="number" className="h-9" value={value.regular_price} onChange={e => set({ regular_price: e.target.value })} />
         </div>
         <div className="space-y-1">
-          <Label className="text-xs">행사가 *</Label>
+          <Label className="text-xs">행사가</Label>
           <Input type="number" className="h-9" value={value.promo_price} onChange={e => set({ promo_price: e.target.value })} />
           {discount !== null && <p className="text-[10px] text-muted-foreground">할인율 {discount}%</p>}
         </div>
@@ -178,7 +181,7 @@ export function PromotionSubForm({
       )}
 
       <p className="text-[10.5px] text-muted-foreground">
-        시작일·종료일은 업무의 시작일·마감일을 사용합니다.
+        모든 항목은 선택 사항입니다. 시작일·종료일은 업무의 시작일·마감일이 있으면 함께 저장됩니다.
       </p>
     </div>
   );
