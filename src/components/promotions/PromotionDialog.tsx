@@ -212,7 +212,7 @@ export function PromotionDialog({
 
         <div className="grid grid-cols-2 gap-3 mt-2">
           <div className="space-y-1.5">
-            <Label>품목 *</Label>
+            <Label>품목</Label>
             <Input
               list="promo-dialog-products"
               value={form.product_name}
@@ -228,7 +228,7 @@ export function PromotionDialog({
             )}
           </div>
           <div className="space-y-1.5">
-            <Label>채널 *</Label>
+            <Label>채널</Label>
             <Input
               list="promo-dialog-channels"
               value={form.channel_name}
@@ -249,7 +249,7 @@ export function PromotionDialog({
             )}
           </div>
           <div className="space-y-1.5">
-            <Label>담당 MD *</Label>
+            <Label>담당 MD</Label>
             <Select value={form.md_id} onValueChange={v => set('md_id', v)}>
               <SelectTrigger><SelectValue placeholder="선택" /></SelectTrigger>
               <SelectContent>{profiles.map(p => <SelectItem key={p.id} value={p.id}>{p.name_kr || p.name}</SelectItem>)}</SelectContent>
@@ -271,11 +271,11 @@ export function PromotionDialog({
             <Input value={form.placement} onChange={e => set('placement', e.target.value)} placeholder="예: 메인 배너 / 카테고리 상단" />
           </div>
           <div className="space-y-1.5">
-            <Label>시작일 *</Label>
+            <Label>시작일</Label>
             <Input type="date" value={form.start_date} onChange={e => set('start_date', e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>종료일 *</Label>
+            <Label>종료일</Label>
             <Input type="date" value={form.end_date} onChange={e => set('end_date', e.target.value)} />
           </div>
           <div className="space-y-1.5">
@@ -283,7 +283,7 @@ export function PromotionDialog({
             <Input type="number" value={form.regular_price} onChange={e => set('regular_price', e.target.value)} />
           </div>
           <div className="space-y-1.5">
-            <Label>행사가 *</Label>
+            <Label>행사가</Label>
             <Input type="number" value={form.promo_price} onChange={e => set('promo_price', e.target.value)} />
             {discount !== null && <p className="text-xs text-muted-foreground">할인율 {discount}%</p>}
           </div>
