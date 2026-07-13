@@ -492,20 +492,18 @@ export default function Tasks() {
                       </SelectContent>
                     </Select>
                   </div>
-                  {createMode !== 'promotion' && (
-                    <div className="space-y-2">
-                      <Label>카테고리 (선택)</Label>
-                      <Select value={taskForm.category_id || '__none__'} onValueChange={v => setTaskForm(f => ({ ...f, category_id: v === '__none__' ? '' : v }))}>
-                        <SelectTrigger><SelectValue placeholder="카테고리 선택" /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="__none__">미분류</SelectItem>
-                          {categories.map(c => (
-                            <SelectItem key={c.id} value={c.id}>{c.icon ? `${c.icon} ` : ''}{c.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </div>
-                  )}
+                  <div className="space-y-2">
+                    <Label>카테고리 (선택)</Label>
+                    <Select value={taskForm.category_id || '__none__'} onValueChange={v => setTaskForm(f => ({ ...f, category_id: v === '__none__' ? '' : v }))}>
+                      <SelectTrigger><SelectValue placeholder="카테고리 선택 (행사 선택 시 행사 정보 입력 가능)" /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="__none__">미분류</SelectItem>
+                        {categories.map(c => (
+                          <SelectItem key={c.id} value={c.id}>{c.icon ? `${c.icon} ` : ''}{c.name}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   <div className="space-y-2">
                     <Label>담당자</Label>
                     <Select value={taskForm.assignee_id} onValueChange={v => setTaskForm(f => ({ ...f, assignee_id: v }))}>
@@ -515,7 +513,7 @@ export default function Tasks() {
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     <div className="space-y-2">
-                      <Label>시작일{(createMode === 'scheduled' || createMode === 'promotion') && <span className="text-destructive ml-0.5">*</span>}</Label>
+                      <Label>시작일{createMode === 'scheduled' && <span className="text-destructive ml-0.5">*</span>}</Label>
                       <Input
                         type="date"
                         value={taskForm.start_date}
@@ -523,11 +521,11 @@ export default function Tasks() {
                         min={createMode === 'scheduled' ? new Date(Date.now() + 86400000).toISOString().slice(0, 10) : undefined}
                       />
                     </div>
-                    <div className="space-y-2"><Label>마감일{createMode === 'promotion' && <span className="text-destructive ml-0.5">*</span>}</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
+                    <div className="space-y-2"><Label>마감일</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
                   </div>
                   {(() => {
                     const promoCat = (categories as any[]).find((c: any) => c.system_slug === 'promotion');
-                    const showPromo = createMode === 'promotion' || (promoCat && taskForm.category_id === promoCat.id);
+                    const showPromo = !!(promoCat && taskForm.category_id === promoCat.id);
                     if (showPromo) {
                       return (
                         <PromotionSubForm
@@ -542,10 +540,10 @@ export default function Tasks() {
                   })()}
                   <Button
                     onClick={handleAddTask}
-                    disabled={submitting || !taskForm.title || (createMode === 'scheduled' && !taskForm.start_date) || (createMode === 'promotion' && (!taskForm.start_date || !taskForm.due_date))}
+                    disabled={submitting || !taskForm.title || (createMode === 'scheduled' && !taskForm.start_date)}
                     className="w-full"
                   >
-                    {submitting ? '등록 중...' : (createMode === 'scheduled' ? '예약 등록' : createMode === 'promotion' ? '행사 + 업무 등록' : '등록')}
+                    {submitting ? '등록 중...' : (createMode === 'scheduled' ? '예약 등록' : '등록')}
                   </Button>
                 </div>
               </Tabs>
