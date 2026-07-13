@@ -73,7 +73,7 @@ export default function Promotions() {
   }, [conflicts]);
 
   const canEditPromotion = (p: Promotion) =>
-    isManager || (profile && p.md_id === profile.id);
+    isManager || (profile && (p.md_id === profile.id || p.created_by === profile.id));
 
   const stats = useMemo(() => {
     const ongoing = promotions.filter((p) => p.status === 'ongoing').length;
