@@ -190,9 +190,9 @@ export function PromotionSubForm({
 /**
  * 이름으로 품목을 찾고, 없으면 자동 생성.
  */
-export async function resolveOrCreateProduct(name: string): Promise<string> {
-  const trimmed = name.trim();
-  if (!trimmed) throw new Error('품목명이 필요합니다');
+export async function resolveOrCreateProduct(name: string): Promise<string | null> {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return null;
   const { data: existing } = await supabase
     .from('products')
     .select('id, name')
@@ -210,11 +210,11 @@ export async function resolveOrCreateProduct(name: string): Promise<string> {
 }
 
 /**
- * 이름으로 채널을 찾고, 없으면 자동 생성.
+ * 이름으로 채널을 찾고, 없으면 자동 생성. 이름이 비어있으면 null.
  */
-export async function resolveOrCreateChannel(name: string, defaultMdId?: string | null): Promise<string> {
-  const trimmed = name.trim();
-  if (!trimmed) throw new Error('채널명이 필요합니다');
+export async function resolveOrCreateChannel(name: string, defaultMdId?: string | null): Promise<string | null> {
+  const trimmed = (name || '').trim();
+  if (!trimmed) return null;
   const { data: existing } = await supabase
     .from('sales_channels')
     .select('id, name')
@@ -233,6 +233,7 @@ export async function resolveOrCreateChannel(name: string, defaultMdId?: string 
 
 /**
  * 행사 데이터 저장(생성/갱신). task와 양방향 링크.
+ * 모든 항목이 선택 사항 — 비어 있는 필드는 null로 저장됩니다.
  */
 export async function upsertPromotionForTask(params: {
   taskId: string;
@@ -248,13 +249,13 @@ export async function upsertPromotionForTask(params: {
   const payload: any = {
     product_id: productId,
     channel_id: channelId,
-    md_id: form.md_id,
-    kind: form.kind,
+    md_id: form.md_id || null,
+    kind: form.kind || 'other',
     placement: form.placement || null,
     regular_price: form.regular_price ? Number(form.regular_price) : null,
-    promo_price: Number(form.promo_price),
-    start_date: startDate,
-    end_date: endDate,
+    promo_price: form.promo_price ? Number(form.promo_price) : null,
+    start_date: startDate || null,
+    end_date: endDate || null,
     task_id: taskId,
   };
   if (existingPromotionId) {
