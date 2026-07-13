@@ -261,21 +261,23 @@ export default function Tasks() {
         return;
       }
 
-      if (isPromo && inserted?.id) {
+      if (isPromo && inserted?.id && (useMulti || hasPromoInfo)) {
         try {
           if (useMulti) {
             const resolvedChannelId = promotionSubForm.channel_id
-              || await resolveOrCreateChannel(promotionSubForm.channel_name, promotionSubForm.md_id);
+              || (promotionSubForm.channel_name.trim()
+                ? await resolveOrCreateChannel(promotionSubForm.channel_name, promotionSubForm.md_id)
+                : null);
             const rows = parsedItems.map(it => ({
               product_id: it.product_id,
               channel_id: resolvedChannelId,
-              md_id: promotionSubForm.md_id,
+              md_id: promotionSubForm.md_id || null,
               kind: promotionSubForm.kind || 'other',
               placement: promotionSubForm.placement || null,
               regular_price: it.regular_price,
               promo_price: it.promo_price,
-              start_date: taskForm.start_date,
-              end_date: taskForm.due_date,
+              start_date: taskForm.start_date || null,
+              end_date: taskForm.due_date || null,
               task_id: inserted.id,
               created_by: profile?.id,
             }));
@@ -293,6 +295,7 @@ export default function Tasks() {
               endDate: taskForm.due_date,
               createdBy: profile?.id,
             });
+            toast({ title: '행사 현황에 자동 등록되었습니다' });
           }
         } catch (e: any) {
           toast({ title: '행사 정보 저장 실패', description: e.message, variant: 'destructive' });
