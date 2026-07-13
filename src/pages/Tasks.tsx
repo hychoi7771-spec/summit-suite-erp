@@ -217,15 +217,9 @@ export default function Tasks() {
           ? 'scheduled'
           : 'todo';
       const promoCategory = categories.find((c: any) => c.system_slug === 'promotion');
-      // 카테고리 결정: 행사 모드면 강제, 아니면 사용자 선택 또는 AI 자동 분류
+      // 카테고리 결정: 사용자 선택 또는 AI 자동 분류
       let resolvedCategoryId: string | null = taskForm.category_id || null;
-      if (createMode === 'promotion') {
-        if (!promoCategory) {
-          toast({ title: '행사 카테고리가 없습니다', description: '관리자에게 문의하세요.', variant: 'destructive' });
-          return;
-        }
-        resolvedCategoryId = promoCategory.id;
-      } else if (!resolvedCategoryId && categories.length > 0) {
+      if (!resolvedCategoryId && categories.length > 0) {
         try {
           const { data: ai } = await supabase.functions.invoke('classify-task', {
             body: {
@@ -240,27 +234,16 @@ export default function Tasks() {
         }
       }
 
-      const isPromo = createMode === 'promotion' || (resolvedCategoryId && promoCategory && resolvedCategoryId === promoCategory.id);
+      const isPromo = !!(resolvedCategoryId && promoCategory && resolvedCategoryId === promoCategory.id);
       const parsedItems = isPromo ? parsePromoLinesFromDescription(taskForm.description) : [];
       const useMulti = isPromo && parsedItems.length > 0;
-
-      if (isPromo) {
-        if (!taskForm.start_date || !taskForm.due_date) {
-          toast({ title: '행사 업무는 시작일·마감일이 필요합니다', variant: 'destructive' });
-          return;
-        }
-        if (!promotionSubForm.channel_name.trim() || !promotionSubForm.md_id) {
-          toast({ title: '채널·담당 MD를 입력해주세요', variant: 'destructive' });
-          return;
-        }
-        if (!useMulti) {
-          const missing = !promotionSubForm.product_name.trim() || !promotionSubForm.promo_price;
-          if (missing) {
-            toast({ title: '행사 정보를 입력해주세요', description: '품목·행사가는 필수입니다. (설명에 "상품명 가격" 형태로 여러 줄 입력 시 자동 인식됩니다)', variant: 'destructive' });
-            return;
-          }
-        }
-      }
+      // 행사 서브폼에 최소한의 정보가 있을 때만 행사 자동등록 (다중 파싱은 별도)
+      const hasPromoInfo = !!(
+        promotionSubForm.product_name.trim() ||
+        promotionSubForm.channel_name.trim() ||
+        promotionSubForm.md_id ||
+        promotionSubForm.promo_price
+      );
 
       const { data: inserted, error } = await supabase.from('tasks').insert({
         title: taskForm.title,
