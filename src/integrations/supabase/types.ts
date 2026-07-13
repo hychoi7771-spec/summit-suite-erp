@@ -1483,24 +1483,24 @@ export type Database = {
         Row: {
           actual_revenue: number | null
           attachment_url: string | null
-          channel_id: string
+          channel_id: string | null
           competitor_price: number | null
           created_at: string
           created_by: string | null
-          end_date: string
+          end_date: string | null
           expected_revenue: number | null
           id: string
           kind: Database["public"]["Enums"]["promotion_kind"]
           market_lowest_price: number | null
-          md_id: string
+          md_id: string | null
           memo: string | null
           monitoring_note: string | null
           placement: string | null
           planned_qty: number | null
-          product_id: string
-          promo_price: number
+          product_id: string | null
+          promo_price: number | null
           regular_price: number | null
-          start_date: string
+          start_date: string | null
           status: Database["public"]["Enums"]["promotion_status"]
           status_override: boolean
           stock_qty: number | null
@@ -1511,24 +1511,24 @@ export type Database = {
         Insert: {
           actual_revenue?: number | null
           attachment_url?: string | null
-          channel_id: string
+          channel_id?: string | null
           competitor_price?: number | null
           created_at?: string
           created_by?: string | null
-          end_date: string
+          end_date?: string | null
           expected_revenue?: number | null
           id?: string
           kind?: Database["public"]["Enums"]["promotion_kind"]
           market_lowest_price?: number | null
-          md_id: string
+          md_id?: string | null
           memo?: string | null
           monitoring_note?: string | null
           placement?: string | null
           planned_qty?: number | null
-          product_id: string
-          promo_price: number
+          product_id?: string | null
+          promo_price?: number | null
           regular_price?: number | null
-          start_date: string
+          start_date?: string | null
           status?: Database["public"]["Enums"]["promotion_status"]
           status_override?: boolean
           stock_qty?: number | null
@@ -1539,24 +1539,24 @@ export type Database = {
         Update: {
           actual_revenue?: number | null
           attachment_url?: string | null
-          channel_id?: string
+          channel_id?: string | null
           competitor_price?: number | null
           created_at?: string
           created_by?: string | null
-          end_date?: string
+          end_date?: string | null
           expected_revenue?: number | null
           id?: string
           kind?: Database["public"]["Enums"]["promotion_kind"]
           market_lowest_price?: number | null
-          md_id?: string
+          md_id?: string | null
           memo?: string | null
           monitoring_note?: string | null
           placement?: string | null
           planned_qty?: number | null
-          product_id?: string
-          promo_price?: number
+          product_id?: string | null
+          promo_price?: number | null
           regular_price?: number | null
-          start_date?: string
+          start_date?: string | null
           status?: Database["public"]["Enums"]["promotion_status"]
           status_override?: boolean
           stock_qty?: number | null
