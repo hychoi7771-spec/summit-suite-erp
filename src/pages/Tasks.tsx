@@ -419,11 +419,10 @@ export default function Tasks() {
             </DialogTrigger>
             <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[560px]">
               <DialogHeader className="sticky top-0 bg-background z-10 pb-2"><DialogTitle>새 업무 등록</DialogTitle></DialogHeader>
-              <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'now' | 'scheduled' | 'promotion')} className="mt-2">
-                <TabsList className="grid w-full grid-cols-3 sticky top-12 bg-background z-10">
+              <Tabs value={createMode} onValueChange={(v) => setCreateMode(v as 'now' | 'scheduled')} className="mt-2">
+                <TabsList className="grid w-full grid-cols-2 sticky top-12 bg-background z-10">
                   <TabsTrigger value="now" className="gap-1.5"><Plus className="h-3.5 w-3.5" />즉시 등록</TabsTrigger>
                   <TabsTrigger value="scheduled" className="gap-1.5"><Calendar className="h-3.5 w-3.5" />예약 등록</TabsTrigger>
-                  <TabsTrigger value="promotion" className="gap-1.5">🎉 행사 등록</TabsTrigger>
                 </TabsList>
                 <div className="space-y-4 mt-4">
                   {createMode === 'scheduled' && (
@@ -431,14 +430,16 @@ export default function Tasks() {
                       예약 업무는 <strong>시작일</strong>이 도래하면 자동으로 '할 일' 칸반으로 이동합니다.
                     </div>
                   )}
-                  {createMode === 'promotion' && (
-                    <div className="rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200 dark:border-fuchsia-800/50 px-3 py-2 text-xs text-fuchsia-700 dark:text-fuchsia-300 space-y-1">
-                      <div>행사 업무로 등록되며 <strong>행사 현황</strong>에 자동 반영됩니다. (시작일·마감일 필수)</div>
-                      <div>💡 <strong>설명</strong>에 <code className="px-1 rounded bg-fuchsia-100">상품명 12000</code> 또는 <code className="px-1 rounded bg-fuchsia-100">상품명 15000 12000</code>처럼 한 줄에 하나씩 적으면 <strong>품목별로 자동 등록</strong>됩니다. (채널·MD는 아래에서 한 번만 선택)</div>
-                      {(() => {
-                        const parsed = parsePromoLinesFromDescription(taskForm.description);
-                        if (parsed.length === 0) return null;
-                        return (
+                  {(() => {
+                    const promoCat = (categories as any[]).find((c: any) => c.system_slug === 'promotion');
+                    const isPromoSelected = !!(promoCat && taskForm.category_id === promoCat.id);
+                    if (!isPromoSelected) return null;
+                    const parsed = parsePromoLinesFromDescription(taskForm.description);
+                    return (
+                      <div className="rounded-md bg-fuchsia-50 dark:bg-fuchsia-900/20 border border-fuchsia-200 dark:border-fuchsia-800/50 px-3 py-2 text-xs text-fuchsia-700 dark:text-fuchsia-300 space-y-1">
+                        <div>🎉 <strong>행사</strong> 카테고리 선택 — 아래 행사 정보가 함께 저장되며 <strong>행사 현황</strong>에 자동 반영됩니다.</div>
+                        <div>💡 <strong>설명</strong>에 <code className="px-1 rounded bg-fuchsia-100">상품명 12000</code> 또는 <code className="px-1 rounded bg-fuchsia-100">상품명 15000 12000</code>처럼 여러 줄 입력 시 <strong>품목별로 자동 등록</strong>됩니다.</div>
+                        {parsed.length > 0 && (
                           <div className="mt-1.5 pt-1.5 border-t border-fuchsia-200/60">
                             <div className="font-medium mb-1">자동 인식된 품목 ({parsed.length}건):</div>
                             <ul className="space-y-0.5">
@@ -453,10 +454,10 @@ export default function Tasks() {
                               ))}
                             </ul>
                           </div>
-                        );
-                      })()}
-                    </div>
-                  )}
+                        )}
+                      </div>
+                    );
+                  })()}
                   <div className="space-y-2">
                     <Label>프로젝트 (선택)</Label>
                     {[...new Set(taskList.map(t => t.project_name).filter(Boolean))].length > 0 && (
