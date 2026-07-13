@@ -103,18 +103,18 @@ export function PromotionDialog({
   };
 
   const save = async () => {
-    const hasProduct = form.product_id || form.product_name?.trim();
-    const hasChannel = form.channel_id || form.channel_name?.trim();
-    if (!hasProduct || !hasChannel || !form.md_id || !form.start_date || !form.end_date || !form.promo_price) {
-      toast({ title: '필수 항목을 입력해주세요', description: '품목·채널·MD·기간·행사가는 필수입니다', variant: 'destructive' });
+    // 모든 항목이 선택 사항 — 최소한 제목/품목/채널 중 하나라도 있으면 저장
+    const hasAny = form.product_id || form.product_name?.trim() || form.channel_id || form.channel_name?.trim() || form.title?.trim();
+    if (!hasAny) {
+      toast({ title: '내용을 입력해주세요', description: '품목·채널·제목 중 최소 하나는 필요합니다', variant: 'destructive' });
       return;
     }
 
-    let productId = form.product_id;
-    let channelId = form.channel_id;
+    let productId = form.product_id || null;
+    let channelId = form.channel_id || null;
     try {
-      if (!productId) productId = await resolveOrCreateProduct(form.product_name);
-      if (!channelId) channelId = await resolveOrCreateChannel(form.channel_name, form.md_id);
+      if (!productId && form.product_name?.trim()) productId = await resolveOrCreateProduct(form.product_name);
+      if (!channelId && form.channel_name?.trim()) channelId = await resolveOrCreateChannel(form.channel_name, form.md_id);
     } catch (e: any) {
       toast({ title: '품목/채널 등록 실패', description: e.message, variant: 'destructive' });
       return;
@@ -123,14 +123,14 @@ export function PromotionDialog({
     const payload: any = {
       product_id: productId,
       channel_id: channelId,
-      md_id: form.md_id,
+      md_id: form.md_id || null,
       title: form.title || null,
-      kind: form.kind,
+      kind: form.kind || 'other',
       placement: form.placement || null,
-      start_date: form.start_date,
-      end_date: form.end_date,
+      start_date: form.start_date || null,
+      end_date: form.end_date || null,
       regular_price: form.regular_price ? Number(form.regular_price) : null,
-      promo_price: Number(form.promo_price),
+      promo_price: form.promo_price ? Number(form.promo_price) : null,
       planned_qty: form.planned_qty ? Number(form.planned_qty) : null,
       stock_qty: form.stock_qty ? Number(form.stock_qty) : null,
       expected_revenue: form.expected_revenue ? Number(form.expected_revenue) : null,
