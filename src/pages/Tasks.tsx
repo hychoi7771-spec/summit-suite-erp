@@ -977,9 +977,18 @@ export default function Tasks() {
                                                   완료
                                                 </Badge>
                                               ) : daysLeft !== null && (
-                                                <Badge variant={daysLeft < 0 ? 'destructive' : daysLeft <= 3 ? 'destructive' : daysLeft <= 7 ? 'secondary' : 'outline'} className="text-[10px] px-1.5 py-0">
+                                                <Badge
+                                                  variant={daysLeft < 0 ? 'destructive' : 'outline'}
+                                                  className={`text-[10px] px-1.5 py-0 ${
+                                                    daysLeft === 0
+                                                      ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-500'
+                                                      : daysLeft > 0 && daysLeft <= 3
+                                                      ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
+                                                      : ''
+                                                  }`}
+                                                >
                                                   <Calendar className="h-2.5 w-2.5 mr-0.5" />
-                                                  {daysLeft < 0 ? `${Math.abs(daysLeft)}일 초과` : daysLeft === 0 ? '오늘 마감' : `D-${daysLeft}`}
+                                                  {daysLeft < 0 ? `${Math.abs(daysLeft)}일 초과` : daysLeft === 0 ? 'D-DAY' : `D-${daysLeft}`}
                                                 </Badge>
                                               )}
                                             </div>
