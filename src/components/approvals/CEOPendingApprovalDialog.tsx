@@ -42,7 +42,7 @@ const typeMeta: Record<string, { label: string; icon: any; color: string }> = {
 };
 
 export function CEOPendingApprovalDialog() {
-  const { user, profile, userRole } = useAuth();
+  const { user, session, profile, userRole } = useAuth();
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [pending, setPending] = useState<ApprovalItem[]>([]);
@@ -56,8 +56,11 @@ export function CEOPendingApprovalDialog() {
   useEffect(() => {
     if (!user || !profile || userRole !== 'ceo') return;
 
-    const sessionFlag = `${SESSION_KEY}:${user.id}`;
+    // 세션별 고유 키(로그인 시마다 갱신). access_token 앞자리 사용.
+    const tokenFingerprint = (session?.access_token ?? '').slice(0, 24);
+    const sessionFlag = `${SESSION_KEY}:${user.id}:${tokenFingerprint}`;
     if (sessionStorage.getItem(sessionFlag)) return;
+
 
     (async () => {
       const { data, error } = await supabase
@@ -103,7 +106,7 @@ export function CEOPendingApprovalDialog() {
       setTab(p.length > 0 ? 'pending' : 'approved');
       setOpen(true);
     })();
-  }, [user?.id, profile?.id, userRole]);
+  }, [user?.id, profile?.id, userRole, session?.access_token]);
 
   const removeItem = (id: string) => {
     setPending((prev) => prev.filter((i) => i.id !== id));
