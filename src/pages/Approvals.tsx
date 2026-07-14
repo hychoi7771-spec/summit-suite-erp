@@ -414,9 +414,14 @@ export default function Approvals() {
     fetchData();
   };
 
-  // 카테고리 필터: 하위 메뉴에서 진입 시 subcategory(또는 type)로 좁힘
+  // 카테고리 필터: "문서 기안"은 통합 카테고리 → 레거시 subcategory(기획/행사/구매/계약/출장)도 포함
   const categoryFiltered = activeCategory
-    ? approvals.filter(a => a.subcategory === activeCategory.key || (!a.subcategory && a.type === activeCategory.type && activeCategory.key === 'general_document'))
+    ? approvals.filter(a => {
+        if (activeCategory.key === 'general_document') {
+          return a.type === 'document';
+        }
+        return a.subcategory === activeCategory.key || (!a.subcategory && a.type === activeCategory.type);
+      })
     : approvals;
 
   const filtered = categoryFiltered.filter(a => {

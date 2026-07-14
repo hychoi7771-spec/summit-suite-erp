@@ -157,12 +157,12 @@ export default function TaskListView({ tasks, profiles, selectedProject, selecte
                       {t.due_date ? (
                         <div className="flex items-center gap-1.5">
                           {overdue && <AlertTriangle className="h-3 w-3 text-destructive" />}
-                          <Calendar className="h-3 w-3 text-muted-foreground" />
-                          <span className={`text-xs ${overdue ? 'text-destructive font-medium' : 'text-foreground'}`}>
+                          <Calendar className={`h-3 w-3 ${days === 0 && !overdue ? 'text-blue-600' : 'text-muted-foreground'}`} />
+                          <span className={`text-xs ${overdue ? 'text-destructive font-medium' : days === 0 ? 'text-blue-600 font-medium' : 'text-foreground'}`}>
                             {format(parseISO(t.due_date), 'M/d')}
                             {days !== null && (
-                              <span className="text-muted-foreground ml-1">
-                                ({days < 0 ? `${Math.abs(days)}일 지연` : days === 0 ? '오늘' : `D-${days}`})
+                              <span className={`ml-1 ${overdue ? 'text-destructive' : days === 0 ? 'text-blue-600' : 'text-muted-foreground'}`}>
+                                ({days < 0 ? `${Math.abs(days)}일 지연` : days === 0 ? 'D-DAY' : `D-${days}`})
                               </span>
                             )}
                           </span>
