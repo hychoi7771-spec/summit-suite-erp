@@ -106,7 +106,7 @@ export function CEOPendingApprovalDialog() {
       setTab(p.length > 0 ? 'pending' : 'approved');
       setOpen(true);
     })();
-  }, [user?.id, profile?.id, userRole]);
+  }, [user?.id, profile?.id, userRole, session?.access_token]);
 
   const removeItem = (id: string) => {
     setPending((prev) => prev.filter((i) => i.id !== id));
