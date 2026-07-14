@@ -312,14 +312,7 @@ export function AppSidebar() {
           {!collapsed && <GroupLabel>결재 · 지출</GroupLabel>}
           <SidebarGroupContent>
             {renderNavItems(approvalNavItems)}
-            {!collapsed && (
-              <div className="mt-0.5">
-                <SectionTrigger open={docsOpen} onOpenChange={setDocsOpen} icon={Stamp} label="문서 기안">
-                  {renderNavItems(approvalDocItems)}
-                </SectionTrigger>
-              </div>
-            )}
-            {collapsed && renderNavItems(approvalDocItems)}
+            {renderNavItems(approvalDocItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
