@@ -54,7 +54,6 @@ export function CEOPendingApprovalDialog() {
       const { data, error } = await supabase
         .from('approvals')
         .select('id, title, type, created_at, requester_id')
-        .eq('current_approver_id', profile.id)
         .eq('status', 'pending')
         .order('created_at', { ascending: true });
 
