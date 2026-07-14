@@ -414,6 +414,64 @@ export default function Expenses() {
           </div>
         </CardContent>
       </Card>
+
+      <Dialog open={!!selectedExpense} onOpenChange={(o) => !o && setSelectedExpense(null)}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle>경비 청구 상세</DialogTitle>
+          </DialogHeader>
+          {selectedExpense && (() => {
+            const submitter = getProfile(selectedExpense.submitted_by);
+            const canApprove = userRole === 'ceo' || userRole === 'general_director';
+            return (
+              <div className="space-y-3 text-sm">
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="text-muted-foreground">청구일</div>
+                  <div className="col-span-2">{selectedExpense.date}</div>
+                  <div className="text-muted-foreground">청구자</div>
+                  <div className="col-span-2">{submitter?.name_kr ?? '—'}</div>
+                  <div className="text-muted-foreground">분류</div>
+                  <div className="col-span-2">{selectedExpense.category}</div>
+                  <div className="text-muted-foreground">결제수단</div>
+                  <div className="col-span-2">{paymentMethodLabel(selectedExpense.payment_method || 'personal')}</div>
+                  <div className="text-muted-foreground">금액</div>
+                  <div className="col-span-2 font-semibold">{formatKRW(selectedExpense.amount)}</div>
+                  <div className="text-muted-foreground">상태</div>
+                  <div className="col-span-2"><StatusBadge status={selectedExpense.status} /></div>
+                </div>
+                <div className="pt-2 border-t">
+                  <div className="text-xs text-muted-foreground mb-1">내역</div>
+                  <div className="whitespace-pre-wrap rounded-md bg-muted/50 p-3 min-h-[60px]">
+                    {selectedExpense.description || '—'}
+                  </div>
+                </div>
+                {selectedExpense.receipt_url && (
+                  <div>
+                    <div className="text-xs text-muted-foreground mb-1">영수증</div>
+                    <a href={selectedExpense.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-info hover:underline inline-flex items-center gap-1">
+                      <Image className="h-3 w-3" /> 새 창에서 열기
+                    </a>
+                    {/\.(png|jpe?g|gif|webp)$/i.test(selectedExpense.receipt_url) && (
+                      <img src={selectedExpense.receipt_url} alt="영수증" className="mt-2 rounded-md border max-h-64 object-contain" />
+                    )}
+                  </div>
+                )}
+                {canApprove && selectedExpense.status === 'Pending' && (
+                  <div className="flex gap-2 justify-end pt-3 border-t">
+                    <Button variant="outline" className="text-destructive" onClick={async () => { await handleStatusChange(selectedExpense.id, 'Rejected'); setSelectedExpense(null); }}>반려</Button>
+                    <Button onClick={async () => { await handleStatusChange(selectedExpense.id, 'Approved'); setSelectedExpense(null); }}>승인</Button>
+                  </div>
+                )}
+                {canApprove && selectedExpense.status === 'Approved' && REIMBURSABLE_METHODS.includes(selectedExpense.payment_method as PaymentMethodValue) && (
+                  <div className="flex justify-end pt-3 border-t">
+                    <Button onClick={async () => { await handleStatusChange(selectedExpense.id, 'Reimbursed'); setSelectedExpense(null); }}>정산 완료</Button>
+                  </div>
+                )}
+              </div>
+            );
+          })()}
+        </DialogContent>
+      </Dialog>
     </div>
 
   );
