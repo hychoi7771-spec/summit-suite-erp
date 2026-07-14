@@ -79,14 +79,9 @@ const approvalNavItems: NavItem[] = [
   { title: '근태관리', url: '/attendance', icon: CalendarClock },
 ];
 
-// 문서 기안 6종 (결재·지출 내부 아코디언)
+// 문서 기안 (통합)
 const approvalDocItems: NavItem[] = [
-  { title: '기획안 품의', url: '/approvals?category=planning_proposal', icon: Lightbulb },
-  { title: '행사안 품의', url: '/approvals?category=event_proposal', icon: PartyPopper },
-  { title: '구매 품의', url: '/approvals?category=purchase_request', icon: ShoppingCart },
-  { title: '계약 품의', url: '/approvals?category=contract_request', icon: FileSignature },
-  { title: '출장 품의', url: '/approvals?category=business_trip', icon: Building2 },
-  { title: '일반 기안', url: '/approvals?category=general_document', icon: FileText },
+  { title: '문서 기안', url: '/approvals?category=general_document', icon: FileText },
 ];
 
 // 분석
