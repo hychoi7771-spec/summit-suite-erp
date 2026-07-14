@@ -283,8 +283,13 @@ export default function Expenses() {
               <TableBody>
                 {expenses.map(expense => {
                   const submitter = getProfile(expense.submitted_by);
+                  const isCeo = userRole === 'ceo';
                   return (
-                    <TableRow key={expense.id}>
+                    <TableRow
+                      key={expense.id}
+                      className={isCeo ? 'cursor-pointer hover:bg-muted/50' : ''}
+                      onClick={isCeo ? () => setSelectedExpense(expense) : undefined}
+                    >
                       <TableCell className="text-sm">{expense.date}</TableCell>
                       <TableCell className="text-sm font-medium max-w-[200px] truncate">{expense.description}</TableCell>
                       <TableCell>
