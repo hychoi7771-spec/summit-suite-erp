@@ -177,6 +177,16 @@ export default function Approvals() {
     if (categoryParam) setTab(searchParams.get('tab') || 'all');
   }, [categoryParam]);
 
+  // URL의 ?id= 파라미터로 결재 상세 자동 오픈 (대기 알림 다이얼로그 이동 대응)
+  useEffect(() => {
+    const idParam = searchParams.get('id');
+    if (!idParam || approvals.length === 0) return;
+    const found = approvals.find((a: any) => a.id === idParam);
+    if (found && selectedApproval?.id !== idParam) {
+      setSelectedApproval(found);
+    }
+  }, [searchParams, approvals]);
+
 
   const getProfileName = (id: string) => profiles.find(p => p.id === id)?.name || '—';
   const getProfileRole = (profileId: string) => {
