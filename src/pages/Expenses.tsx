@@ -318,7 +318,7 @@ export default function Expenses() {
                       <TableCell className="text-right text-sm font-medium">{formatKRW(expense.amount)}</TableCell>
                       <TableCell>
                         {expense.receipt_url ? (
-                          <a href={expense.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-info hover:underline flex items-center gap-1">
+                          <a href={expense.receipt_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs text-info hover:underline flex items-center gap-1">
                             <Image className="h-3 w-3" /> 보기
                           </a>
                         ) : (
@@ -327,7 +327,7 @@ export default function Expenses() {
                       </TableCell>
                       <TableCell><StatusBadge status={expense.status} /></TableCell>
                       {isAdmin && (
-                        <TableCell>
+                        <TableCell onClick={(e) => e.stopPropagation()}>
                           {expense.status === 'Pending' && (
                             <div className="flex gap-1">
                               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleStatusChange(expense.id, 'Approved')}>승인</Button>
