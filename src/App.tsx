@@ -39,6 +39,7 @@ import OneOnOne from "./pages/OneOnOne";
 import Attendance from "./pages/Attendance";
 import AccountSettings from "./pages/AccountSettings";
 import CompanyHolidays from "./pages/CompanyHolidays";
+import DomainStatus from "./pages/DomainStatus";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
