@@ -39,6 +39,7 @@ import OneOnOne from "./pages/OneOnOne";
 import Attendance from "./pages/Attendance";
 import AccountSettings from "./pages/AccountSettings";
 import CompanyHolidays from "./pages/CompanyHolidays";
+import DomainStatus from "./pages/DomainStatus";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -112,6 +113,7 @@ function AppRoutes() {
                 <Route path="/one-on-one" element={<OneOnOne />} />
                 <Route path="/account" element={<AccountSettings />} />
                 <Route path="/company-holidays" element={<CompanyHolidays />} />
+                <Route path="/domain-status" element={<DomainStatus />} />
                 <Route path="/assets/tasks" element={<AssetsTasks />} />
                 <Route path="/assets/daily-reports" element={<AssetsDailyReports />} />
                 <Route path="/assets/approvals" element={<AssetsApprovals />} />

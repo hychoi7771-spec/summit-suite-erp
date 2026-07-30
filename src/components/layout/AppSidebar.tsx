@@ -14,6 +14,7 @@ import {
   UserCog,
   Vote,
   BookOpen,
+  Globe,
   ChevronRight,
   User,
   FileText,
@@ -111,6 +112,7 @@ const adminNavItems: NavItem[] = [
   { title: '사내 휴무일', url: '/company-holidays', icon: CalendarOff, managerOnly: true },
   { title: '프로젝트 폴더', url: '/project-folders', icon: FolderOpen },
   { title: '사용 매뉴얼', url: '/manual', icon: BookOpen },
+  { title: '도메인 연결 상태', url: '/domain-status', icon: Globe, managerOnly: true },
 ];
 
 const statusColors: Record<string, string> = {
