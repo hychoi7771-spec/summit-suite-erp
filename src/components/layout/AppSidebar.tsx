@@ -14,6 +14,7 @@ import {
   UserCog,
   Vote,
   BookOpen,
+  Globe,
   ChevronRight,
   User,
   FileText,
