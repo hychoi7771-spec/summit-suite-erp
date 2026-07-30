@@ -113,6 +113,7 @@ function AppRoutes() {
                 <Route path="/one-on-one" element={<OneOnOne />} />
                 <Route path="/account" element={<AccountSettings />} />
                 <Route path="/company-holidays" element={<CompanyHolidays />} />
+                <Route path="/domain-status" element={<DomainStatus />} />
                 <Route path="/assets/tasks" element={<AssetsTasks />} />
                 <Route path="/assets/daily-reports" element={<AssetsDailyReports />} />
                 <Route path="/assets/approvals" element={<AssetsApprovals />} />
