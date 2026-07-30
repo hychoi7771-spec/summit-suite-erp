@@ -133,14 +133,37 @@ export default function Tasks() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
+  const fetchAllTasks = async () => {
+    // PostgREST는 1회 요청당 최대 1000행만 반환 → 페이지네이션으로 전체 조회
+    const pageSize = 1000;
+    let from = 0;
+    const all: any[] = [];
+    // 최대 20페이지(2만건)까지 안전하게 조회
+    for (let i = 0; i < 20; i++) {
+      const { data, error } = await supabase
+        .from('tasks')
+        .select('*')
+        .order('position', { ascending: true })
+        .order('created_at', { ascending: true })
+        .range(from, from + pageSize - 1);
+      if (error) break;
+      const rows = data || [];
+      all.push(...rows);
+      if (rows.length < pageSize) break;
+      from += pageSize;
+    }
+    return all;
+  };
+
   const fetchData = async () => {
-    const [taskRes, profRes, catRes, prodRes] = await Promise.all([
-      supabase.from('tasks').select('*').order('position', { ascending: true }),
+    const [taskRows, profRes, catRes, prodRes] = await Promise.all([
+      fetchAllTasks(),
       supabase.from('profiles').select('id, name, name_kr, avatar'),
       supabase.from('task_categories').select('*').order('sort_order', { ascending: true }),
       supabase.from('products').select('id, name'),
     ]);
-    let tasks = taskRes.data || [];
+    let tasks = taskRows;
+
 
     // Auto-promote scheduled tasks whose start_date has arrived
     const today = new Date().toISOString().slice(0, 10);
