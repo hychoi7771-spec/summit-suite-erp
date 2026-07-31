@@ -16,6 +16,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { getSignedReceiptUrl, useSignedReceiptUrl } from '@/lib/receiptUrl';
 
 const fileIcons: Record<string, typeof FileText> = { PDF: FileText, AI: Image, ZIP: Archive };
 const categoryOptions = ['브랜딩', '인증', '디자인', '계약서', '마케팅', '개발의뢰서', '견적서', '성분표', '기타'];
@@ -41,7 +42,9 @@ export default function Library() {
     if (e) e.stopPropagation();
     try {
       setDownloading(true);
-      const response = await fetch(url);
+      const signed = await getSignedReceiptUrl(url);
+      if (!signed) throw new Error('no url');
+      const response = await fetch(signed);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
