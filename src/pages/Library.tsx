@@ -91,7 +91,6 @@ export default function Library() {
       return;
     }
 
-    const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(storageData.path);
     // 비공개 버킷: 경로만 저장하고 열람 시 서명 URL을 발급합니다.
     const url = storageData.path;
 
@@ -333,12 +332,12 @@ export default function Library() {
           </DialogHeader>
           {selectedFile && (
             <div className="space-y-4">
-              {selectedFile.url && previewableTypes.includes(selectedFile.type) ? (
+              {selectedFileUrl && previewableTypes.includes(selectedFile.type) ? (
                 selectedFile.type === 'PDF' ? (
-                  <iframe src={selectedFile.url} className="w-full h-96 rounded-lg border" title={selectedFile.name} />
+                  <iframe src={selectedFileUrl} className="w-full h-96 rounded-lg border" title={selectedFile.name} />
                 ) : (
                   <div className="flex justify-center bg-muted/30 rounded-lg p-4">
-                    <img src={selectedFile.url} alt={selectedFile.name} className="max-h-96 object-contain rounded" />
+                    <img src={selectedFileUrl} alt={selectedFile.name} className="max-h-96 object-contain rounded" />
                   </div>
                 )
               ) : (
