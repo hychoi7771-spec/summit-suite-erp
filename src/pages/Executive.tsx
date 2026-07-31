@@ -26,6 +26,7 @@ import {
   PieChart, Pie, Cell, BarChart, Bar, Legend,
 } from 'recharts';
 import { format, subDays, startOfMonth, endOfMonth, differenceInHours, differenceInDays, parseISO } from 'date-fns';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#06b6d4', '#ec4899', '#f97316'];
 
@@ -90,7 +91,7 @@ export default function Executive() {
         tasksRes, approvalsRes, expensesRes, salesRes,
         leavesRes, profilesRes, categoriesRes, meetingsRes, noticesRes,
       ] = await Promise.all([
-        supabase.from('tasks').select('id,title,status,priority,assignee_id,due_date,category_id,created_at,updated_at,project_name'),
+        fetchAllRows('tasks', 'id,title,status,priority,assignee_id,due_date,category_id,created_at,updated_at,project_name'),
         supabase.from('approvals').select('id,title,type,status,requester_id,current_approver_id,created_at,approved_at,rejected_at'),
         supabase.from('expenses').select('id,date,amount,category,status,payment_method,submitted_by'),
         supabase.from('sales_data').select('id,platform,month,revenue,target,orders'),
@@ -102,7 +103,7 @@ export default function Executive() {
       ]);
 
       return {
-        tasks: tasksRes.data || [],
+        tasks: tasksRes || [],
         approvals: approvalsRes.data || [],
         expenses: expensesRes.data || [],
         sales: salesRes.data || [],

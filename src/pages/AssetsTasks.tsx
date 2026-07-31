@@ -4,6 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 import AssetLibraryShell, { AssetCategory, AssetItem } from '@/components/assets/AssetLibraryShell';
 import { Button } from '@/components/ui/button';
 import { Copy, ExternalLink } from 'lucide-react';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 export default function AssetsTasks() {
   const nav = useNavigate();
@@ -16,12 +17,8 @@ export default function AssetsTasks() {
       setLoading(true);
       const [catRes, taskRes, profRes] = await Promise.all([
         supabase.from('task_categories').select('id,name,color,icon').order('sort_order'),
-        supabase
-          .from('tasks')
-          .select('id,title,description,assignee_id,category_id,tags,updated_at,created_at')
-          .eq('status', 'done')
-          .order('updated_at', { ascending: false })
-          .limit(500),
+        fetchAllRows('tasks', 'id,title,description,assignee_id,category_id,tags,updated_at,created_at',
+          q => q.eq('status', 'done').order('updated_at', { ascending: false })),
         supabase.from('profiles').select('id,name_kr,name'),
       ]);
       const cats = (catRes.data || []) as AssetCategory[];
@@ -29,7 +26,7 @@ export default function AssetsTasks() {
       const catMap = new Map(cats.map(c => [c.id, c]));
       setCategories(cats);
       setItems(
-        (taskRes.data || []).map(t => {
+        (taskRes || []).map(t => {
           const c = t.category_id ? catMap.get(t.category_id) : undefined;
           return {
             id: t.id,

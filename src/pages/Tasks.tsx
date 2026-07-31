@@ -31,8 +31,8 @@ import CategoryManageDialog from '@/components/tasks/CategoryManageDialog';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
 import { PromotionSubForm, emptyPromotionSubForm, upsertPromotionForTask, resolveOrCreateProduct, resolveOrCreateChannel, type PromotionSubFormValue } from '@/components/promotions/PromotionSubForm';
 
-const TOGGLES_STORAGE_KEY = 'task-board-toggles';
-const DEFAULT_TOGGLES: BoardToggles = { hideDone: true, compact: false, myOnly: false, overdueOnly: false };
+const TOGGLES_STORAGE_KEY = 'task-board-toggles-v2';
+const DEFAULT_TOGGLES: BoardToggles = { hideDone: false, compact: false, myOnly: false, overdueOnly: false };
 
 type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done' | 'scheduled';
 
@@ -873,7 +873,8 @@ export default function Tasks() {
                       ].filter(Boolean).join(' ').toLowerCase();
                       if (!hay.includes(debouncedSearch)) return false;
                     }
-                    if (toggles.hideDone && t.status === 'done') return false;
+                    // '완료' 컬럼에서는 완료 업무를 숨기지 않는다 (완료로 옮긴 카드가 사라지는 문제 방지)
+                    if (toggles.hideDone && col.status !== 'done' && t.status === 'done') return false;
                     if (toggles.myOnly && profile && t.assignee_id !== profile.id) return false;
                     if (toggles.overdueOnly) {
                       const d = getDaysLeft(t.due_date);
