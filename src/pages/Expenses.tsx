@@ -18,6 +18,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { openReceipt, useSignedReceiptUrl } from '@/lib/receiptUrl';
 import { Constants } from '@/integrations/supabase/types';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
 
@@ -48,6 +49,7 @@ export default function Expenses() {
   const [submitting, setSubmitting] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [selectedExpense, setSelectedExpense] = useState<any | null>(null);
+  const selectedReceiptUrl = useSignedReceiptUrl(selectedExpense?.receipt_url);
   const [form, setForm] = useState({ amount: '', category: '' as string, description: '', payment_method: 'personal' as PaymentMethodValue });
 
 
@@ -447,11 +449,11 @@ export default function Expenses() {
                 {selectedExpense.receipt_url && (
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">영수증</div>
-                    <a href={selectedExpense.receipt_url} target="_blank" rel="noopener noreferrer" className="text-xs text-info hover:underline inline-flex items-center gap-1">
+                    <button type="button" onClick={() => openReceipt(selectedExpense.receipt_url)} className="text-xs text-info hover:underline inline-flex items-center gap-1">
                       <Image className="h-3 w-3" /> 새 창에서 열기
-                    </a>
-                    {/\.(png|jpe?g|gif|webp)$/i.test(selectedExpense.receipt_url) && (
-                      <img src={selectedExpense.receipt_url} alt="영수증" className="mt-2 rounded-md border max-h-64 object-contain" />
+                    </button>
+                    {selectedReceiptUrl && /\.(png|jpe?g|gif|webp)/i.test(selectedExpense.receipt_url) && (
+                      <img src={selectedReceiptUrl} alt="영수증" className="mt-2 rounded-md border max-h-64 object-contain" />
                     )}
                   </div>
                 )}
