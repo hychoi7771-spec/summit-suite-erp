@@ -103,7 +103,7 @@ export default function Executive() {
       ]);
 
       return {
-        tasks: tasksRes.data || [],
+        tasks: tasksRes || [],
         approvals: approvalsRes.data || [],
         expenses: expensesRes.data || [],
         sales: salesRes.data || [],
