@@ -16,6 +16,7 @@ import { EmptyState } from '@/components/shared/EmptyState';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { getSignedReceiptUrl, useSignedReceiptUrl } from '@/lib/receiptUrl';
 
 const fileIcons: Record<string, typeof FileText> = { PDF: FileText, AI: Image, ZIP: Archive };
 const categoryOptions = ['브랜딩', '인증', '디자인', '계약서', '마케팅', '개발의뢰서', '견적서', '성분표', '기타'];
@@ -33,6 +34,7 @@ export default function Library() {
   const [form, setForm] = useState({ category: '' });
   const [submitting, setSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
+  const selectedFileUrl = useSignedReceiptUrl(selectedFile?.url);
   const [downloading, setDownloading] = useState(false);
 
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
@@ -41,7 +43,9 @@ export default function Library() {
     if (e) e.stopPropagation();
     try {
       setDownloading(true);
-      const response = await fetch(url);
+      const signed = await getSignedReceiptUrl(url);
+      if (!signed) throw new Error('no url');
+      const response = await fetch(signed);
       const blob = await response.blob();
       const blobUrl = window.URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -87,8 +91,8 @@ export default function Library() {
       return;
     }
 
-    const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(storageData.path);
-    const url = urlData.publicUrl;
+    // 비공개 버킷: 경로만 저장하고 열람 시 서명 URL을 발급합니다.
+    const url = storageData.path;
 
     const sizeKB = uploadFile.size / 1024;
     const sizeStr = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
@@ -328,12 +332,12 @@ export default function Library() {
           </DialogHeader>
           {selectedFile && (
             <div className="space-y-4">
-              {selectedFile.url && previewableTypes.includes(selectedFile.type) ? (
+              {selectedFileUrl && previewableTypes.includes(selectedFile.type) ? (
                 selectedFile.type === 'PDF' ? (
-                  <iframe src={selectedFile.url} className="w-full h-96 rounded-lg border" title={selectedFile.name} />
+                  <iframe src={selectedFileUrl} className="w-full h-96 rounded-lg border" title={selectedFile.name} />
                 ) : (
                   <div className="flex justify-center bg-muted/30 rounded-lg p-4">
-                    <img src={selectedFile.url} alt={selectedFile.name} className="max-h-96 object-contain rounded" />
+                    <img src={selectedFileUrl} alt={selectedFile.name} className="max-h-96 object-contain rounded" />
                   </div>
                 )
               ) : (
