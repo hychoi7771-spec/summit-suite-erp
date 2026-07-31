@@ -13,6 +13,7 @@ import { NoticePopupOnLogin } from '@/components/notices/NoticePopupOnLogin';
 import { PendingApprovalToast } from '@/components/approvals/PendingApprovalToast';
 import { CEOPendingApprovalDialog } from '@/components/approvals/CEOPendingApprovalDialog';
 import { CommandPalette, useCommandPalette } from '@/components/shared/CommandPalette';
+import { FeatureUpdatePopup } from '@/components/updates/FeatureUpdatePopup';
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -198,6 +199,7 @@ export function AppLayout({ children }: AppLayoutProps) {
       <NoticePopupOnLogin />
       <PendingApprovalToast />
       <CEOPendingApprovalDialog />
+      <FeatureUpdatePopup />
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </SidebarProvider>
   );
