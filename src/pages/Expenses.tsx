@@ -90,8 +90,8 @@ export default function Expenses() {
         setSubmitting(false);
         return;
       }
-      const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(data.path);
-      receiptUrl = urlData.publicUrl;
+      // 비공개 버킷: 공개 URL 대신 경로만 저장하고, 열람 시 서명 URL을 발급합니다.
+      receiptUrl = data.path;
     }
 
     const isCeo = userRole === 'ceo';
@@ -317,9 +317,9 @@ export default function Expenses() {
                       <TableCell className="text-right text-sm font-medium">{formatKRW(expense.amount)}</TableCell>
                       <TableCell>
                         {expense.receipt_url ? (
-                          <a href={expense.receipt_url} target="_blank" rel="noopener noreferrer" onClick={(e) => e.stopPropagation()} className="text-xs text-info hover:underline flex items-center gap-1">
+                          <button type="button" onClick={(e) => { e.stopPropagation(); openReceipt(expense.receipt_url); }} className="text-xs text-info hover:underline flex items-center gap-1">
                             <Image className="h-3 w-3" /> 보기
-                          </a>
+                          </button>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
