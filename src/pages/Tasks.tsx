@@ -20,6 +20,7 @@ import { useToast } from '@/hooks/use-toast';
 import { DragDropContext, Droppable, Draggable, DropResult } from '@hello-pangea/dnd';
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 import DesignRequestDialog from '@/components/tasks/DesignRequestDialog';
+import TaskExportDialog from '@/components/tasks/TaskExportDialog';
 import DesignRequestDetail from '@/components/tasks/DesignRequestDetail';
 import TaskDetailDialog from '@/components/tasks/TaskDetailDialog';
 import GanttChart from '@/components/tasks/GanttChart';
@@ -435,6 +436,7 @@ export default function Tasks() {
         tone="blue"
         actions={
           <div className="flex items-center gap-2">
+          <TaskExportDialog tasks={taskList} profiles={profiles} categories={categories} />
           <DesignRequestDialog profiles={profiles} onSuccess={fetchData} />
           <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
             <DialogTrigger asChild>
