@@ -13,6 +13,7 @@ import StockUrgentWidget from '@/components/dashboard/StockUrgentWidget';
 
 import { differenceInDays, parseISO, startOfDay } from 'date-fns';
 import { Link } from 'react-router-dom';
+import { fetchAllRows } from '@/lib/fetchAllRows';
 
 const fadeIn = {
   hidden: { opacity: 0, y: 12 },
@@ -44,7 +45,7 @@ export default function Dashboard() {
     const todayStr = new Date().toISOString().slice(0, 10);
     const [prodRes, taskRes, expRes, salesRes, profRes, roleRes, logRes, leaveRes] = await Promise.all([
       supabase.from('products').select('*'),
-      supabase.from('tasks').select('*'),
+      fetchAllRows('tasks'),
       supabase.from('expenses').select('*'),
       supabase.from('sales_data').select('*'),
       supabase.from('profiles').select('*'),
@@ -54,7 +55,7 @@ export default function Dashboard() {
         .eq('status', 'approved').lte('start_date', todayStr).gte('end_date', todayStr),
     ]);
     setProducts(prodRes.data || []);
-    setTasks(taskRes.data || []);
+    setTasks(taskRes || []);
     setExpenses(expRes.data || []);
     setSalesData(salesRes.data || []);
     setProfiles(profRes.data || []);
