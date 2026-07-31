@@ -873,7 +873,8 @@ export default function Tasks() {
                       ].filter(Boolean).join(' ').toLowerCase();
                       if (!hay.includes(debouncedSearch)) return false;
                     }
-                    if (toggles.hideDone && t.status === 'done') return false;
+                    // '완료' 컬럼에서는 완료 업무를 숨기지 않는다 (완료로 옮긴 카드가 사라지는 문제 방지)
+                    if (toggles.hideDone && col.status !== 'done' && t.status === 'done') return false;
                     if (toggles.myOnly && profile && t.assignee_id !== profile.id) return false;
                     if (toggles.overdueOnly) {
                       const d = getDaysLeft(t.due_date);
