@@ -31,8 +31,8 @@ import CategoryManageDialog from '@/components/tasks/CategoryManageDialog';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
 import { PromotionSubForm, emptyPromotionSubForm, upsertPromotionForTask, resolveOrCreateProduct, resolveOrCreateChannel, type PromotionSubFormValue } from '@/components/promotions/PromotionSubForm';
 
-const TOGGLES_STORAGE_KEY = 'task-board-toggles';
-const DEFAULT_TOGGLES: BoardToggles = { hideDone: true, compact: false, myOnly: false, overdueOnly: false };
+const TOGGLES_STORAGE_KEY = 'task-board-toggles-v2';
+const DEFAULT_TOGGLES: BoardToggles = { hideDone: false, compact: false, myOnly: false, overdueOnly: false };
 
 type TaskStatus = 'todo' | 'in-progress' | 'review' | 'done' | 'scheduled';
 
