@@ -34,6 +34,7 @@ export default function Library() {
   const [form, setForm] = useState({ category: '' });
   const [submitting, setSubmitting] = useState(false);
   const [selectedFile, setSelectedFile] = useState<any>(null);
+  const selectedFileUrl = useSignedReceiptUrl(selectedFile?.url);
   const [downloading, setDownloading] = useState(false);
 
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
@@ -91,7 +92,8 @@ export default function Library() {
     }
 
     const { data: urlData } = supabase.storage.from('receipts').getPublicUrl(storageData.path);
-    const url = urlData.publicUrl;
+    // 비공개 버킷: 경로만 저장하고 열람 시 서명 URL을 발급합니다.
+    const url = storageData.path;
 
     const sizeKB = uploadFile.size / 1024;
     const sizeStr = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${Math.round(sizeKB)} KB`;
