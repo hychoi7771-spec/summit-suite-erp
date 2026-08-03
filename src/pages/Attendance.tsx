@@ -420,7 +420,7 @@ export default function Attendance() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {isAdmin && (
+                {isBalanceAdmin && (
                   <Button size="sm" variant="outline" onClick={recalculateAll} disabled={recalculating}>
                     {recalculating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
                     자동 재계산
@@ -464,7 +464,7 @@ export default function Attendance() {
                           </div>
                         </TableCell>
                         <TableCell className="text-center text-xs">
-                          {isAdmin ? (
+                          {isBalanceAdmin ? (
                             <Input
                               type="date"
                               defaultValue={p.hire_date || ''}
@@ -476,7 +476,7 @@ export default function Attendance() {
                           ) : (p.hire_date ? format(parseISO(p.hire_date), 'yyyy.MM.dd') : '-')}
                         </TableCell>
                         <TableCell className="text-right">
-                          {isAdmin ? (
+                          {isBalanceAdmin ? (
                             <Input
                               type="number" step="0.5" defaultValue={annual}
                               className="w-20 h-8 text-right ml-auto"
@@ -489,7 +489,7 @@ export default function Attendance() {
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">{monthly > 0 ? `${monthly}일` : '-'}</TableCell>
                         <TableCell className="text-right text-muted-foreground">
-                          {isAdmin ? (
+                          {isBalanceAdmin ? (
                             <Input
                               type="number" step="0.5" defaultValue={used}
                               className="w-20 h-8 text-right ml-auto"
@@ -511,7 +511,7 @@ export default function Attendance() {
                   })}
                 </TableBody>
               </Table>
-              {isAdmin && (
+              {isBalanceAdmin ? (
                 <p className="text-xs text-muted-foreground mt-3">
                   💡 입사일/연차 적립/사용일 칸을 클릭해 수정. '자동 재계산'으로 입사일 기준 월차(1년 미만)/연차(1년 이상)를 일괄 갱신합니다.
                 </p>
