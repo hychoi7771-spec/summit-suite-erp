@@ -323,7 +323,11 @@ export function AppSidebar() {
         <SidebarGroup className="py-0">
           {!collapsed && <GroupLabel>분석</GroupLabel>}
           <SidebarGroupContent>
-            {renderNavItems(insightsNavItems)}
+            {renderNavItems(
+              insightsNavItems.filter(
+                (item) => (!item.managerOnly || isManager) && (!item.ceoOnly || userRole === 'ceo')
+              )
+            )}
             {!collapsed && (
               <div className="mt-0.5">
                 <SectionTrigger open={assetsOpen} onOpenChange={setAssetsOpen} icon={Archive} label="자산함">
