@@ -58,7 +58,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import logo from '@/assets/logo.jpg';
 
-type NavItem = { title: string; url: string; icon: any; managerOnly?: boolean; accent?: boolean };
+type NavItem = { title: string; url: string; icon: any; managerOnly?: boolean; ceoOnly?: boolean; accent?: boolean };
 
 // 업무
 const workspaceNavItems: NavItem[] = [
