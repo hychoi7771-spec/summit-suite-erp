@@ -50,8 +50,11 @@ const STATUS_STYLE: Record<string, string> = {
 export default function Attendance() {
   const { profile, userRole, isManager } = useAuth();
   const { toast } = useToast();
-  // 실장(managing_director)도 인사/근태 관리자: 휴가 수정·삭제 가능
+  // 실장(managing_director)도 인사/근태 관리자: 휴가 신청 승인·수정·삭제 가능
   const isAdmin = isManager || userRole === 'managing_director';
+  // 연차/월차 적립·사용일수 확정 수정 권한: 총괄이사(최하용)·대표만
+  const isBalanceAdmin = userRole === 'general_director' || userRole === 'ceo';
+
 
   const [requests, setRequests] = useState<any[]>([]);
   const [balances, setBalances] = useState<any[]>([]);
@@ -417,7 +420,7 @@ export default function Attendance() {
                 )}
               </div>
               <div className="flex items-center gap-2">
-                {isAdmin && (
+                {isBalanceAdmin && (
                   <Button size="sm" variant="outline" onClick={recalculateAll} disabled={recalculating}>
                     {recalculating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
                     자동 재계산
@@ -461,7 +464,7 @@ export default function Attendance() {
                           </div>
                         </TableCell>
                         <TableCell className="text-center text-xs">
-                          {isAdmin ? (
+                          {isBalanceAdmin ? (
                             <Input
                               type="date"
                               defaultValue={p.hire_date || ''}
@@ -473,7 +476,7 @@ export default function Attendance() {
                           ) : (p.hire_date ? format(parseISO(p.hire_date), 'yyyy.MM.dd') : '-')}
                         </TableCell>
                         <TableCell className="text-right">
-                          {isAdmin ? (
+                          {isBalanceAdmin ? (
                             <Input
                               type="number" step="0.5" defaultValue={annual}
                               className="w-20 h-8 text-right ml-auto"
@@ -486,7 +489,7 @@ export default function Attendance() {
                         </TableCell>
                         <TableCell className="text-right text-muted-foreground">{monthly > 0 ? `${monthly}일` : '-'}</TableCell>
                         <TableCell className="text-right text-muted-foreground">
-                          {isAdmin ? (
+                          {isBalanceAdmin ? (
                             <Input
                               type="number" step="0.5" defaultValue={used}
                               className="w-20 h-8 text-right ml-auto"
@@ -508,11 +511,16 @@ export default function Attendance() {
                   })}
                 </TableBody>
               </Table>
-              {isAdmin && (
+              {isBalanceAdmin ? (
                 <p className="text-xs text-muted-foreground mt-3">
                   💡 입사일/연차 적립/사용일 칸을 클릭해 수정. '자동 재계산'으로 입사일 기준 월차(1년 미만)/연차(1년 이상)를 일괄 갱신합니다.
                 </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-3">
+                  🔒 연차 적립·사용일수는 확정된 값으로, 인사 관리자(총괄이사)만 수정할 수 있습니다.
+                </p>
               )}
+
             </CardContent>
           </Card>
 
