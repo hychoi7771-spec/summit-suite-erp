@@ -58,7 +58,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import logo from '@/assets/logo.jpg';
 
-type NavItem = { title: string; url: string; icon: any; managerOnly?: boolean; accent?: boolean };
+type NavItem = { title: string; url: string; icon: any; managerOnly?: boolean; ceoOnly?: boolean; accent?: boolean };
 
 // 업무
 const workspaceNavItems: NavItem[] = [
@@ -88,7 +88,8 @@ const approvalDocItems: NavItem[] = [
 // 분석
 const insightsNavItems: NavItem[] = [
   { title: '영업관리', url: '/sales', icon: BarChart3, managerOnly: true },
-  { title: '행사 현황', url: '/promotions', icon: PartyPopper },
+  // 행사 현황: 기능 정식 오픈 전까지 대표 계정에만 노출
+  { title: '행사 현황', url: '/promotions', icon: PartyPopper, ceoOnly: true },
 ];
 
 const assetNavItems: NavItem[] = [
@@ -322,7 +323,11 @@ export function AppSidebar() {
         <SidebarGroup className="py-0">
           {!collapsed && <GroupLabel>분석</GroupLabel>}
           <SidebarGroupContent>
-            {renderNavItems(insightsNavItems)}
+            {renderNavItems(
+              insightsNavItems.filter(
+                (item) => (!item.managerOnly || isManager) && (!item.ceoOnly || userRole === 'ceo')
+              )
+            )}
             {!collapsed && (
               <div className="mt-0.5">
                 <SectionTrigger open={assetsOpen} onOpenChange={setAssetsOpen} icon={Archive} label="자산함">

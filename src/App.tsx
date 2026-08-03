@@ -62,6 +62,14 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** 행사 현황: 기능 정식 오픈 전까지 대표 계정만 접근 가능 */
+function CeoOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { userRole, loading } = useAuth();
+  if (loading) return null;
+  if (userRole !== 'ceo') return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   const { user, loading } = useAuth();
 
@@ -92,7 +100,7 @@ function AppRoutes() {
                 <Route path="/meetings" element={<Meetings />} />
                 <Route path="/expenses" element={<Expenses />} />
                 <Route path="/sales" element={<Sales />} />
-                <Route path="/promotions" element={<Promotions />} />
+                <Route path="/promotions" element={<CeoOnlyRoute><Promotions /></CeoOnlyRoute>} />
                 <Route path="/library" element={<Library />} />
                 <Route path="/notices" element={<Notices />} />
                 <Route path="/notices-board" element={<Notices />} />
