@@ -88,7 +88,8 @@ const approvalDocItems: NavItem[] = [
 // 분석
 const insightsNavItems: NavItem[] = [
   { title: '영업관리', url: '/sales', icon: BarChart3, managerOnly: true },
-  { title: '행사 현황', url: '/promotions', icon: PartyPopper },
+  // 행사 현황: 기능 정식 오픈 전까지 대표 계정에만 노출
+  { title: '행사 현황', url: '/promotions', icon: PartyPopper, ceoOnly: true },
 ];
 
 const assetNavItems: NavItem[] = [
