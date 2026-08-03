@@ -515,7 +515,12 @@ export default function Attendance() {
                 <p className="text-xs text-muted-foreground mt-3">
                   💡 입사일/연차 적립/사용일 칸을 클릭해 수정. '자동 재계산'으로 입사일 기준 월차(1년 미만)/연차(1년 이상)를 일괄 갱신합니다.
                 </p>
+              ) : (
+                <p className="text-xs text-muted-foreground mt-3">
+                  🔒 연차 적립·사용일수는 확정된 값으로, 인사 관리자(총괄이사)만 수정할 수 있습니다.
+                </p>
               )}
+
             </CardContent>
           </Card>
 
