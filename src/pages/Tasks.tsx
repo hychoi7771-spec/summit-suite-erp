@@ -337,7 +337,7 @@ export default function Tasks() {
       }
       toast({ title: finalStatus === 'scheduled' ? '예약 업무 등록 완료' : '업무 등록 완료' });
       setTaskDialogOpen(false);
-      setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
+      setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '', due_mode: 'date' });
       setPromotionSubForm(emptyPromotionSubForm);
       setCreateMode('now');
       fetchData();
