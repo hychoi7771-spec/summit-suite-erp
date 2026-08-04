@@ -991,7 +991,7 @@ export default function Tasks() {
                                             )}
                                             {isDesign && <Badge variant="outline" className="text-[10px] gap-0.5 border-primary/30 text-primary"><Palette className="h-2.5 w-2.5" /> 디자인</Badge>}
                                             {task.meeting_id && <Badge variant="outline" className="text-[10px] gap-0.5"><FileText className="h-2.5 w-2.5" /> 회의록</Badge>}
-                                            {(task.tags || []).slice(0, 2).map((tag: string) => (
+                                            {(task.tags || []).filter((tag: string) => tag !== ONGOING_TAG).slice(0, 2).map((tag: string) => (
                                               <span key={tag} className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{tag}</span>
                                             ))}
                                           </div>
