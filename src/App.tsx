@@ -97,7 +97,7 @@ function AppRoutes() {
                 <Route path="/products" element={<Products />} />
                 <Route path="/tasks" element={<Tasks />} />
                 <Route path="/design-reviews" element={<DesignReviews />} />
-                <Route path="/meetings" element={<Meetings />} />
+                <Route path="/meetings" element={<CeoOnlyRoute><Meetings /></CeoOnlyRoute>} />
                 <Route path="/expenses" element={<Expenses />} />
                 <Route path="/sales" element={<Sales />} />
                 <Route path="/promotions" element={<CeoOnlyRoute><Promotions /></CeoOnlyRoute>} />

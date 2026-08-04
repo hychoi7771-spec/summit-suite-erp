@@ -64,7 +64,7 @@ type NavItem = { title: string; url: string; icon: any; managerOnly?: boolean; c
 const workspaceNavItems: NavItem[] = [
   { title: '대시보드', url: '/', icon: LayoutDashboard },
   { title: '업무', url: '/tasks', icon: ListTodo },
-  { title: '회의록', url: '/meetings', icon: ClipboardList },
+  { title: '회의록', url: '/meetings', icon: ClipboardList, ceoOnly: true },
   { title: '일정', url: '/calendar', icon: CalendarDays },
   { title: '공지 게시판', url: '/notices-board', icon: Megaphone },
   { title: '설문/투표', url: '/surveys', icon: Vote },
@@ -307,7 +307,13 @@ export function AppSidebar() {
         {/* 업무 */}
         <SidebarGroup className="py-0">
           {!collapsed && <GroupLabel>업무</GroupLabel>}
-          <SidebarGroupContent>{renderNavItems(workspaceNavItems)}</SidebarGroupContent>
+          <SidebarGroupContent>
+            {renderNavItems(
+              workspaceNavItems.filter(
+                (item) => (!item.managerOnly || isManager) && (!item.ceoOnly || userRole === 'general_director')
+              )
+            )}
+          </SidebarGroupContent>
         </SidebarGroup>
 
         {/* 결재·지출 */}
