@@ -392,7 +392,8 @@ export default function Tasks() {
       priority: editForm.priority as any,
       assignee_id: editForm.assignee_id || null,
       start_date: editForm.start_date || null,
-      due_date: editForm.due_date || null,
+      due_date: editForm.due_mode === 'ongoing' ? null : (editForm.due_date || null),
+      tags: withOngoingTag(editingTask.tags, editForm.due_mode === 'ongoing'),
       project_name: editForm.project_name || null,
       category_id: editForm.category_id || null,
     } as any).eq('id', editingTask.id);
