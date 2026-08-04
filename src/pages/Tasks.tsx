@@ -68,7 +68,7 @@ export default function Tasks() {
   const [selectedDesignTask, setSelectedDesignTask] = useState<any>(null);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [editingTask, setEditingTask] = useState<any>(null);
-  const [editForm, setEditForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: '', start_date: '', due_date: '', project_name: '', category_id: '' });
+  const [editForm, setEditForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: '', start_date: '', due_date: '', project_name: '', category_id: '', due_mode: 'date' as 'date' | 'ongoing' });
   // Phase 1: categories + filters + toggles
   const [categories, setCategories] = useState<TaskCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all'); // 'all' | '__none__' | id
