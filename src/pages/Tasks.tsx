@@ -1025,7 +1025,17 @@ export default function Tasks() {
                                                   <ChevronRight className="h-3.5 w-3.5" />
                                                 </button>
                                               )}
-                                              {daysLeft !== null && task.status === 'done' ? (
+                                              {isOngoingTask(task) && task.status !== 'done' ? (
+                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
+                                                  <Calendar className="h-2.5 w-2.5 mr-0.5" />
+                                                  상시
+                                                </Badge>
+                                              ) : isOngoingTask(task) && task.status === 'done' ? (
+                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-success/10 text-success border-success/20">
+                                                  <Calendar className="h-2.5 w-2.5 mr-0.5" />
+                                                  종결
+                                                </Badge>
+                                              ) : daysLeft !== null && task.status === 'done' ? (
                                                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-success/10 text-success border-success/20">
                                                   <Calendar className="h-2.5 w-2.5 mr-0.5" />
                                                   완료
