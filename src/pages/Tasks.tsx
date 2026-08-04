@@ -368,6 +368,7 @@ export default function Tasks() {
       due_date: task.due_date || '',
       project_name: task.project_name || '',
       category_id: task.category_id || '',
+      due_mode: isOngoingTask(task) ? 'ongoing' : 'date',
     });
   };
 
