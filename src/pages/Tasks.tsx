@@ -353,6 +353,14 @@ export default function Tasks() {
     return differenceInDays(startOfDay(parseISO(dueDate)), startOfDay(new Date()));
   };
 
+  /** 상시 업무(완료 시 종결) — 마감일을 특정할 수 없는 업무는 '상시' 태그로 표시 */
+  const isOngoingTask = (task: any) => Array.isArray(task?.tags) && task.tags.includes(ONGOING_TAG);
+
+  const withOngoingTag = (tags: any, ongoing: boolean) => {
+    const base = (Array.isArray(tags) ? tags : []).filter((t: string) => t !== ONGOING_TAG);
+    return ongoing ? [...base, ONGOING_TAG] : base;
+  };
+
   // 수정/삭제는 본인 담당 업무 또는 관리자(대표/총괄이사)만 가능
   const canEditTask = (task: any) => isAdmin || (!!profile && task?.assignee_id === profile.id);
 
