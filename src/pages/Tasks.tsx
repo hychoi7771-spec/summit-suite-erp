@@ -1191,7 +1191,21 @@ export default function Tasks() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2"><Label>시작일</Label><Input type="date" value={editForm.start_date} onChange={e => setEditForm(f => ({ ...f, start_date: e.target.value }))} readOnly={!canEdit} /></div>
-              <div className="space-y-2"><Label>마감일</Label><Input type="date" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))} readOnly={!canEdit} /></div>
+              <div className="space-y-2">
+                <Label>마감 기일</Label>
+                <Select value={editForm.due_mode} onValueChange={(v) => setEditForm(f => ({ ...f, due_mode: v as 'date' | 'ongoing', due_date: v === 'ongoing' ? '' : f.due_date }))} disabled={!canEdit}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">지정일</SelectItem>
+                    <SelectItem value="ongoing">상시 (완료 시 종결)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {editForm.due_mode === 'date' ? (
+                  <Input type="date" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))} readOnly={!canEdit} />
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">기한 없이 진행하고, 완료 단계로 옮길 때 종결됩니다.</p>
+                )}
+              </div>
             </div>
           </fieldset>
           <div className="flex items-center gap-2 mt-2">
