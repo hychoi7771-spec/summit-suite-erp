@@ -45,6 +45,9 @@ const columnsConfig: { status: TaskStatus; label: string }[] = [
   { status: 'scheduled', label: '예약' },
 ];
 
+/** 마감기일을 특정할 수 없는 업무: '상시(완료 시 종결)' 표시용 태그 */
+const ONGOING_TAG = '상시';
+
 export default function Tasks() {
   const { profile, userRole } = useAuth();
   const { toast } = useToast();
@@ -57,7 +60,7 @@ export default function Tasks() {
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [createMode, setCreateMode] = useState<'now' | 'scheduled'>('now');
-  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
+  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '', due_mode: 'date' as 'date' | 'ongoing' });
   const [promotionSubForm, setPromotionSubForm] = useState<PromotionSubFormValue>(emptyPromotionSubForm);
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [searchParams, setSearchParams] = useSearchParams();
@@ -68,7 +71,7 @@ export default function Tasks() {
   const [selectedDesignTask, setSelectedDesignTask] = useState<any>(null);
   const [selectedTask, setSelectedTask] = useState<any>(null);
   const [editingTask, setEditingTask] = useState<any>(null);
-  const [editForm, setEditForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: '', start_date: '', due_date: '', project_name: '', category_id: '' });
+  const [editForm, setEditForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: '', start_date: '', due_date: '', project_name: '', category_id: '', due_mode: 'date' as 'date' | 'ongoing' });
   // Phase 1: categories + filters + toggles
   const [categories, setCategories] = useState<TaskCategory[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>('all'); // 'all' | '__none__' | id
@@ -275,7 +278,8 @@ export default function Tasks() {
         priority: taskForm.priority as any,
         assignee_id: taskForm.assignee_id || profile?.id || null,
         start_date: taskForm.start_date || null,
-        due_date: taskForm.due_date || null,
+        due_date: taskForm.due_mode === 'ongoing' ? null : (taskForm.due_date || null),
+        tags: taskForm.due_mode === 'ongoing' ? [ONGOING_TAG] : [],
         project_name: taskForm.project_name || null,
         category_id: resolvedCategoryId,
         status: finalStatus as any,
@@ -337,7 +341,7 @@ export default function Tasks() {
       }
       toast({ title: finalStatus === 'scheduled' ? '예약 업무 등록 완료' : '업무 등록 완료' });
       setTaskDialogOpen(false);
-      setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
+      setTaskForm({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '', due_mode: 'date' });
       setPromotionSubForm(emptyPromotionSubForm);
       setCreateMode('now');
       fetchData();
@@ -351,6 +355,14 @@ export default function Tasks() {
   const getDaysLeft = (dueDate: string | null) => {
     if (!dueDate) return null;
     return differenceInDays(startOfDay(parseISO(dueDate)), startOfDay(new Date()));
+  };
+
+  /** 상시 업무(완료 시 종결) — 마감일을 특정할 수 없는 업무는 '상시' 태그로 표시 */
+  const isOngoingTask = (task: any) => Array.isArray(task?.tags) && task.tags.includes(ONGOING_TAG);
+
+  const withOngoingTag = (tags: any, ongoing: boolean) => {
+    const base = (Array.isArray(tags) ? tags : []).filter((t: string) => t !== ONGOING_TAG);
+    return ongoing ? [...base, ONGOING_TAG] : base;
   };
 
   // 수정/삭제는 본인 담당 업무 또는 관리자(대표/총괄이사)만 가능
@@ -368,6 +380,7 @@ export default function Tasks() {
       due_date: task.due_date || '',
       project_name: task.project_name || '',
       category_id: task.category_id || '',
+      due_mode: isOngoingTask(task) ? 'ongoing' : 'date',
     });
   };
 
@@ -379,7 +392,8 @@ export default function Tasks() {
       priority: editForm.priority as any,
       assignee_id: editForm.assignee_id || null,
       start_date: editForm.start_date || null,
-      due_date: editForm.due_date || null,
+      due_date: editForm.due_mode === 'ongoing' ? null : (editForm.due_date || null),
+      tags: withOngoingTag(editingTask.tags, editForm.due_mode === 'ongoing'),
       project_name: editForm.project_name || null,
       category_id: editForm.category_id || null,
     } as any).eq('id', editingTask.id);
@@ -546,7 +560,21 @@ export default function Tasks() {
                         min={createMode === 'scheduled' ? new Date(Date.now() + 86400000).toISOString().slice(0, 10) : undefined}
                       />
                     </div>
-                    <div className="space-y-2"><Label>마감일</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
+                    <div className="space-y-2">
+                      <Label>마감 기일</Label>
+                      <Select value={taskForm.due_mode} onValueChange={(v) => setTaskForm(f => ({ ...f, due_mode: v as 'date' | 'ongoing', due_date: v === 'ongoing' ? '' : f.due_date }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="date">지정일</SelectItem>
+                          <SelectItem value="ongoing">상시 (완료 시 종결)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {taskForm.due_mode === 'date' ? (
+                        <Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} />
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground">기한 없이 진행하고, 완료 단계로 옮길 때 종결됩니다.</p>
+                      )}
+                    </div>
                   </div>
                   {(() => {
                     const promoCat = (categories as any[]).find((c: any) => c.system_slug === 'promotion');
@@ -963,7 +991,7 @@ export default function Tasks() {
                                             )}
                                             {isDesign && <Badge variant="outline" className="text-[10px] gap-0.5 border-primary/30 text-primary"><Palette className="h-2.5 w-2.5" /> 디자인</Badge>}
                                             {task.meeting_id && <Badge variant="outline" className="text-[10px] gap-0.5"><FileText className="h-2.5 w-2.5" /> 회의록</Badge>}
-                                            {(task.tags || []).slice(0, 2).map((tag: string) => (
+                                            {(task.tags || []).filter((tag: string) => tag !== ONGOING_TAG).slice(0, 2).map((tag: string) => (
                                               <span key={tag} className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{tag}</span>
                                             ))}
                                           </div>
@@ -997,7 +1025,17 @@ export default function Tasks() {
                                                   <ChevronRight className="h-3.5 w-3.5" />
                                                 </button>
                                               )}
-                                              {daysLeft !== null && task.status === 'done' ? (
+                                              {isOngoingTask(task) && task.status !== 'done' ? (
+                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
+                                                  <Calendar className="h-2.5 w-2.5 mr-0.5" />
+                                                  상시
+                                                </Badge>
+                                              ) : isOngoingTask(task) && task.status === 'done' ? (
+                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-success/10 text-success border-success/20">
+                                                  <Calendar className="h-2.5 w-2.5 mr-0.5" />
+                                                  종결
+                                                </Badge>
+                                              ) : daysLeft !== null && task.status === 'done' ? (
                                                 <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-success/10 text-success border-success/20">
                                                   <Calendar className="h-2.5 w-2.5 mr-0.5" />
                                                   완료
@@ -1163,7 +1201,21 @@ export default function Tasks() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div className="space-y-2"><Label>시작일</Label><Input type="date" value={editForm.start_date} onChange={e => setEditForm(f => ({ ...f, start_date: e.target.value }))} readOnly={!canEdit} /></div>
-              <div className="space-y-2"><Label>마감일</Label><Input type="date" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))} readOnly={!canEdit} /></div>
+              <div className="space-y-2">
+                <Label>마감 기일</Label>
+                <Select value={editForm.due_mode} onValueChange={(v) => setEditForm(f => ({ ...f, due_mode: v as 'date' | 'ongoing', due_date: v === 'ongoing' ? '' : f.due_date }))} disabled={!canEdit}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="date">지정일</SelectItem>
+                    <SelectItem value="ongoing">상시 (완료 시 종결)</SelectItem>
+                  </SelectContent>
+                </Select>
+                {editForm.due_mode === 'date' ? (
+                  <Input type="date" value={editForm.due_date} onChange={e => setEditForm(f => ({ ...f, due_date: e.target.value }))} readOnly={!canEdit} />
+                ) : (
+                  <p className="text-[11px] text-muted-foreground">기한 없이 진행하고, 완료 단계로 옮길 때 종결됩니다.</p>
+                )}
+              </div>
             </div>
           </fieldset>
           <div className="flex items-center gap-2 mt-2">
