@@ -57,7 +57,7 @@ export default function Tasks() {
   const [taskDialogOpen, setTaskDialogOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [createMode, setCreateMode] = useState<'now' | 'scheduled'>('now');
-  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '' });
+  const [taskForm, setTaskForm] = useState({ title: '', description: '', priority: 'medium', assignee_id: profile?.id || '', start_date: '', due_date: '', project_name: '', category_id: '', due_mode: 'date' as 'date' | 'ongoing' });
   const [promotionSubForm, setPromotionSubForm] = useState<PromotionSubFormValue>(emptyPromotionSubForm);
   const [selectedProject, setSelectedProject] = useState<string>('all');
   const [searchParams, setSearchParams] = useSearchParams();
