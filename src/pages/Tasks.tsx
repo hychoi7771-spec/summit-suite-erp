@@ -560,7 +560,21 @@ export default function Tasks() {
                         min={createMode === 'scheduled' ? new Date(Date.now() + 86400000).toISOString().slice(0, 10) : undefined}
                       />
                     </div>
-                    <div className="space-y-2"><Label>마감일</Label><Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} /></div>
+                    <div className="space-y-2">
+                      <Label>마감 기일</Label>
+                      <Select value={taskForm.due_mode} onValueChange={(v) => setTaskForm(f => ({ ...f, due_mode: v as 'date' | 'ongoing', due_date: v === 'ongoing' ? '' : f.due_date }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="date">지정일</SelectItem>
+                          <SelectItem value="ongoing">상시 (완료 시 종결)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      {taskForm.due_mode === 'date' ? (
+                        <Input type="date" value={taskForm.due_date} onChange={e => setTaskForm(f => ({ ...f, due_date: e.target.value }))} />
+                      ) : (
+                        <p className="text-[11px] text-muted-foreground">기한 없이 진행하고, 완료 단계로 옮길 때 종결됩니다.</p>
+                      )}
+                    </div>
                   </div>
                   {(() => {
                     const promoCat = (categories as any[]).find((c: any) => c.system_slug === 'promotion');
