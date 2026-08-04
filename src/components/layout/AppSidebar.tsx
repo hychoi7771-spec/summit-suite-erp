@@ -307,7 +307,13 @@ export function AppSidebar() {
         {/* 업무 */}
         <SidebarGroup className="py-0">
           {!collapsed && <GroupLabel>업무</GroupLabel>}
-          <SidebarGroupContent>{renderNavItems(workspaceNavItems)}</SidebarGroupContent>
+          <SidebarGroupContent>
+            {renderNavItems(
+              workspaceNavItems.filter(
+                (item) => (!item.managerOnly || isManager) && (!item.ceoOnly || userRole === 'general_director')
+              )
+            )}
+          </SidebarGroupContent>
         </SidebarGroup>
 
         {/* 결재·지출 */}
