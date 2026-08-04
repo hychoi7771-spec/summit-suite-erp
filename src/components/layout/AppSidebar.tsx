@@ -325,7 +325,7 @@ export function AppSidebar() {
           <SidebarGroupContent>
             {renderNavItems(
               insightsNavItems.filter(
-                (item) => (!item.managerOnly || isManager) && (!item.ceoOnly || userRole === 'ceo')
+                (item) => (!item.managerOnly || isManager) && (!item.ceoOnly || userRole === 'general_director')
               )
             )}
             {!collapsed && (

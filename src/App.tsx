@@ -62,11 +62,11 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
-/** 행사 현황: 기능 정식 오픈 전까지 대표 계정만 접근 가능 */
+/** 행사 현황: 기능 정식 오픈 전까지 관리자(총괄이사) 계정만 접근 가능 */
 function CeoOnlyRoute({ children }: { children: React.ReactNode }) {
   const { userRole, loading } = useAuth();
   if (loading) return null;
-  if (userRole !== 'ceo') return <Navigate to="/" replace />;
+  if (userRole !== 'general_director') return <Navigate to="/" replace />;
   return <>{children}</>;
 }
 
