@@ -45,6 +45,9 @@ const columnsConfig: { status: TaskStatus; label: string }[] = [
   { status: 'scheduled', label: '예약' },
 ];
 
+/** 마감기일을 특정할 수 없는 업무: '상시(완료 시 종결)' 표시용 태그 */
+const ONGOING_TAG = '상시';
+
 export default function Tasks() {
   const { profile, userRole } = useAuth();
   const { toast } = useToast();
