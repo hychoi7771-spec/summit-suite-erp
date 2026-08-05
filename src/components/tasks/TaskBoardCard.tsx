@@ -10,6 +10,7 @@ interface TaskBoardCardProps {
   category?: TaskCategory;
   toggles: { compact: boolean; hideDone?: boolean; myOnly?: boolean; overdueOnly?: boolean };
   selectedProject: string;
+  onClick: () => void;
   onEdit: (task: any, e?: React.MouseEvent) => void;
   onDelete: (taskId: string, e: React.MouseEvent) => void;
   onQuickStatusChange: (taskId: string, currentStatus: string, direction: 'prev' | 'next', e: React.MouseEvent) => void;
