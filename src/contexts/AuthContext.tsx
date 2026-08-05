@@ -56,6 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [viewAsStaff, setViewAsStaffState] = useState<boolean>(
+    () => typeof window !== 'undefined' && localStorage.getItem(VIEW_AS_STAFF_KEY) === '1'
+  );
+
 
   const loadUserContext = useCallback(async (userId: string) => {
     const [profileRes, roleRes] = await Promise.all([
