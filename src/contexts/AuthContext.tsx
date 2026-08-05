@@ -175,12 +175,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const isAdmin = ADMIN_ROLES.has(userRole ?? '');
-  const isManager = MANAGER_ROLES.has(userRole ?? '');
+  const realRole = userRole;
+  const canViewAsStaff = ADMIN_ROLES.has(realRole ?? '') || realRole === 'managing_director';
+  const effectiveRole = viewAsStaff && canViewAsStaff ? 'staff' : realRole;
+  const isAdmin = ADMIN_ROLES.has(effectiveRole ?? '');
+  const isManager = MANAGER_ROLES.has(effectiveRole ?? '');
+
+  const setViewAsStaff = (v: boolean) => {
+    setViewAsStaffState(v);
+    if (v) localStorage.setItem(VIEW_AS_STAFF_KEY, '1');
+    else localStorage.removeItem(VIEW_AS_STAFF_KEY);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, userRole, isAdmin, isManager, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        profile,
+        userRole: effectiveRole,
+        realRole,
+        viewAsStaff: viewAsStaff && canViewAsStaff,
+        setViewAsStaff,
+        isAdmin,
+        isManager,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
+
   );
 }
