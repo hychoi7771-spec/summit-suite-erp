@@ -2,7 +2,7 @@ import { ReactNode, useState, useEffect } from 'react';
 import { AppSidebar } from './AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bell, Search, LogOut, Trash2, Settings } from 'lucide-react';
+import { Bell, Search, LogOut, Trash2, Settings, Eye } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
