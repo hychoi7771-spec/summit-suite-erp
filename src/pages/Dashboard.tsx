@@ -44,12 +44,12 @@ export default function Dashboard() {
   const fetchAll = async () => {
     const todayStr = new Date().toISOString().slice(0, 10);
     const [prodRes, taskRes, expRes, salesRes, profRes, roleRes, logRes, leaveRes] = await Promise.all([
-      supabase.from('products').select('*'),
-      fetchAllRows('tasks'),
-      supabase.from('expenses').select('*'),
-      supabase.from('sales_data').select('*'),
-      supabase.from('profiles').select('*'),
-      supabase.from('user_roles').select('*'),
+      supabase.from('products').select('id,name,stage,progress'),
+      fetchAllRows('tasks', 'id,title,status,assignee_id,due_date,priority,updated_at,start_date'),
+      supabase.from('expenses').select('id,status,amount'),
+      supabase.from('sales_data').select('id,month,platform,revenue,target'),
+      supabase.from('profiles').select('id,user_id,name_kr,avatar,presence'),
+      supabase.from('user_roles').select('user_id,role'),
       supabase.from('daily_logs').select('id,user_id,date').eq('date', todayStr),
       supabase.from('leave_requests').select('user_id,status,start_date,end_date')
         .eq('status', 'approved').lte('start_date', todayStr).gte('end_date', todayStr),
