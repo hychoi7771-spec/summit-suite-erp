@@ -46,6 +46,7 @@ export default function TaskBoardCard({
 
   return (
     <Card
+      onClick={onClick}
       className={`group relative transition-all cursor-grab active:cursor-grabbing overflow-hidden ${isDesign ? 'border-l-2 border-l-primary' : ''} ${isOverdue ? 'border-l-2 border-l-destructive' : ''}`}
     >
       {category && <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: category.color }} />}
