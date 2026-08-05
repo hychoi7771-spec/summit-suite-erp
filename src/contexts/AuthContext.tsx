@@ -7,7 +7,14 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   profile: any | null;
+  /** 화면 표시에 사용되는 유효 권한 (직원 보기 모드일 때 'staff') */
   userRole: string | null;
+  /** DB에 저장된 실제 권한 */
+  realRole: string | null;
+  /** 직원 보기 모드 여부 */
+  viewAsStaff: boolean;
+  /** 직원 보기 모드 전환 (실제 권한이 관리자일 때만 동작) */
+  setViewAsStaff: (v: boolean) => void;
   /** 결재/시스템 관리자: ceo, general_director */
   isAdmin: boolean;
   /** 운영 관리자(결재 제외 편집 권한): ceo, general_director, deputy_gm */
@@ -21,6 +28,9 @@ const AuthContext = createContext<AuthContextType>({
   loading: true,
   profile: null,
   userRole: null,
+  realRole: null,
+  viewAsStaff: false,
+  setViewAsStaff: () => {},
   isAdmin: false,
   isManager: false,
   signOut: async () => {},
@@ -30,6 +40,8 @@ export const useAuth = () => useContext(AuthContext);
 
 const ADMIN_ROLES = new Set(['ceo', 'general_director']);
 const MANAGER_ROLES = new Set(['ceo', 'general_director', 'deputy_gm']);
+const VIEW_AS_STAFF_KEY = 'view_as_staff';
+
 
 const updatePresence = async (userId: string, status: 'working' | 'away' | 'offline') => {
   await supabase
@@ -44,6 +56,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
+  const [viewAsStaff, setViewAsStaffState] = useState<boolean>(
+    () => typeof window !== 'undefined' && localStorage.getItem(VIEW_AS_STAFF_KEY) === '1'
+  );
+
 
   const loadUserContext = useCallback(async (userId: string) => {
     const [profileRes, roleRes] = await Promise.all([
@@ -163,12 +179,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
   };
 
-  const isAdmin = ADMIN_ROLES.has(userRole ?? '');
-  const isManager = MANAGER_ROLES.has(userRole ?? '');
+  const realRole = userRole;
+  const canViewAsStaff = ADMIN_ROLES.has(realRole ?? '') || realRole === 'managing_director';
+  const effectiveRole = viewAsStaff && canViewAsStaff ? 'staff' : realRole;
+  const isAdmin = ADMIN_ROLES.has(effectiveRole ?? '');
+  const isManager = MANAGER_ROLES.has(effectiveRole ?? '');
+
+  const setViewAsStaff = (v: boolean) => {
+    setViewAsStaffState(v);
+    if (v) localStorage.setItem(VIEW_AS_STAFF_KEY, '1');
+    else localStorage.removeItem(VIEW_AS_STAFF_KEY);
+  };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, userRole, isAdmin, isManager, signOut }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        session,
+        loading,
+        profile,
+        userRole: effectiveRole,
+        realRole,
+        viewAsStaff: viewAsStaff && canViewAsStaff,
+        setViewAsStaff,
+        isAdmin,
+        isManager,
+        signOut,
+      }}
+    >
       {children}
     </AuthContext.Provider>
+
   );
 }

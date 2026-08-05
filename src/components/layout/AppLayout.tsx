@@ -2,7 +2,7 @@ import { ReactNode, useState, useEffect } from 'react';
 import { AppSidebar } from './AppSidebar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
-import { Bell, Search, LogOut, Trash2, Settings } from 'lucide-react';
+import { Bell, Search, LogOut, Trash2, Settings, Eye } from 'lucide-react';
 import { useAuth } from '@/contexts/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
@@ -20,7 +20,9 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const { profile, userRole, signOut } = useAuth();
+  const { profile, userRole, realRole, viewAsStaff, setViewAsStaff, signOut } = useAuth();
+  const canViewAsStaff =
+    realRole === 'ceo' || realRole === 'general_director' || realRole === 'managing_director';
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -94,6 +96,15 @@ export function AppLayout({ children }: AppLayoutProps) {
       <div className="min-h-screen flex w-full">
         <AppSidebar />
         <div className="flex-1 flex flex-col min-w-0">
+          {viewAsStaff && (
+            <div className="flex items-center justify-center gap-3 bg-warning/15 border-b border-warning/30 px-4 py-2 text-xs">
+              <Eye className="h-4 w-4 text-warning" />
+              <span className="font-medium">직원 계정 보기 모드 — 메뉴·권한이 일반 사원 기준으로 표시됩니다</span>
+              <Button size="sm" variant="outline" className="h-6 px-2 text-xs" onClick={() => setViewAsStaff(false)}>
+                관리자 보기로 복귀
+              </Button>
+            </div>
+          )}
           <header className="h-14 flex items-center justify-between border-b border-border bg-card px-4 sticky top-0 z-30">
             <div className="flex items-center gap-3">
               <SidebarTrigger className="text-muted-foreground hover:text-foreground" />
@@ -175,12 +186,21 @@ export function AppLayout({ children }: AppLayoutProps) {
                     </div>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="font-normal">
                     <p className="text-sm font-medium">{displayName}</p>
                     <p className="text-xs text-muted-foreground">{roleLabel}</p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {canViewAsStaff && (
+                    <>
+                      <DropdownMenuItem onClick={() => setViewAsStaff(!viewAsStaff)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        {viewAsStaff ? '관리자 보기로 복귀' : '직원 계정 보기 모드'}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem onClick={() => navigate('/account')}>
                     <Settings className="h-4 w-4 mr-2" /> 계정 관리
                   </DropdownMenuItem>
@@ -188,6 +208,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     <LogOut className="h-4 w-4 mr-2" /> 로그아웃
                   </DropdownMenuItem>
                 </DropdownMenuContent>
+
               </DropdownMenu>
             </div>
           </header>
