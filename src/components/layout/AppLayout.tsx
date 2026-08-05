@@ -175,12 +175,21 @@ export function AppLayout({ children }: AppLayoutProps) {
                     </div>
                   </button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-48">
+                <DropdownMenuContent align="end" className="w-56">
                   <DropdownMenuLabel className="font-normal">
                     <p className="text-sm font-medium">{displayName}</p>
                     <p className="text-xs text-muted-foreground">{roleLabel}</p>
                   </DropdownMenuLabel>
                   <DropdownMenuSeparator />
+                  {canViewAsStaff && (
+                    <>
+                      <DropdownMenuItem onClick={() => setViewAsStaff(!viewAsStaff)}>
+                        <Eye className="h-4 w-4 mr-2" />
+                        {viewAsStaff ? '관리자 보기로 복귀' : '직원 계정 보기 모드'}
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                    </>
+                  )}
                   <DropdownMenuItem onClick={() => navigate('/account')}>
                     <Settings className="h-4 w-4 mr-2" /> 계정 관리
                   </DropdownMenuItem>
@@ -188,6 +197,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                     <LogOut className="h-4 w-4 mr-2" /> 로그아웃
                   </DropdownMenuItem>
                 </DropdownMenuContent>
+
               </DropdownMenu>
             </div>
           </header>
