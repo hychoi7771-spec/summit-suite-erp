@@ -20,7 +20,9 @@ interface AppLayoutProps {
 }
 
 export function AppLayout({ children }: AppLayoutProps) {
-  const { profile, userRole, signOut } = useAuth();
+  const { profile, userRole, realRole, viewAsStaff, setViewAsStaff, signOut } = useAuth();
+  const canViewAsStaff =
+    realRole === 'ceo' || realRole === 'general_director' || realRole === 'managing_director';
   const navigate = useNavigate();
   const [notifications, setNotifications] = useState<any[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
