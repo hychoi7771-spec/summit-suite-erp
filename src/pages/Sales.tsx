@@ -107,7 +107,10 @@ export default function Sales() {
           <div className="flex items-center gap-2">
             <Select value={ym} onValueChange={setYm}>
               <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-              <SelectContent>{MONTHS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                {availableMonths.length === 0 && <SelectItem value="">데이터 없음</SelectItem>}
+                {availableMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
         }
