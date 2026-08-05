@@ -37,7 +37,12 @@ interface MDRow { md_name: string; year_month: string; target_revenue: number; t
 interface ChRow { id: string; md_name: string; channel_name: string; year_month: string; target_revenue: number; target_profit: number; actual_revenue: number | null; actual_profit: number | null; note?: string; }
 interface Meeting { id: string; meeting_date: string; title?: string; attendees?: string; highlights: string[]; season_calendar: { label: string; date: string; dday?: string }[]; weather_note?: string; channel_review?: string; inventory_review?: string; event_review?: string; marketing_review?: string; md_review?: string; checklist: { owner: string; action: string; due: string }[]; ai_summary?: string; }
 
-const MONTHS = ['2026-06', '2026-07'];
+const computeMonths = (md: MDRow[], ch: ChRow[]) => {
+  const set = new Set<string>();
+  md.forEach(m => m.year_month && set.add(m.year_month));
+  ch.forEach(c => c.year_month && set.add(c.year_month));
+  return [...set].sort();
+};
 
 export default function Sales() {
   const { toast } = useToast();
@@ -45,10 +50,18 @@ export default function Sales() {
   const isAllowed = ['ceo', 'general_director', 'managing_director'].includes(userRole || '');
 
   const [loading, setLoading] = useState(true);
-  const [ym, setYm] = useState('2026-07');
+  const [ym, setYm] = useState<string>('');
   const [mdSummary, setMdSummary] = useState<MDRow[]>([]);
   const [channels, setChannels] = useState<ChRow[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+
+  const availableMonths = useMemo(() => computeMonths(mdSummary, channels), [mdSummary, channels]);
+
+  useEffect(() => {
+    if (availableMonths.length > 0 && !availableMonths.includes(ym)) {
+      setYm(availableMonths[availableMonths.length - 1]);
+    }
+  }, [availableMonths, ym]);
 
   const load = async () => {
     setLoading(true);
@@ -94,7 +107,10 @@ export default function Sales() {
           <div className="flex items-center gap-2">
             <Select value={ym} onValueChange={setYm}>
               <SelectTrigger className="w-[140px]"><SelectValue /></SelectTrigger>
-              <SelectContent>{MONTHS.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}</SelectContent>
+              <SelectContent>
+                {availableMonths.length === 0 && <SelectItem value="">데이터 없음</SelectItem>}
+                {availableMonths.map(m => <SelectItem key={m} value={m}>{m}</SelectItem>)}
+              </SelectContent>
             </Select>
           </div>
         }

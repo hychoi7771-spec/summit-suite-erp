@@ -26,6 +26,7 @@ import TaskDetailDialog from '@/components/tasks/TaskDetailDialog';
 import GanttChart from '@/components/tasks/GanttChart';
 import TaskCalendarView from '@/components/tasks/TaskCalendarView';
 import TaskListView from '@/components/tasks/TaskListView';
+import TaskBoardCard from '@/components/tasks/TaskBoardCard';
 import CategoryBar, { TaskCategory } from '@/components/tasks/CategoryBar';
 import TaskFilterToolbar, { BoardToggles } from '@/components/tasks/TaskFilterToolbar';
 import CategoryManageDialog from '@/components/tasks/CategoryManageDialog';
@@ -943,122 +944,23 @@ export default function Tasks() {
                                 <Draggable key={task.id} draggableId={task.id} index={index}>
                                   {(provided, snapshot) => (
                                     <div ref={provided.innerRef} {...provided.draggableProps} {...provided.dragHandleProps}>
-                                      <Card
-                                        className={`group relative transition-all cursor-grab active:cursor-grabbing overflow-hidden ${snapshot.isDragging ? 'shadow-lg ring-2 ring-primary/20 rotate-1' : 'hover:shadow-md hover:-translate-y-0.5'} ${isDesign ? 'border-l-2 border-l-primary' : ''} ${isOverdue ? 'border-l-2 border-l-destructive' : ''}`}
-                                        onClick={() => isDesign ? setSelectedDesignTask(task) : openEditDialog(task)}
-                                      >
-                                        {cat && (
-                                          <div className="absolute left-0 top-0 bottom-0 w-1" style={{ backgroundColor: cat.color }} />
-                                        )}
-                                        <CardContent className={toggles.compact ? 'p-2 pl-3 space-y-1' : 'p-3 pl-3.5 space-y-2'}>
-                                          <div className="flex items-start justify-between gap-1">
-                                            <div className="flex items-center gap-1.5 flex-1 min-w-0">
-                                              {task.priority === 'urgent' && <span className="text-xs shrink-0">🔴</span>}
-                                              {task.priority === 'high' && <span className="text-xs shrink-0">🟠</span>}
-                                              {cat?.icon && <span className="text-xs shrink-0" title={cat.name}>{cat.icon}</span>}
-                                              {isDesign && <Palette className="h-3.5 w-3.5 text-primary shrink-0" />}
-                                              <p className="text-sm font-medium leading-snug truncate">{task.title}</p>
-                                            </div>
-                                            <div className="flex items-center gap-0.5 shrink-0">
-                                              {canEditTask(task) && (
-                                                <>
-                                                  <button onClick={(e) => openEditDialog(task, e)} className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors" title="수정">
-                                                    <Pencil className="h-3 w-3" />
-                                                  </button>
-                                                  <button onClick={(e) => handleDeleteTask(task.id, e)} className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors" title="삭제">
-                                                    <Trash2 className="h-3 w-3" />
-                                                  </button>
-                                                </>
-                                              )}
-                                            </div>
-                                          </div>
-                                          {!toggles.compact && task.description && <p className="text-[11px] text-muted-foreground line-clamp-2">{task.description}</p>}
-                                          {isDesign && Array.isArray(task.attachments) && task.attachments.filter((u: string) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)(\?|$)/i.test(u)).length > 0 && (
-                                            <div className="flex gap-1 overflow-hidden">
-                                              {task.attachments.filter((u: string) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)(\?|$)/i.test(u)).slice(0, 3).map((url: string, i: number) => (
-                                                <img key={i} src={url} alt="" className="h-12 w-12 object-cover rounded border bg-muted shrink-0" loading="lazy" />
-                                              ))}
-                                              {task.attachments.filter((u: string) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)(\?|$)/i.test(u)).length > 3 && (
-                                                <div className="h-12 w-12 rounded border bg-muted flex items-center justify-center text-[10px] text-muted-foreground shrink-0">
-                                                  +{task.attachments.filter((u: string) => /\.(png|jpe?g|gif|webp|svg|bmp|avif)(\?|$)/i.test(u)).length - 3}
-                                                </div>
-                                              )}
-                                            </div>
-                                          )}
-                                          <div className="flex flex-wrap gap-1">
-                                            {task.project_name && selectedProject === 'all' && (
-                                              <Badge variant="outline" className="text-[10px] gap-0.5 bg-muted/50"><FolderKanban className="h-2.5 w-2.5" /> {task.project_name}</Badge>
-                                            )}
-                                            {isDesign && <Badge variant="outline" className="text-[10px] gap-0.5 border-primary/30 text-primary"><Palette className="h-2.5 w-2.5" /> 디자인</Badge>}
-                                            {task.meeting_id && <Badge variant="outline" className="text-[10px] gap-0.5"><FileText className="h-2.5 w-2.5" /> 회의록</Badge>}
-                                            {(task.tags || []).filter((tag: string) => tag !== ONGOING_TAG).slice(0, 2).map((tag: string) => (
-                                              <span key={tag} className="text-[10px] bg-muted text-muted-foreground px-1.5 py-0.5 rounded">{tag}</span>
-                                            ))}
-                                          </div>
-                                          <div className="flex items-center justify-between pt-1 border-t border-border/40">
-                                            {assignee ? (
-                                              <div className="flex items-center gap-1.5">
-                                                <Avatar className="h-5 w-5"><AvatarFallback className="bg-primary/80 text-primary-foreground text-[9px]">{assignee.avatar}</AvatarFallback></Avatar>
-                                                <span className="text-[11px] text-muted-foreground">{assignee.name_kr}</span>
-                                              </div>
-                                            ) : <span />}
-                                            <div className="flex items-center gap-1">
-                                              {statusOrder.indexOf(task.status) > 0 && (
-                                                <button
-                                                  onClick={(e) => handleQuickStatusChange(task.id, task.status, 'prev', e)}
-                                                  className="p-0.5 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-                                                  title={statusLabels[statusOrder[statusOrder.indexOf(task.status) - 1]]}
-                                                >
-                                                  <ChevronLeft className="h-3.5 w-3.5" />
-                                                </button>
-                                              )}
-                                              {statusOrder.indexOf(task.status) < statusOrder.length - 1 && (
-                                                <button
-                                                  onClick={(e) => handleQuickStatusChange(task.id, task.status, 'next', e)}
-                                                  className={`p-0.5 rounded transition-colors ${
-                                                    statusOrder.indexOf(task.status) === statusOrder.length - 2
-                                                      ? 'hover:bg-emerald-100 dark:hover:bg-emerald-900/30 text-emerald-600 hover:text-emerald-700'
-                                                      : 'hover:bg-muted text-muted-foreground hover:text-foreground'
-                                                  }`}
-                                                  title={statusLabels[statusOrder[statusOrder.indexOf(task.status) + 1]]}
-                                                >
-                                                  <ChevronRight className="h-3.5 w-3.5" />
-                                                </button>
-                                              )}
-                                              {isOngoingTask(task) && task.status !== 'done' ? (
-                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-primary/10 text-primary border-primary/20">
-                                                  <Calendar className="h-2.5 w-2.5 mr-0.5" />
-                                                  상시
-                                                </Badge>
-                                              ) : isOngoingTask(task) && task.status === 'done' ? (
-                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-success/10 text-success border-success/20">
-                                                  <Calendar className="h-2.5 w-2.5 mr-0.5" />
-                                                  종결
-                                                </Badge>
-                                              ) : daysLeft !== null && task.status === 'done' ? (
-                                                <Badge variant="outline" className="text-[10px] px-1.5 py-0 bg-success/10 text-success border-success/20">
-                                                  <Calendar className="h-2.5 w-2.5 mr-0.5" />
-                                                  완료
-                                                </Badge>
-                                              ) : daysLeft !== null && (
-                                                <Badge
-                                                  variant={daysLeft < 0 ? 'destructive' : 'outline'}
-                                                  className={`text-[10px] px-1.5 py-0 ${
-                                                    daysLeft === 0
-                                                      ? 'bg-blue-500 text-white border-blue-500 hover:bg-blue-500'
-                                                      : daysLeft > 0 && daysLeft <= 3
-                                                      ? 'bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-500/30'
-                                                      : ''
-                                                  }`}
-                                                >
-                                                  <Calendar className="h-2.5 w-2.5 mr-0.5" />
-                                                  {daysLeft < 0 ? `${Math.abs(daysLeft)}일 초과` : daysLeft === 0 ? 'D-DAY' : `D-${daysLeft}`}
-                                                </Badge>
-                                              )}
-                                            </div>
-                                          </div>
-                                        </CardContent>
-                                      </Card>
+                                      <TaskBoardCard
+                                        task={task}
+                                        assignee={assignee}
+                                        category={cat}
+                                        toggles={toggles}
+                                        selectedProject={selectedProject}
+                                        onClick={() => task.is_design_request ? setSelectedDesignTask(task) : openEditDialog(task)}
+                                        onEdit={openEditDialog}
+                                        onDelete={handleDeleteTask}
+                                        onQuickStatusChange={handleQuickStatusChange}
+                                        getDaysLeft={getDaysLeft}
+                                        isOngoingTask={isOngoingTask}
+                                        ONGOING_TAG={ONGOING_TAG}
+                                        statusOrder={statusOrder}
+                                        statusLabels={statusLabels}
+                                        canEdit={canEditTask(task)}
+                                      />
                                     </div>
                                   )}
                                 </Draggable>
