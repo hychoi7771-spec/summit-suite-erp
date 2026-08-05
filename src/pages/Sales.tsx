@@ -37,7 +37,12 @@ interface MDRow { md_name: string; year_month: string; target_revenue: number; t
 interface ChRow { id: string; md_name: string; channel_name: string; year_month: string; target_revenue: number; target_profit: number; actual_revenue: number | null; actual_profit: number | null; note?: string; }
 interface Meeting { id: string; meeting_date: string; title?: string; attendees?: string; highlights: string[]; season_calendar: { label: string; date: string; dday?: string }[]; weather_note?: string; channel_review?: string; inventory_review?: string; event_review?: string; marketing_review?: string; md_review?: string; checklist: { owner: string; action: string; due: string }[]; ai_summary?: string; }
 
-const MONTHS = ['2026-06', '2026-07'];
+const computeMonths = (md: MDRow[], ch: ChRow[]) => {
+  const set = new Set<string>();
+  md.forEach(m => m.year_month && set.add(m.year_month));
+  ch.forEach(c => c.year_month && set.add(c.year_month));
+  return [...set].sort();
+};
 
 export default function Sales() {
   const { toast } = useToast();
