@@ -26,6 +26,7 @@ import TaskDetailDialog from '@/components/tasks/TaskDetailDialog';
 import GanttChart from '@/components/tasks/GanttChart';
 import TaskCalendarView from '@/components/tasks/TaskCalendarView';
 import TaskListView from '@/components/tasks/TaskListView';
+import TaskBoardCard from '@/components/tasks/TaskBoardCard';
 import CategoryBar, { TaskCategory } from '@/components/tasks/CategoryBar';
 import TaskFilterToolbar, { BoardToggles } from '@/components/tasks/TaskFilterToolbar';
 import CategoryManageDialog from '@/components/tasks/CategoryManageDialog';
