@@ -28,6 +28,7 @@ export default function TaskBoardCard({
   category,
   toggles,
   selectedProject,
+  onClick,
   onEdit,
   onDelete,
   onQuickStatusChange,
