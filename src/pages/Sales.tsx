@@ -50,10 +50,18 @@ export default function Sales() {
   const isAllowed = ['ceo', 'general_director', 'managing_director'].includes(userRole || '');
 
   const [loading, setLoading] = useState(true);
-  const [ym, setYm] = useState('2026-07');
+  const [ym, setYm] = useState<string>('');
   const [mdSummary, setMdSummary] = useState<MDRow[]>([]);
   const [channels, setChannels] = useState<ChRow[]>([]);
   const [meetings, setMeetings] = useState<Meeting[]>([]);
+
+  const availableMonths = useMemo(() => computeMonths(mdSummary, channels), [mdSummary, channels]);
+
+  useEffect(() => {
+    if (availableMonths.length > 0 && !availableMonths.includes(ym)) {
+      setYm(availableMonths[availableMonths.length - 1]);
+    }
+  }, [availableMonths, ym]);
 
   const load = async () => {
     setLoading(true);
