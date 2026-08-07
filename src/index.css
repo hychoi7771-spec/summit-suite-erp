@@ -6,28 +6,28 @@
 
 @layer base {
   :root {
-    /* Cool Summer palette — clear ocean blue */
-    --background: 200 55% 97%;      /* #f0f8fc */
-    --foreground: 210 45% 15%;
+    /* Cool Summer palette — fresh aqua / teal */
+    --background: 175 55% 97%;      /* #f0fbfa */
+    --foreground: 185 45% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 210 45% 15%;
+    --card-foreground: 185 45% 15%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 210 45% 15%;
+    --popover-foreground: 185 45% 15%;
 
-    /* Primary: crisp ocean blue */
-    --primary: 200 90% 48%;         /* #0ea5e9-ish */
+    /* Primary: vivid aqua teal */
+    --primary: 175 80% 42%;         /* #15b8b0-ish */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 200 50% 95%;
-    --secondary-foreground: 210 45% 18%;
+    --secondary: 175 50% 94%;
+    --secondary-foreground: 185 45% 18%;
 
-    --muted: 205 38% 94%;
-    --muted-foreground: 210 16% 44%;
+    --muted: 180 38% 94%;
+    --muted-foreground: 185 16% 44%;
 
-    --accent: 195 80% 88%;          /* cool aqua blue */
-    --accent-foreground: 205 55% 20%;
+    --accent: 160 70% 85%;          /* bright aqua mint */
+    --accent-foreground: 175 55% 20%;
 
     --destructive: 352 75% 60%;
     --destructive-foreground: 0 0% 100%;
@@ -38,37 +38,37 @@
     --warning: 38 92% 62%;
     --warning-foreground: 30 60% 18%;
 
-    --info: 205 88% 55%;
+    --info: 185 88% 52%;
     --info-foreground: 0 0% 100%;
 
-    --border: 205 38% 87%;
-    --input: 205 38% 87%;
-    --ring: 200 90% 48%;
+    --border: 180 38% 87%;
+    --input: 180 38% 87%;
+    --ring: 175 80% 42%;
 
     --radius: 1rem;
 
-    /* Sidebar — soft ocean blue */
-    --sidebar-background: 200 60% 96%;
-    --sidebar-foreground: 210 35% 18%;
-    --sidebar-primary: 200 90% 45%;
+    /* Sidebar — soft aqua */
+    --sidebar-background: 175 60% 95%;
+    --sidebar-foreground: 185 35% 18%;
+    --sidebar-primary: 175 80% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 195 75% 92%;
-    --sidebar-accent-foreground: 205 55% 22%;
-    --sidebar-border: 205 38% 86%;
-    --sidebar-ring: 200 90% 48%;
-    --sidebar-muted: 210 16% 46%;
+    --sidebar-accent: 165 70% 90%;
+    --sidebar-accent-foreground: 175 55% 22%;
+    --sidebar-border: 180 38% 86%;
+    --sidebar-ring: 175 80% 42%;
+    --sidebar-muted: 185 16% 46%;
 
-    --chart-1: 200 90% 50%;
-    --chart-2: 195 80% 52%;
-    --chart-3: 210 85% 58%;
+    --chart-1: 175 80% 45%;
+    --chart-2: 160 70% 48%;
+    --chart-3: 185 85% 58%;
     --chart-4: 38 92% 62%;
     --chart-5: 260 60% 68%;
 
     /* Cool gradients */
-    --gradient-pastel-1: linear-gradient(135deg, #d8f3ff 0%, #d3ebfa 100%);
-    --gradient-pastel-2: linear-gradient(135deg, #d9f3ff 0%, #d5f5f0 100%);
-    --gradient-pastel-3: linear-gradient(135deg, #d4f8ff 0%, #d8f3ff 100%);
-    --gradient-pastel-4: linear-gradient(135deg, #e3f7ff 0%, #dbeaff 100%);
+    --gradient-pastel-1: linear-gradient(135deg, #d4f8f6 0%, #c9f6f1 100%);
+    --gradient-pastel-2: linear-gradient(135deg, #d8f9f5 0%, #d0f6ef 100%);
+    --gradient-pastel-3: linear-gradient(135deg, #c9f9f0 0%, #d4f8f6 100%);
+    --gradient-pastel-4: linear-gradient(135deg, #e0fbf9 0%, #d8f6ff 100%);
   }
 
 
