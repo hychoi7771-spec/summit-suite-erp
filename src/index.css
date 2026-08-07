@@ -6,100 +6,102 @@
 
 @layer base {
   :root {
-    /* Soft Pastel palette — monday.com Vibe inspired */
-    --background: 300 60% 99%;      /* #fdf8ff */
-    --foreground: 252 35% 18%;
+    /* Cool Summer palette — aqua / ocean breeze */
+    --background: 195 60% 98%;      /* #f4fbfe */
+    --foreground: 205 40% 16%;
 
     --card: 0 0% 100%;
-    --card-foreground: 252 35% 18%;
+    --card-foreground: 205 40% 16%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 252 35% 18%;
+    --popover-foreground: 205 40% 16%;
 
-    /* Primary: lavender pastel accent */
-    --primary: 252 88% 72%;         /* #a78bfa-ish */
+    /* Primary: fresh ocean cyan-blue */
+    --primary: 195 85% 45%;         /* #12a5cf-ish */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 300 55% 96%;
-    --secondary-foreground: 252 35% 22%;
+    --secondary: 195 50% 95%;
+    --secondary-foreground: 205 40% 20%;
 
-    --muted: 285 40% 96%;
-    --muted-foreground: 250 12% 48%;
+    --muted: 200 40% 95%;
+    --muted-foreground: 205 16% 46%;
 
-    --accent: 330 100% 92%;         /* pastel pink #ffd6e8 */
-    --accent-foreground: 330 55% 28%;
+    --accent: 172 70% 88%;          /* mint aqua */
+    --accent-foreground: 180 50% 22%;
 
-    --destructive: 350 82% 68%;
+    --destructive: 352 75% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 152 55% 52%;
+    --success: 165 62% 42%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 42 100% 76%;         /* pastel amber #ffe8b8 */
-    --warning-foreground: 32 55% 24%;
+    --warning: 38 92% 62%;
+    --warning-foreground: 30 60% 18%;
 
-    --info: 252 88% 72%;
+    --info: 205 88% 55%;
     --info-foreground: 0 0% 100%;
 
-    --border: 285 40% 90%;
-    --input: 285 40% 90%;
-    --ring: 252 88% 72%;
+    --border: 200 40% 89%;
+    --input: 200 40% 89%;
+    --ring: 195 85% 45%;
 
     --radius: 1rem;
 
-    /* Sidebar — airy lavender pastel */
-    --sidebar-background: 285 65% 97%;
-    --sidebar-foreground: 252 30% 22%;
-    --sidebar-primary: 252 88% 68%;
+    /* Sidebar — icy aqua */
+    --sidebar-background: 195 65% 96%;
+    --sidebar-foreground: 205 35% 20%;
+    --sidebar-primary: 195 85% 42%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 255 100% 94%;
-    --sidebar-accent-foreground: 258 55% 30%;
-    --sidebar-border: 285 40% 90%;
-    --sidebar-ring: 252 88% 72%;
-    --sidebar-muted: 250 12% 52%;
+    --sidebar-accent: 185 75% 91%;
+    --sidebar-accent-foreground: 195 60% 24%;
+    --sidebar-border: 200 40% 88%;
+    --sidebar-ring: 195 85% 45%;
+    --sidebar-muted: 205 16% 48%;
 
-    --chart-1: 252 88% 72%;
-    --chart-2: 330 90% 78%;
-    --chart-3: 190 80% 68%;
-    --chart-4: 42 100% 72%;
-    --chart-5: 152 55% 62%;
+    --chart-1: 195 85% 48%;
+    --chart-2: 172 70% 48%;
+    --chart-3: 210 85% 62%;
+    --chart-4: 38 92% 62%;
+    --chart-5: 260 60% 68%;
 
-    /* Pastel gradients */
-    --gradient-pastel-1: linear-gradient(135deg, #eadcff 0%, #ffd6e8 100%);
-    --gradient-pastel-2: linear-gradient(135deg, #d8ecff 0%, #eadcff 100%);
-    --gradient-pastel-3: linear-gradient(135deg, #ffe8b8 0%, #ffd6e8 100%);
-    --gradient-pastel-4: linear-gradient(135deg, #d4f5e5 0%, #d8ecff 100%);
+    /* Cool gradients */
+    --gradient-pastel-1: linear-gradient(135deg, #d5f3fb 0%, #cfe9ff 100%);
+    --gradient-pastel-2: linear-gradient(135deg, #d8ecff 0%, #d4f8ef 100%);
+    --gradient-pastel-3: linear-gradient(135deg, #cffaf0 0%, #d5f3fb 100%);
+    --gradient-pastel-4: linear-gradient(135deg, #e3f6ff 0%, #dbe7ff 100%);
   }
+
 
   .dark {
-    --background: 252 30% 8%;
-    --foreground: 285 20% 96%;
-    --card: 252 30% 11%;
-    --card-foreground: 285 20% 96%;
-    --popover: 252 30% 11%;
-    --popover-foreground: 285 20% 96%;
-    --primary: 252 88% 72%;
-    --primary-foreground: 0 0% 100%;
-    --secondary: 252 25% 18%;
-    --secondary-foreground: 285 20% 96%;
-    --muted: 252 25% 18%;
-    --muted-foreground: 250 12% 65%;
-    --accent: 330 60% 60%;
+    --background: 205 45% 8%;
+    --foreground: 195 25% 96%;
+    --card: 205 42% 11%;
+    --card-foreground: 195 25% 96%;
+    --popover: 205 42% 11%;
+    --popover-foreground: 195 25% 96%;
+    --primary: 192 85% 52%;
+    --primary-foreground: 205 45% 8%;
+    --secondary: 205 32% 18%;
+    --secondary-foreground: 195 25% 96%;
+    --muted: 205 32% 18%;
+    --muted-foreground: 200 16% 68%;
+    --accent: 172 60% 42%;
     --accent-foreground: 0 0% 100%;
-    --destructive: 350 62% 50%;
-    --destructive-foreground: 285 20% 96%;
-    --border: 252 25% 20%;
-    --input: 252 25% 20%;
-    --ring: 252 88% 72%;
-    --sidebar-background: 252 30% 9%;
-    --sidebar-foreground: 285 20% 90%;
-    --sidebar-primary: 252 88% 72%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 252 25% 18%;
-    --sidebar-accent-foreground: 285 20% 96%;
-    --sidebar-border: 252 25% 20%;
-    --sidebar-ring: 252 88% 72%;
+    --destructive: 352 62% 50%;
+    --destructive-foreground: 195 25% 96%;
+    --border: 205 30% 20%;
+    --input: 205 30% 20%;
+    --ring: 192 85% 52%;
+    --sidebar-background: 205 45% 9%;
+    --sidebar-foreground: 195 22% 90%;
+    --sidebar-primary: 192 85% 52%;
+    --sidebar-primary-foreground: 205 45% 8%;
+    --sidebar-accent: 205 32% 18%;
+    --sidebar-accent-foreground: 195 25% 96%;
+    --sidebar-border: 205 30% 20%;
+    --sidebar-ring: 192 85% 52%;
   }
+
 }
 
 @layer base {
@@ -121,11 +123,11 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl shadow-[0_2px_10px_-4px_rgba(139,92,246,0.08)];
+    @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl shadow-[0_2px_10px_-4px_rgba(14,165,208,0.08)];
   }
 
   .stat-card {
-    @apply bg-card rounded-2xl border border-border/60 p-5 shadow-[0_2px_10px_-4px_rgba(139,92,246,0.06)] transition-all duration-200 hover:shadow-[0_6px_20px_-6px_rgba(139,92,246,0.14)] hover:border-primary/30;
+    @apply bg-card rounded-2xl border border-border/60 p-5 shadow-[0_2px_10px_-4px_rgba(14,165,208,0.06)] transition-all duration-200 hover:shadow-[0_6px_20px_-6px_rgba(14,165,208,0.14)] hover:border-primary/30;
   }
 
   .nav-badge {
