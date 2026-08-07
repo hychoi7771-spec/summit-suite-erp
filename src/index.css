@@ -123,11 +123,11 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl shadow-[0_2px_10px_-4px_rgba(20,184,166,0.08)];
+    @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl shadow-[0_2px_10px_-4px_rgba(14,165,233,0.08)];
   }
 
   .stat-card {
-    @apply bg-card rounded-2xl border border-border/60 p-5 shadow-[0_2px_10px_-4px_rgba(20,184,166,0.06)] transition-all duration-200 hover:shadow-[0_6px_20px_-6px_rgba(20,184,166,0.14)] hover:border-primary/30;
+    @apply bg-card rounded-2xl border border-border/60 p-5 shadow-[0_2px_10px_-4px_rgba(14,165,233,0.06)] transition-all duration-200 hover:shadow-[0_6px_20px_-6px_rgba(14,165,233,0.14)] hover:border-primary/30;
   }
 
   .nav-badge {
