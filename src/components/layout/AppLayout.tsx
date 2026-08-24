@@ -120,6 +120,14 @@ export function AppLayout({ children }: AppLayoutProps) {
                   ⌘K
                 </kbd>
               </button>
+              <button
+                type="button"
+                onClick={() => setPaletteOpen(true)}
+                className="md:hidden p-2 rounded-lg hover:bg-muted transition-colors"
+                aria-label="검색"
+              >
+                <Search className="h-5 w-5 text-muted-foreground" />
+              </button>
             </div>
             <div className="flex items-center gap-3">
               <Popover>
