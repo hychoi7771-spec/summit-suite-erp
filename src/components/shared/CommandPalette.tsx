@@ -41,20 +41,36 @@ import {
   Search,
 } from "lucide-react";
 
+type HitKind =
+  | "task"
+  | "approval"
+  | "notice"
+  | "file"
+  | "meeting"
+  | "product"
+  | "design"
+  | "expense";
+
 type SearchHit = {
-  kind: "task" | "approval" | "notice" | "file";
+  kind: HitKind;
   id: string;
   title: string;
   subtitle: string | null;
   created_at: string;
 };
 
-const hitMeta: Record<SearchHit["kind"], { icon: any; label: string; to: (id: string) => string }> = {
-  task: { icon: ListTodo, label: "업무", to: () => "/tasks" },
-  approval: { icon: Inbox, label: "결재", to: () => "/approvals" },
+const hitMeta: Record<HitKind, { icon: any; label: string; to: (id: string) => string }> = {
+  task: { icon: ListTodo, label: "업무", to: (id) => `/tasks?task=${id}` },
+  approval: { icon: Inbox, label: "결재", to: (id) => `/approvals?approval=${id}` },
   notice: { icon: Megaphone, label: "공지", to: () => "/notices-board" },
   file: { icon: FolderArchive, label: "파일", to: () => "/library" },
+  meeting: { icon: ClipboardList, label: "회의록", to: () => "/meetings" },
+  product: { icon: FolderOpen, label: "프로젝트", to: () => "/products" },
+  design: { icon: Palette, label: "시안", to: () => "/design-reviews" },
+  expense: { icon: Receipt, label: "경비", to: () => "/expenses" },
 };
+
+const fallbackMeta = { icon: Search, label: "결과", to: () => "/" };
 
 
 type Cmd = {
@@ -185,7 +201,7 @@ export function CommandPalette({
           <>
             <CommandGroup heading="검색 결과">
               {hits.map((h) => {
-                const m = hitMeta[h.kind];
+                const m = hitMeta[h.kind] ?? fallbackMeta;
                 return (
                   <CommandItem
                     key={`${h.kind}-${h.id}`}
@@ -194,7 +210,12 @@ export function CommandPalette({
                   >
                     <m.icon className="mr-2 h-4 w-4 text-primary" />
                     <span className="truncate">{h.title}</span>
-                    <span className="ml-auto text-[10px] uppercase tracking-wide text-muted-foreground">
+                    {h.subtitle && (
+                      <span className="ml-2 truncate text-[11px] text-muted-foreground hidden sm:inline">
+                        {h.subtitle}
+                      </span>
+                    )}
+                    <span className="ml-auto shrink-0 text-[10px] uppercase tracking-wide text-muted-foreground">
                       {m.label}
                     </span>
                   </CommandItem>
