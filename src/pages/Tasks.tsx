@@ -608,11 +608,11 @@ export default function Tasks() {
       />
 
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList>
-          <TabsTrigger value="board" className="gap-1.5"><FolderKanban className="h-3.5 w-3.5" />칸반</TabsTrigger>
-          <TabsTrigger value="list" className="gap-1.5"><LayoutList className="h-3.5 w-3.5" />리스트</TabsTrigger>
-          <TabsTrigger value="calendar" className="gap-1.5"><CalendarDays className="h-3.5 w-3.5" />캘린더</TabsTrigger>
-          <TabsTrigger value="gantt" className="gap-1.5"><GanttChartSquare className="h-3.5 w-3.5" />간트차트</TabsTrigger>
+        <TabsList className="w-full sm:w-auto overflow-x-auto justify-start">
+          <TabsTrigger value="board" className="gap-1.5 shrink-0"><FolderKanban className="h-3.5 w-3.5" />칸반</TabsTrigger>
+          <TabsTrigger value="list" className="gap-1.5 shrink-0"><LayoutList className="h-3.5 w-3.5" />리스트</TabsTrigger>
+          <TabsTrigger value="calendar" className="gap-1.5 shrink-0"><CalendarDays className="h-3.5 w-3.5" />캘린더</TabsTrigger>
+          <TabsTrigger value="gantt" className="gap-1.5 shrink-0"><GanttChartSquare className="h-3.5 w-3.5" />간트차트</TabsTrigger>
         </TabsList>
 
         <TabsContent value="board" className="mt-4 space-y-4">
@@ -866,7 +866,7 @@ export default function Tasks() {
           </div>
 
           <DragDropContext onDragEnd={handleDragEnd}>
-            <div className="overflow-x-auto pb-4">
+            <div className="overflow-x-auto pb-4 -mx-4 px-4 md:mx-0 md:px-0 snap-x snap-mandatory md:snap-none">
               <div className="flex gap-3 min-w-max">
                 {columnsConfig.map(col => {
                   const columnColors: Record<string, { header: string; dot: string; dropzone: string }> = {
@@ -923,7 +923,7 @@ export default function Tasks() {
                   });
                   const colTasks = filteredTasks.filter(t => t.status === col.status);
                   return (
-                    <div key={col.status} className="w-[280px] shrink-0">
+                    <div key={col.status} className="w-[86vw] max-w-[320px] md:w-[280px] shrink-0 snap-start">
                       <div className={`flex items-center justify-between mb-2 px-3 py-2 rounded-lg ${colors.header}`}>
                         <div className="flex items-center gap-2">
                           <span className={`h-2.5 w-2.5 rounded-full ${colors.dot}`} />
