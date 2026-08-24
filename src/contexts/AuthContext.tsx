@@ -56,9 +56,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any | null>(null);
   const [userRole, setUserRole] = useState<string | null>(null);
-  const [viewAsStaff, setViewAsStaffState] = useState<boolean>(
-    () => typeof window !== 'undefined' && localStorage.getItem(VIEW_AS_STAFF_KEY) === '1'
-  );
+  const [viewAsStaff, setViewAsStaffState] = useState<boolean>(() => {
+    if (typeof window === 'undefined') return false;
+    // ?viewAsStaff=1 / =0 로 직원 보기 모드 즉시 전환 가능
+    const param = new URLSearchParams(window.location.search).get('viewAsStaff');
+    if (param === '1') {
+      localStorage.setItem(VIEW_AS_STAFF_KEY, '1');
+      return true;
+    }
+    if (param === '0') {
+      localStorage.removeItem(VIEW_AS_STAFF_KEY);
+      return false;
+    }
+    return localStorage.getItem(VIEW_AS_STAFF_KEY) === '1';
+  });
 
 
   const loadUserContext = useCallback(async (userId: string) => {
