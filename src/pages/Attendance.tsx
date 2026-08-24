@@ -21,6 +21,7 @@ import {
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { LeaveRequestDialog } from '@/components/attendance/LeaveRequestDialog';
+import { MyLeaveTimeline } from '@/components/attendance/MyLeaveTimeline';
 import { isNonWorkingDay, isWeekend, getHolidayName } from '@/lib/holidays';
 
 const LEAVE_TYPE_LABEL: Record<string, string> = {
@@ -325,13 +326,24 @@ export default function Attendance() {
       </div>
 
       <Tabs defaultValue="calendar">
-        <TabsList>
-          <TabsTrigger value="calendar">월별 캘린더</TabsTrigger>
-          <TabsTrigger value="balances">My 연차</TabsTrigger>
-          <TabsTrigger value="my">내 신청 내역</TabsTrigger>
-          <TabsTrigger value="all">전체 신청</TabsTrigger>
-          <TabsTrigger value="summer">🏖️ 여름휴가 현황</TabsTrigger>
+        <TabsList className="w-full sm:w-auto overflow-x-auto justify-start">
+          <TabsTrigger value="calendar" className="shrink-0">월별 캘린더</TabsTrigger>
+          <TabsTrigger value="mine" className="shrink-0">내 연차 확인</TabsTrigger>
+          <TabsTrigger value="balances" className="shrink-0">My 연차</TabsTrigger>
+          <TabsTrigger value="my" className="shrink-0">내 신청 내역</TabsTrigger>
+          <TabsTrigger value="all" className="shrink-0">전체 신청</TabsTrigger>
+          <TabsTrigger value="summer" className="shrink-0">🏖️ 여름휴가 현황</TabsTrigger>
         </TabsList>
+
+        {/* 내 연차 셀프 확인 */}
+        <TabsContent value="mine" className="space-y-4 mt-4">
+          <MyLeaveTimeline
+            year={year}
+            myName={profile?.name_kr || profile?.name || '나'}
+            balance={profile ? balanceFor(profile.id) ?? null : null}
+            myRequests={requests.filter(r => r.user_id === profile?.id)}
+          />
+        </TabsContent>
 
         {/* 월별 캘린더 */}
         <TabsContent value="calendar" className="space-y-4 mt-4">
