@@ -189,7 +189,18 @@ export default function Tasks() {
     setCategories((catRes.data || []) as TaskCategory[]);
     setProducts(prodRes.data || []);
     setLoading(false);
+
+    // 반복 템플릿: 오늘 생성 대상 자동 등록
+    try {
+      const created = await runDueTemplates(profile?.id);
+      if (created > 0) {
+        toast({ title: '반복 업무 자동 생성', description: `${created}건의 업무가 템플릿에서 생성되었습니다.` });
+        const refreshed = await fetchAllTasks();
+        setTaskList(refreshed);
+      }
+    } catch { /* noop */ }
   };
+
 
   // 설명 문구에서 "상품명 가격" 형태의 라인을 파싱해 품목별 행사 항목을 추출
   const parsePromoLinesFromDescription = (desc: string) => {
