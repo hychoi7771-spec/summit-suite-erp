@@ -2291,6 +2291,91 @@ export type Database = {
           },
         ]
       }
+      task_templates: {
+        Row: {
+          assignee_id: string | null
+          category_id: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          due_offset_days: number
+          id: string
+          is_active: boolean
+          last_generated_date: string | null
+          month_day: number | null
+          name: string
+          priority: Database["public"]["Enums"]["task_priority"]
+          project_name: string | null
+          recurrence: string
+          tags: string[] | null
+          title: string
+          updated_at: string
+          weekdays: number[] | null
+        }
+        Insert: {
+          assignee_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          created_by: string
+          description?: string | null
+          due_offset_days?: number
+          id?: string
+          is_active?: boolean
+          last_generated_date?: string | null
+          month_day?: number | null
+          name: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          project_name?: string | null
+          recurrence?: string
+          tags?: string[] | null
+          title: string
+          updated_at?: string
+          weekdays?: number[] | null
+        }
+        Update: {
+          assignee_id?: string | null
+          category_id?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          due_offset_days?: number
+          id?: string
+          is_active?: boolean
+          last_generated_date?: string | null
+          month_day?: number | null
+          name?: string
+          priority?: Database["public"]["Enums"]["task_priority"]
+          project_name?: string | null
+          recurrence?: string
+          tags?: string[] | null
+          title?: string
+          updated_at?: string
+          weekdays?: number[] | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "task_templates_assignee_id_fkey"
+            columns: ["assignee_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_templates_category_id_fkey"
+            columns: ["category_id"]
+            isOneToOne: false
+            referencedRelation: "task_categories"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "task_templates_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tasks: {
         Row: {
           assignee_id: string | null
