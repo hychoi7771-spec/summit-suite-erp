@@ -466,6 +466,8 @@ export default function Tasks() {
         actions={
           <div className="flex items-center gap-2">
           <TaskExportDialog tasks={taskList} profiles={profiles} categories={categories} />
+          <TaskTemplateDialog profiles={profiles} categories={categories} onSuccess={fetchData} />
+
           <DesignRequestDialog profiles={profiles} onSuccess={fetchData} />
           <Dialog open={taskDialogOpen} onOpenChange={setTaskDialogOpen}>
             <DialogTrigger asChild>
