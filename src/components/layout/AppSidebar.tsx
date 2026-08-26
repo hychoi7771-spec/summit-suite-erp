@@ -317,7 +317,7 @@ export function AppSidebar() {
           {!collapsed && <GroupLabel>결재 · 지출</GroupLabel>}
           <SidebarGroupContent>
             {renderNavItems(approvalNavItems)}
-            {renderNavItems(approvalDocItems)}
+            
           </SidebarGroupContent>
         </SidebarGroup>
 
