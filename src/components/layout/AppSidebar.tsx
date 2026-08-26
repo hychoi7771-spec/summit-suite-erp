@@ -56,7 +56,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useAuth } from '@/contexts/AuthContext';
 import logo from '@/assets/logo.jpg';
 
-type NavItem = { title: string; url: string; icon: any; managerOnly?: boolean; ceoOnly?: boolean; accent?: boolean };
+type NavItem = { title: string; url: string; icon: any; managerOnly?: boolean; ceoOnly?: boolean; managingDirectorOnly?: boolean; accent?: boolean };
 
 // 업무
 const workspaceNavItems: NavItem[] = [
@@ -87,9 +87,9 @@ const insightsNavItems: NavItem[] = [
 ];
 
 const assetNavItems: NavItem[] = [
-  { title: '업무 자산함', url: '/assets/tasks', icon: ListChecks },
-  { title: '일일보고 자산함', url: '/assets/daily-reports', icon: NotebookPen },
-  { title: '결재문서 자산함', url: '/assets/approvals', icon: FileCheck2 },
+  { title: '업무 자산함', url: '/assets/tasks', icon: ListChecks, managingDirectorOnly: true },
+  { title: '일일보고 자산함', url: '/assets/daily-reports', icon: NotebookPen, managingDirectorOnly: true },
+  { title: '결재문서 자산함', url: '/assets/approvals', icon: FileCheck2, managingDirectorOnly: true },
 ];
 
 // 더보기 (미사용 - 숨김 처리)
@@ -110,7 +110,9 @@ export function AppSidebar() {
   const location = useLocation();
   const { userRole, isManager } = useAuth();
   const isExecutive = userRole === 'ceo' || userRole === 'general_director' || userRole === 'managing_director';
+  const isManagingDirector = userRole === 'managing_director';
   const visibleAdminNavItems = adminNavItems.filter((item) => !item.managerOnly || isManager);
+  const visibleAssetNavItems = assetNavItems.filter((item) => !item.managingDirectorOnly || isManagingDirector);
 
   const currentCategory = new URLSearchParams(location.search).get('category');
 
@@ -285,14 +287,14 @@ export function AppSidebar() {
                 (item) => (!item.managerOnly || isManager) && (!item.ceoOnly || userRole === 'general_director')
               )
             )}
-            {!collapsed && (
+            {!collapsed && visibleAssetNavItems.length > 0 && (
               <div className="mt-0.5">
                 <SectionTrigger open={assetsOpen} onOpenChange={setAssetsOpen} icon={Archive} label="자산함">
-                  {renderNavItems(assetNavItems)}
+                  {renderNavItems(visibleAssetNavItems)}
                 </SectionTrigger>
               </div>
             )}
-            {collapsed && renderNavItems(assetNavItems)}
+            {collapsed && visibleAssetNavItems.length > 0 && renderNavItems(visibleAssetNavItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 

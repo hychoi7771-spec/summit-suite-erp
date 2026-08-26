@@ -70,6 +70,14 @@ function CeoOnlyRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** 분석 자산함: 관리이사만 접근 가능 */
+function ManagingDirectorOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { userRole, loading } = useAuth();
+  if (loading) return null;
+  if (userRole !== 'managing_director') return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   const { user, loading } = useAuth();
 
@@ -122,9 +130,9 @@ function AppRoutes() {
                 <Route path="/account" element={<AccountSettings />} />
                 <Route path="/company-holidays" element={<CompanyHolidays />} />
                 <Route path="/domain-status" element={<DomainStatus />} />
-                <Route path="/assets/tasks" element={<AssetsTasks />} />
-                <Route path="/assets/daily-reports" element={<AssetsDailyReports />} />
-                <Route path="/assets/approvals" element={<AssetsApprovals />} />
+                <Route path="/assets/tasks" element={<ManagingDirectorOnlyRoute><AssetsTasks /></ManagingDirectorOnlyRoute>} />
+                <Route path="/assets/daily-reports" element={<ManagingDirectorOnlyRoute><AssetsDailyReports /></ManagingDirectorOnlyRoute>} />
+                <Route path="/assets/approvals" element={<ManagingDirectorOnlyRoute><AssetsApprovals /></ManagingDirectorOnlyRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppLayout>
