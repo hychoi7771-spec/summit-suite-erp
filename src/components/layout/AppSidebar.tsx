@@ -16,7 +16,6 @@ import {
   BookOpen,
   Globe,
   ChevronRight,
-  User,
   FileText,
   AtSign,
   FileEdit,
@@ -54,7 +53,6 @@ import {
   useSidebar,
 } from '@/components/ui/sidebar';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
-import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import logo from '@/assets/logo.jpg';
 
@@ -106,19 +104,12 @@ const adminNavItems: NavItem[] = [
 ];
 
 
-const statusColors: Record<string, string> = {
-  working: 'bg-success',
-  away: 'bg-warning',
-  offline: 'bg-muted-foreground/40',
-};
-
 export function AppSidebar() {
   const { state } = useSidebar();
   const collapsed = state === 'collapsed';
   const location = useLocation();
   const { userRole, isManager } = useAuth();
   const isExecutive = userRole === 'ceo' || userRole === 'general_director' || userRole === 'managing_director';
-  const [members, setMembers] = useState<any[]>([]);
   const visibleAdminNavItems = adminNavItems.filter((item) => !item.managerOnly || isManager);
 
   const currentCategory = new URLSearchParams(location.search).get('category');
@@ -139,36 +130,6 @@ export function AppSidebar() {
   const [adminOpen, setAdminOpen] = useState(() =>
     visibleAdminNavItems.some((i) => location.pathname === i.url)
   );
-
-  const roleOrder: Record<string, number> = {
-    ceo: 0, general_director: 1, managing_director: 2, deputy_gm: 3, md: 4, designer: 5, assistant_manager: 6, staff: 7,
-  };
-
-  useEffect(() => {
-    const fetchMembers = async () => {
-      const [profRes, roleRes] = await Promise.all([
-        supabase.from('profiles').select('id, user_id, name_kr, name, avatar, presence'),
-        supabase.from('user_roles').select('user_id, role'),
-      ]);
-      const roles = roleRes.data || [];
-      const sorted = (profRes.data || []).sort((a, b) => {
-        const rA = roles.find((r) => r.user_id === a.user_id)?.role;
-        const rB = roles.find((r) => r.user_id === b.user_id)?.role;
-        return (roleOrder[rA ?? ''] ?? 99) - (roleOrder[rB ?? ''] ?? 99);
-      });
-      setMembers(sorted);
-    };
-    fetchMembers();
-
-    const channel = supabase
-      .channel('sidebar-profiles')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, () => fetchMembers())
-      .subscribe();
-
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, []);
 
   const isItemActive = (url: string) => {
     const [path, query] = url.split('?');
@@ -349,26 +310,6 @@ export function AppSidebar() {
           <SidebarGroup className="py-0">
             <GroupLabel>관리</GroupLabel>
             <SidebarGroupContent>{renderNavItems(visibleAdminNavItems)}</SidebarGroupContent>
-          </SidebarGroup>
-        )}
-
-        {/* 팀원 */}
-        {!collapsed && (
-          <SidebarGroup className="py-0 mt-2">
-            <GroupLabel>팀원</GroupLabel>
-            <div className="px-1.5 pb-3 space-y-0.5">
-              {members.map((member) => (
-                <div key={member.id} className="flex items-center gap-2 px-2 py-1.5 rounded-md hover:bg-sidebar-accent/40 transition-colors">
-                  <div className="relative">
-                    <div className="h-6 w-6 rounded-full bg-sidebar-accent flex items-center justify-center ring-1 ring-sidebar-border/40">
-                      <span className="text-[10px] font-medium text-sidebar-accent-foreground">{member.avatar}</span>
-                    </div>
-                    <span className={`absolute -bottom-0.5 -right-0.5 h-2 w-2 rounded-full border-2 border-sidebar-background ${statusColors[member.presence] || 'bg-muted-foreground/40'}`} />
-                  </div>
-                  <span className="text-[12px] text-sidebar-foreground/80 truncate">{member.name}</span>
-                </div>
-              ))}
-            </div>
           </SidebarGroup>
         )}
       </SidebarContent>
