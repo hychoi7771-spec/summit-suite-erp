@@ -110,7 +110,9 @@ export function AppSidebar() {
   const location = useLocation();
   const { userRole, isManager } = useAuth();
   const isExecutive = userRole === 'ceo' || userRole === 'general_director' || userRole === 'managing_director';
+  const isManagingDirector = userRole === 'managing_director';
   const visibleAdminNavItems = adminNavItems.filter((item) => !item.managerOnly || isManager);
+  const visibleAssetNavItems = assetNavItems.filter((item) => !item.managingDirectorOnly || isManagingDirector);
 
   const currentCategory = new URLSearchParams(location.search).get('category');
 
