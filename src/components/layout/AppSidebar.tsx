@@ -287,14 +287,14 @@ export function AppSidebar() {
                 (item) => (!item.managerOnly || isManager) && (!item.ceoOnly || userRole === 'general_director')
               )
             )}
-            {!collapsed && (
+            {!collapsed && visibleAssetNavItems.length > 0 && (
               <div className="mt-0.5">
                 <SectionTrigger open={assetsOpen} onOpenChange={setAssetsOpen} icon={Archive} label="자산함">
-                  {renderNavItems(assetNavItems)}
+                  {renderNavItems(visibleAssetNavItems)}
                 </SectionTrigger>
               </div>
             )}
-            {collapsed && renderNavItems(assetNavItems)}
+            {collapsed && visibleAssetNavItems.length > 0 && renderNavItems(visibleAssetNavItems)}
           </SidebarGroupContent>
         </SidebarGroup>
 
