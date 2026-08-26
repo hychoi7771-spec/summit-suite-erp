@@ -335,13 +335,14 @@ export function AppSidebar() {
           </SidebarGroupContent>
         </SidebarGroup>
 
-        {/* 더보기 */}
-        {!collapsed && (
+        {/* 더보기 (미사용 - 숨김) */}
+        {!collapsed && personalNavItems.length > 0 && (
           <SidebarGroup className="py-0">
             <GroupLabel>더보기</GroupLabel>
             <SidebarGroupContent>{renderNavItems(personalNavItems)}</SidebarGroupContent>
           </SidebarGroup>
         )}
+
 
         {/* 관리 */}
         {!collapsed && (
