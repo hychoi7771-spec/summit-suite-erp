@@ -130,9 +130,9 @@ function AppRoutes() {
                 <Route path="/account" element={<AccountSettings />} />
                 <Route path="/company-holidays" element={<CompanyHolidays />} />
                 <Route path="/domain-status" element={<DomainStatus />} />
-                <Route path="/assets/tasks" element={<AssetsTasks />} />
-                <Route path="/assets/daily-reports" element={<AssetsDailyReports />} />
-                <Route path="/assets/approvals" element={<AssetsApprovals />} />
+                <Route path="/assets/tasks" element={<ManagingDirectorOnlyRoute><AssetsTasks /></ManagingDirectorOnlyRoute>} />
+                <Route path="/assets/daily-reports" element={<ManagingDirectorOnlyRoute><AssetsDailyReports /></ManagingDirectorOnlyRoute>} />
+                <Route path="/assets/approvals" element={<ManagingDirectorOnlyRoute><AssetsApprovals /></ManagingDirectorOnlyRoute>} />
                 <Route path="*" element={<NotFound />} />
               </Routes>
             </AppLayout>
