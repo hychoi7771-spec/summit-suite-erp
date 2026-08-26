@@ -56,7 +56,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { useAuth } from '@/contexts/AuthContext';
 import logo from '@/assets/logo.jpg';
 
-type NavItem = { title: string; url: string; icon: any; managerOnly?: boolean; ceoOnly?: boolean; accent?: boolean };
+type NavItem = { title: string; url: string; icon: any; managerOnly?: boolean; ceoOnly?: boolean; managingDirectorOnly?: boolean; accent?: boolean };
 
 // 업무
 const workspaceNavItems: NavItem[] = [
