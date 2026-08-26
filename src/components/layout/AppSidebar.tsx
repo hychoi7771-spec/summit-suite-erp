@@ -87,9 +87,9 @@ const insightsNavItems: NavItem[] = [
 ];
 
 const assetNavItems: NavItem[] = [
-  { title: '업무 자산함', url: '/assets/tasks', icon: ListChecks },
-  { title: '일일보고 자산함', url: '/assets/daily-reports', icon: NotebookPen },
-  { title: '결재문서 자산함', url: '/assets/approvals', icon: FileCheck2 },
+  { title: '업무 자산함', url: '/assets/tasks', icon: ListChecks, managingDirectorOnly: true },
+  { title: '일일보고 자산함', url: '/assets/daily-reports', icon: NotebookPen, managingDirectorOnly: true },
+  { title: '결재문서 자산함', url: '/assets/approvals', icon: FileCheck2, managingDirectorOnly: true },
 ];
 
 // 더보기 (미사용 - 숨김 처리)
