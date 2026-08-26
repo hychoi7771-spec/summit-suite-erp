@@ -70,6 +70,14 @@ function CeoOnlyRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
 
+/** 분석 자산함: 관리이사만 접근 가능 */
+function ManagingDirectorOnlyRoute({ children }: { children: React.ReactNode }) {
+  const { userRole, loading } = useAuth();
+  if (loading) return null;
+  if (userRole !== 'managing_director') return <Navigate to="/" replace />;
+  return <>{children}</>;
+}
+
 function AppRoutes() {
   const { user, loading } = useAuth();
 
