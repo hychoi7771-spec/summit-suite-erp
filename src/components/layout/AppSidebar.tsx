@@ -94,23 +94,17 @@ const assetNavItems: NavItem[] = [
   { title: '결재문서 자산함', url: '/assets/approvals', icon: FileCheck2 },
 ];
 
-// 더보기
-const personalNavItems: NavItem[] = [
-  { title: '내 프로젝트', url: '/my-projects', icon: User },
-  { title: '내 게시물', url: '/my-posts', icon: FileText },
-  { title: '1:1 피드백', url: '/one-on-one', icon: MessagesSquare },
-  { title: '나를 언급', url: '/mentions', icon: AtSign },
-  { title: '임시저장', url: '/drafts', icon: FileEdit },
-];
+// 더보기 (미사용 - 숨김 처리)
+const personalNavItems: NavItem[] = [];
 
 // 관리
 const adminNavItems: NavItem[] = [
   { title: '팀원관리', url: '/team', icon: UserCog, managerOnly: true },
   { title: '사내 휴무일', url: '/company-holidays', icon: CalendarOff, managerOnly: true },
-  { title: '프로젝트 폴더', url: '/project-folders', icon: FolderOpen },
   { title: '사용 매뉴얼', url: '/manual', icon: BookOpen },
   { title: '도메인 연결 상태', url: '/domain-status', icon: Globe, managerOnly: true },
 ];
+
 
 const statusColors: Record<string, string> = {
   working: 'bg-success',
