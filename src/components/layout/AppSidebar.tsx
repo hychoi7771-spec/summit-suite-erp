@@ -73,17 +73,13 @@ const workspaceNavItems: NavItem[] = [
   { title: '디자인 시안', url: '/design-reviews', icon: Palette },
 ];
 
-// 결재·지출
+// 결재·지출 (전자결재 통합)
 const approvalNavItems: NavItem[] = [
-  { title: '결재함', url: '/approvals', icon: Inbox },
+  { title: '전자결재', url: '/approvals', icon: Inbox },
   { title: '지출 통합 관리', url: '/expenses', icon: Receipt },
   { title: '근태관리', url: '/attendance', icon: CalendarClock },
 ];
 
-// 문서 기안 (통합)
-const approvalDocItems: NavItem[] = [
-  { title: '문서 기안', url: '/approvals?category=general_document', icon: FileText },
-];
 
 // 분석
 const insightsNavItems: NavItem[] = [
