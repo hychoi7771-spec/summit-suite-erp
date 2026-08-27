@@ -452,6 +452,8 @@ export default function Attendance() {
         <TabsContent value="team" className="space-y-4 mt-4">
           <TeamLeaveTable
             balances={balances}
+            allBalances={allBalances}
+
             profiles={profiles}
             userRoles={userRoles}
             requests={requests}
