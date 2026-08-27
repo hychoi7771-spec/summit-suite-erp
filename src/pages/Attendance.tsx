@@ -59,6 +59,8 @@ export default function Attendance() {
 
   const [requests, setRequests] = useState<any[]>([]);
   const [balances, setBalances] = useState<any[]>([]);
+  const [allBalances, setAllBalances] = useState<any[]>([]);
+
   const [profiles, setProfiles] = useState<any[]>([]);
   const [userRoles, setUserRoles] = useState<any[]>([]);
   const [showRequest, setShowRequest] = useState(false);
@@ -81,9 +83,10 @@ export default function Attendance() {
   };
 
   const fetchData = async () => {
-    const [reqRes, balRes, profRes, roleRes] = await Promise.all([
+    const [reqRes, balRes, allBalRes, profRes, roleRes] = await Promise.all([
       supabase.from('leave_requests').select('*').order('start_date', { ascending: false }),
       supabase.from('leave_balances').select('*').eq('year', year),
+      supabase.from('leave_balances').select('*').order('year', { ascending: false }),
       supabase.from('profiles').select('id, user_id, name_kr, avatar, hire_date'),
       supabase.from('user_roles').select('user_id, role'),
     ]);
@@ -95,9 +98,11 @@ export default function Attendance() {
     });
     setRequests(reqRes.data || []);
     setBalances(balRes.data || []);
+    setAllBalances(allBalRes.data || []);
     setProfiles(sorted);
     setUserRoles(roles);
   };
+
 
   const recalculateAll = async () => {
     await withRecalc(async () => {
@@ -447,6 +452,8 @@ export default function Attendance() {
         <TabsContent value="team" className="space-y-4 mt-4">
           <TeamLeaveTable
             balances={balances}
+            allBalances={allBalances}
+
             profiles={profiles}
             userRoles={userRoles}
             requests={requests}
@@ -565,9 +572,10 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 function TeamLeaveTable({
-  balances, profiles, userRoles, requests, year, onYearChange, myProfileId,
+  balances, allBalances = [], profiles, userRoles, requests, year, onYearChange, myProfileId,
 }: {
   balances: any[];
+  allBalances?: any[];
   profiles: any[];
   userRoles: any[];
   requests: any[];
@@ -575,6 +583,7 @@ function TeamLeaveTable({
   onYearChange: (y: number) => void;
   myProfileId?: string;
 }) {
+
   
 
   // 신청내역을 담당자별로 묶음 (내 신청 + 전체 신청 통합)
@@ -624,15 +633,31 @@ function TeamLeaveTable({
       const projected = remaining - pendingDays; // 대기건 승인 시 예상 잔여
       const usageRate = baseTotal > 0 ? Math.min(100, Math.round((baseUsed / baseTotal) * 100)) : 0;
 
+      // 이전 회계연도 이력 (입사 1년 미만 월차 기간 포함)
+      const priorPeriods = allBalances
+        .filter(b => b.user_id === p.id && b.id !== bal?.id && (b.fiscal_start ?? '') < fiscalStart)
+        .sort((a, b) => String(b.fiscal_start ?? '').localeCompare(String(a.fiscal_start ?? '')))
+        .map(b => {
+          const ps: string = b.fiscal_start ?? `${b.year}-01-01`;
+          const pe: string = b.fiscal_end ?? `${b.year + 1}-01-01`;
+          const plist = (reqByUser.get(p.id) || []).filter(r => r.start_date >= ps && r.start_date < pe);
+          const pMonthly = Number(b.monthly_total_days ?? 0) > 0;
+          const pTotal = pMonthly ? Number(b.monthly_total_days ?? 0) : Number(b.total_days ?? 0);
+          const pUsed = pMonthly ? Number(b.monthly_used_days ?? 0) : Number(b.used_days ?? 0);
+          return { id: b.id, ps, pe, pMonthly, pTotal, pUsed, remaining: pTotal - pUsed, list: plist };
+        });
+
       return {
         profile: p, role, list, isMonthlyMode,
         total, used, mTotal, mUsed, fiscalStart, fiscalEnd,
         nextGrant: bal?.next_grant_date as string | undefined,
         baseTotal, baseUsed, remaining, projected,
         approvedAnnual, approvedMonthly, pendingDays, summerDays, usageRate,
+        priorPeriods,
       };
     });
-  }, [balances, profiles, userRoles, reqByUser, year]);
+  }, [balances, allBalances, profiles, userRoles, reqByUser, year]);
+
 
 
   const totals = useMemo(() => rows.reduce((acc, r) => ({
@@ -757,6 +782,50 @@ function TeamLeaveTable({
                     </div>
                   ))}
                 </div>
+
+                {/* 이전 회계연도 이력 */}
+                {r.priorPeriods.length > 0 && (
+                  <details className="border-t bg-muted/20">
+                    <summary className="cursor-pointer px-4 py-2 text-[11px] text-muted-foreground">
+                      이전 회계연도 이력 {r.priorPeriods.length}건 보기
+                    </summary>
+                    <div className="px-3 pb-3 space-y-2">
+                      {r.priorPeriods.map(pp => (
+                        <div key={pp.id} className="rounded-md border bg-background p-2 space-y-1">
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px]">
+                            <Badge variant="outline" className="text-[9px] px-1 py-0">
+                              {pp.pMonthly ? '월차 기준(1년 미만)' : '연차 기준'}
+                            </Badge>
+                            <span className="font-medium">{pp.ps} ~ {pp.pe}</span>
+                            <span className="text-muted-foreground">적립 <b className="text-foreground">{fmt(pp.pTotal)}일</b></span>
+                            <span className="text-muted-foreground">사용 <b className="text-foreground">{fmt(pp.pUsed)}일</b></span>
+                            <span className="text-muted-foreground">잔여 <b className="text-primary">{fmt(pp.remaining)}일</b></span>
+                          </div>
+                          <div className="space-y-1">
+                            {pp.list.length === 0 ? (
+                              <p className="text-[11px] text-muted-foreground">신청내역 없음</p>
+                            ) : pp.list.map(req => (
+                              <div key={req.id} className="flex flex-wrap items-center gap-2 text-[11px]">
+                                <Badge variant="outline" className={LEAVE_TYPE_COLOR[req.leave_type] ?? ''}>
+                                  {req.leave_type === 'monthly' ? '월차' : (LEAVE_TYPE_LABEL[req.leave_type] ?? req.leave_type)}
+                                </Badge>
+                                <span className="font-medium">
+                                  {req.start_date}{req.end_date !== req.start_date ? ` ~ ${req.end_date}` : ''}
+                                </span>
+                                {req.half_day_period && (
+                                  <span className="text-muted-foreground">{req.half_day_period === 'am' ? '오전' : '오후'}</span>
+                                )}
+                                <span className="text-muted-foreground">{fmt(Number(req.days || 0))}일</span>
+                                <Badge variant="outline" className={STATUS_STYLE[req.status] ?? ''}>{STATUS_LABEL[req.status] ?? req.status}</Badge>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
+                )}
+
               </div>
             );
           })}
