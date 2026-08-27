@@ -59,6 +59,8 @@ export default function Attendance() {
 
   const [requests, setRequests] = useState<any[]>([]);
   const [balances, setBalances] = useState<any[]>([]);
+  const [allBalances, setAllBalances] = useState<any[]>([]);
+
   const [profiles, setProfiles] = useState<any[]>([]);
   const [userRoles, setUserRoles] = useState<any[]>([]);
   const [showRequest, setShowRequest] = useState(false);
