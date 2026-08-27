@@ -698,8 +698,12 @@ function TeamLeaveTable({
                         {r.profile.id === myProfileId && <Badge variant="outline" className="text-[9px] px-1 py-0">나</Badge>}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        {r.role ? (ROLE_LABEL[r.role] ?? r.role) : ''} · 입사 {r.profile.hire_date ?? '-'}{r.isMonthlyMode ? ' · 월차 기준' : ''}
+                        {r.role ? (ROLE_LABEL[r.role] ?? r.role) : ''} · 입사 {r.profile.hire_date ?? '-'}{r.isMonthlyMode ? ' · 월차 기준(1년 미만)' : ' · 연차 15일'}
                       </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        회계연도 {r.fiscalStart} ~ {r.fiscalEnd}{r.nextGrant ? ` · 다음 적립 ${r.nextGrant}` : ''}
+                      </div>
+
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-center shrink-0">
