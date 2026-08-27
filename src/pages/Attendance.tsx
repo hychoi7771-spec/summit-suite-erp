@@ -21,8 +21,6 @@ import {
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { LeaveRequestDialog } from '@/components/attendance/LeaveRequestDialog';
-import { MyLeaveTimeline } from '@/components/attendance/MyLeaveTimeline';
-import LeaveBalanceOverview from '@/components/attendance/LeaveBalanceOverview';
 import { isNonWorkingDay, isWeekend, getHolidayName } from '@/lib/holidays';
 
 const LEAVE_TYPE_LABEL: Record<string, string> = {
@@ -329,22 +327,10 @@ export default function Attendance() {
       <Tabs defaultValue="calendar">
         <TabsList className="w-full sm:w-auto overflow-x-auto justify-start">
           <TabsTrigger value="calendar" className="shrink-0">월별 캘린더</TabsTrigger>
-          <TabsTrigger value="mine" className="shrink-0">내 연차 확인</TabsTrigger>
-          <TabsTrigger value="balances" className="shrink-0">My 연차</TabsTrigger>
           <TabsTrigger value="my" className="shrink-0">내 신청 내역</TabsTrigger>
           <TabsTrigger value="all" className="shrink-0">전체 신청</TabsTrigger>
           <TabsTrigger value="summer" className="shrink-0">🏖️ 여름휴가 현황</TabsTrigger>
         </TabsList>
-
-        {/* 내 연차 셀프 확인 */}
-        <TabsContent value="mine" className="space-y-4 mt-4">
-          <MyLeaveTimeline
-            year={year}
-            myName={profile?.name_kr || profile?.name || '나'}
-            balance={profile ? balanceFor(profile.id) ?? null : null}
-            myRequests={requests.filter(r => r.user_id === profile?.id)}
-          />
-        </TabsContent>
 
         {/* 월별 캘린더 */}
         <TabsContent value="calendar" className="space-y-4 mt-4">
@@ -415,192 +401,6 @@ export default function Attendance() {
                   );
                 })}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* 연차 잔여 */}
-        <TabsContent value="balances" className="space-y-4 mt-4">
-          <LeaveBalanceOverview year={year} profiles={profiles} balanceFor={balanceFor} />
-          <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0">
-              <div className="flex items-center gap-2">
-                <CardTitle className="text-base">{year}년 휴가 대시보드</CardTitle>
-                {recalculating && (
-                  <Badge variant="outline" className="gap-1.5 bg-primary/10 text-primary border-primary/30">
-                    <Loader2 className="h-3 w-3 animate-spin" />
-                    재계산 중…
-                  </Badge>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                {isBalanceAdmin && (
-                  <Button size="sm" variant="outline" onClick={recalculateAll} disabled={recalculating}>
-                    {recalculating ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : null}
-                    자동 재계산
-                  </Button>
-                )}
-                <Button size="icon" variant="outline" onClick={() => setYear(y => y - 1)}><ChevronLeft className="h-4 w-4" /></Button>
-                <span className="text-sm font-medium w-16 text-center">{year}년</span>
-                <Button size="icon" variant="outline" onClick={() => setYear(y => y + 1)}><ChevronRight className="h-4 w-4" /></Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead>멤버</TableHead>
-                    <TableHead className="text-center">입사일</TableHead>
-                    <TableHead className="text-right">연차 적립</TableHead>
-                    <TableHead className="text-right">월차 적립</TableHead>
-                    <TableHead className="text-right">사용</TableHead>
-                    <TableHead className="text-right">남은 휴가</TableHead>
-                    <TableHead className="text-center">다음 적립일</TableHead>
-                  </TableRow>
-                </TableHeader>
-                 <TableBody>
-                  {profiles.map(p => {
-                    const bal = balanceFor(p.id);
-                    const annual = Number(bal?.total_days ?? 0);
-                    const monthly = Number(bal?.monthly_total_days ?? 0);
-                    // 사용일: 연차 사용 + 월차 사용 합산
-                    const usedAnnual = Number(bal?.used_days ?? 0);
-                    const usedMonthly = Number(bal?.monthly_used_days ?? 0);
-                    const used = usedAnnual + usedMonthly;
-                    const total = annual + monthly;
-                    const remaining = total - used;
-                    return (
-                      <TableRow key={p.id}>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Avatar className="h-7 w-7"><AvatarFallback className="text-[10px]">{p.avatar}</AvatarFallback></Avatar>
-                            <span className="font-medium">{p.name_kr}</span>
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-center text-xs">
-                          {isBalanceAdmin ? (
-                            <Input
-                              type="date"
-                              defaultValue={p.hire_date || ''}
-                              className="w-36 h-8 text-xs mx-auto"
-                              onBlur={e => {
-                                if (e.target.value !== (p.hire_date || '')) updateHireDate(p.id, e.target.value);
-                              }}
-                            />
-                          ) : (p.hire_date ? format(parseISO(p.hire_date), 'yyyy.MM.dd') : '-')}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {isBalanceAdmin ? (
-                            <Input
-                              type="number" step="0.5" defaultValue={annual}
-                              className="w-20 h-8 text-right ml-auto"
-                              onBlur={e => {
-                                const v = parseFloat(e.target.value);
-                                if (!isNaN(v) && v !== annual) updateBalance(p.id, v);
-                              }}
-                            />
-                          ) : `${annual}일`}
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">{monthly > 0 ? `${monthly}일` : '-'}</TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {isBalanceAdmin ? (
-                            <Input
-                              type="number" step="0.5" defaultValue={used}
-                              className="w-20 h-8 text-right ml-auto"
-                              onBlur={e => {
-                                const v = parseFloat(e.target.value);
-                                if (!isNaN(v) && v !== used) updateUsedDays(p.id, v);
-                              }}
-                            />
-                          ) : `${used}일`}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <span className={`font-semibold ${remaining < 3 ? 'text-destructive' : 'text-foreground'}`}>{remaining}일</span>
-                        </TableCell>
-                        <TableCell className="text-center text-xs text-muted-foreground">
-                          {bal?.next_grant_date ? format(parseISO(bal.next_grant_date), 'yyyy.MM.dd') : '-'}
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
-                </TableBody>
-              </Table>
-              {isBalanceAdmin ? (
-                <p className="text-xs text-muted-foreground mt-3">
-                  💡 입사일/연차 적립/사용일 칸을 클릭해 수정. '자동 재계산'으로 입사일 기준 월차(1년 미만)/연차(1년 이상)를 일괄 갱신합니다.
-                </p>
-              ) : (
-                <p className="text-xs text-muted-foreground mt-3">
-                  🔒 연차 적립·사용일수는 확정된 값으로, 인사 관리자(총괄이사)만 수정할 수 있습니다.
-                </p>
-              )}
-
-            </CardContent>
-          </Card>
-
-          {/* 사용 일자 상세표 (이미지 형식) */}
-          <Card>
-            <CardHeader><CardTitle className="text-base">휴가 사용 내역 (전체 기간 누적)</CardTitle></CardHeader>
-            <CardContent className="overflow-x-auto">
-              <Table>
-                <TableHeader>
-                  <TableRow>
-                    <TableHead className="w-[120px]">성명</TableHead>
-                    <TableHead className="w-[80px]">구분</TableHead>
-                    <TableHead>사용 일자</TableHead>
-                    <TableHead className="text-right w-[80px]">합계</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {profiles.map(p => {
-                    const myReqs = requests.filter(r => r.user_id === p.id && r.status === 'approved');
-                    const sortByDate = (a: any, b: any) => a.start_date.localeCompare(b.start_date);
-                    const monthlyReqs = myReqs.filter(r => r.leave_type === 'monthly').sort(sortByDate);
-                    const annualReqs = myReqs.filter(r => r.leave_type === 'annual' || r.leave_type === 'sick').sort(sortByDate);
-                    const halfReqs = myReqs.filter(r => r.leave_type === 'half_day').sort(sortByDate);
-                    const monthlySum = monthlyReqs.reduce((s, r) => s + Number(r.days), 0);
-                    const annualSum = annualReqs.reduce((s, r) => s + Number(r.days), 0);
-                    const halfSum = halfReqs.reduce((s, r) => s + Number(r.days), 0);
-                    const hasMonthly = monthlySum > 0;
-                    const rowSpan = hasMonthly ? 3 : 2;
-                    return (
-                      <Fragment key={p.id}>
-                        {hasMonthly && (
-                          <TableRow>
-                            <TableCell rowSpan={rowSpan} className="font-medium align-middle">{p.name_kr}</TableCell>
-                            <TableCell className="text-xs">월차</TableCell>
-                            <TableCell className="text-xs">
-                              {monthlyReqs.map(r => format(parseISO(r.start_date), 'yyyy.MM.dd')).join(', ')}
-                            </TableCell>
-                            <TableCell className="text-right text-xs">{monthlySum}일</TableCell>
-                          </TableRow>
-                        )}
-                        <TableRow>
-                          {!hasMonthly && (
-                            <TableCell rowSpan={rowSpan} className="font-medium align-middle">{p.name_kr}</TableCell>
-                          )}
-                          <TableCell className="text-xs">연차</TableCell>
-                          <TableCell className="text-xs">
-                            {annualReqs.length > 0
-                              ? annualReqs.map(r => format(parseISO(r.start_date), 'yyyy.MM.dd')).join(', ')
-                              : <span className="text-muted-foreground">-</span>}
-                          </TableCell>
-                          <TableCell className="text-right text-xs">{annualSum > 0 ? `${annualSum}일` : '-'}</TableCell>
-                        </TableRow>
-                        <TableRow>
-                          <TableCell className="text-xs">반차</TableCell>
-                          <TableCell className="text-xs">
-                            {halfReqs.length > 0
-                              ? halfReqs.map(r => format(parseISO(r.start_date), 'yyyy.MM.dd')).join(', ')
-                              : <span className="text-muted-foreground">-</span>}
-                          </TableCell>
-                          <TableCell className="text-right text-xs">{halfSum > 0 ? `${halfSum}일` : '-'}</TableCell>
-                        </TableRow>
-                      </Fragment>
-                    );
-                  })}
-                </TableBody>
-              </Table>
             </CardContent>
           </Card>
         </TabsContent>
