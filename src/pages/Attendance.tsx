@@ -575,7 +575,7 @@ function TeamLeaveTable({
   onYearChange: (y: number) => void;
   myProfileId?: string;
 }) {
-  const [expanded, setExpanded] = useState<string | null>(null);
+  
 
   // 해당 연도 신청내역을 담당자별로 묶음 (내 신청 + 전체 신청 통합)
   const reqByUser = useMemo(() => {
@@ -667,119 +667,90 @@ function TeamLeaveTable({
         </div>
 
         <p className="text-xs text-muted-foreground">
-          담당자 행을 클릭하면 해당 연도의 신청내역(내 신청 · 전체 신청)이 펼쳐집니다. 잔여는 승인건 기준이며, 대기건은 “승인 시 잔여”로 별도 계산됩니다. 여름휴가는 연차에서 차감되지 않습니다.
+          잔여는 승인건 기준이며, 대기건은 “승인 시 잔여”로 별도 계산됩니다. 여름휴가는 연차에서 차감되지 않습니다.
         </p>
 
-        <div className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>담당자</TableHead>
-                <TableHead className="text-center">입사일</TableHead>
-                <TableHead className="text-center">적립</TableHead>
-                <TableHead className="text-center">사용</TableHead>
-                <TableHead className="text-center">잔여</TableHead>
-                <TableHead className="text-center">대기</TableHead>
-                <TableHead className="text-center">승인 시 잔여</TableHead>
-                <TableHead className="text-center">여름휴가</TableHead>
-                <TableHead className="text-center">신청</TableHead>
-                <TableHead className="w-[160px]">사용률</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {rows.map(r => {
-                const barColor = r.remaining <= 2
-                  ? 'bg-destructive'
-                  : r.usageRate >= 70
-                    ? 'bg-warning'
-                    : undefined;
-                const isOpen = expanded === r.profile.id;
-                return (
-                  <Fragment key={r.profile.id}>
-                    <TableRow
-                      className="cursor-pointer hover:bg-muted/40"
-                      onClick={() => setExpanded(isOpen ? null : r.profile.id)}
-                    >
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Avatar className="h-7 w-7"><AvatarFallback className="text-[10px]">{r.profile.avatar}</AvatarFallback></Avatar>
-                          <div>
-                            <div className="font-medium text-sm flex items-center gap-1">
-                              {r.profile.name_kr}
-                              {r.profile.id === myProfileId && <Badge variant="outline" className="text-[9px] px-1 py-0">나</Badge>}
-                            </div>
-                            <div className="text-[10px] text-muted-foreground">
-                              {r.role ? (ROLE_LABEL[r.role] ?? r.role) : ''}{r.isMonthlyMode ? ' · 월차 기준' : ''}
-                            </div>
-                          </div>
-                        </div>
-                      </TableCell>
-                      <TableCell className="text-center text-xs text-muted-foreground">{r.profile.hire_date ?? '-'}</TableCell>
-                      <TableCell className="text-center">{fmt(r.baseTotal)}일</TableCell>
-                      <TableCell className="text-center">{fmt(r.baseUsed)}일</TableCell>
-                      <TableCell className={`text-center font-semibold ${r.remaining <= 2 ? 'text-destructive' : 'text-primary'}`}>
-                        {fmt(r.remaining)}일
-                      </TableCell>
-                      <TableCell className="text-center text-xs">
-                        {r.pendingDays > 0
-                          ? <span className="text-warning font-medium">{fmt(r.pendingDays)}일</span>
-                          : <span className="text-muted-foreground">-</span>}
-                      </TableCell>
-                      <TableCell className={`text-center text-xs ${r.pendingDays > 0 ? 'font-semibold' : 'text-muted-foreground'}`}>
-                        {r.pendingDays > 0 ? `${fmt(r.projected)}일` : '-'}
-                      </TableCell>
-                      <TableCell className="text-center text-xs text-muted-foreground">
-                        {r.summerDays > 0 ? `${fmt(r.summerDays)}일` : '-'}
-                      </TableCell>
-                      <TableCell className="text-center text-xs text-muted-foreground">{r.list.length}건</TableCell>
-                      <TableCell>
-                        <div className="flex items-center gap-2">
-                          <Progress value={r.usageRate} className="h-2 flex-1" indicatorClassName={barColor} />
-                          <span className="text-xs text-muted-foreground w-9 text-right">{r.usageRate}%</span>
-                        </div>
-                      </TableCell>
-                    </TableRow>
+        {/* 담당자별 카드: 요약 + 신청내역 상시 표시 */}
+        <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+          {rows.map(r => {
+            const barColor = r.remaining <= 2
+              ? 'bg-destructive'
+              : r.usageRate >= 70
+                ? 'bg-warning'
+                : undefined;
+            return (
+              <div key={r.profile.id} className="rounded-lg border bg-card overflow-hidden">
+                {/* 헤더: 인물 + 요약 수치 */}
+                <div className="flex items-center justify-between gap-3 px-4 py-3 border-b bg-muted/30">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <Avatar className="h-8 w-8 shrink-0"><AvatarFallback className="text-[10px]">{r.profile.avatar}</AvatarFallback></Avatar>
+                    <div className="min-w-0">
+                      <div className="font-semibold text-sm flex items-center gap-1.5">
+                        {r.profile.name_kr}
+                        {r.profile.id === myProfileId && <Badge variant="outline" className="text-[9px] px-1 py-0">나</Badge>}
+                      </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        {r.role ? (ROLE_LABEL[r.role] ?? r.role) : ''} · 입사 {r.profile.hire_date ?? '-'}{r.isMonthlyMode ? ' · 월차 기준' : ''}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3 text-center shrink-0">
+                    <div>
+                      <div className="text-[10px] text-muted-foreground">적립</div>
+                      <div className="text-sm font-bold">{fmt(r.baseTotal)}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-muted-foreground">사용</div>
+                      <div className="text-sm font-bold">{fmt(r.baseUsed)}</div>
+                    </div>
+                    <div>
+                      <div className="text-[10px] text-muted-foreground">잔여</div>
+                      <div className={`text-sm font-bold ${r.remaining <= 2 ? 'text-destructive' : 'text-primary'}`}>{fmt(r.remaining)}</div>
+                    </div>
+                    <div className="w-16">
+                      <Progress value={r.usageRate} className="h-1.5" indicatorClassName={barColor} />
+                      <div className="text-[9px] text-muted-foreground mt-0.5">{r.usageRate}% 사용</div>
+                    </div>
+                  </div>
+                </div>
 
-                    {isOpen && (
-                      <TableRow className="bg-muted/20 hover:bg-muted/20">
-                        <TableCell colSpan={10} className="py-3">
-                          {r.list.length === 0 ? (
-                            <p className="text-sm text-muted-foreground text-center py-3">{year}년 신청내역이 없습니다.</p>
-                          ) : (
-                            <div className="space-y-1">
-                              {r.list.map(req => (
-                                <div key={req.id} className="flex flex-wrap items-center gap-2 rounded-md border bg-background px-3 py-2 text-xs">
-                                  <Badge variant="outline" className={LEAVE_TYPE_COLOR[req.leave_type] ?? ''}>
-                                    {req.leave_type === 'monthly' ? '월차' : (LEAVE_TYPE_LABEL[req.leave_type] ?? req.leave_type)}
-                                  </Badge>
-                                  <span className="font-medium">
-                                    {req.start_date}{req.end_date !== req.start_date ? ` ~ ${req.end_date}` : ''}
-                                  </span>
-                                  {req.half_day_period && (
-                                    <span className="text-muted-foreground">{req.half_day_period === 'am' ? '오전' : '오후'}</span>
-                                  )}
-                                  <span className="text-muted-foreground">{fmt(Number(req.days || 0))}일</span>
-                                  <Badge variant="outline" className={STATUS_STYLE[req.status] ?? ''}>{STATUS_LABEL[req.status] ?? req.status}</Badge>
-                                  {req.reason && <span className="text-muted-foreground truncate max-w-[240px]">· {req.reason}</span>}
-                                </div>
-                              ))}
-                              <div className="pt-2 text-xs text-muted-foreground">
-                                승인 합계 — 연차성 {fmt(r.approvedAnnual)}일 / 월차 {fmt(r.approvedMonthly)}일 / 여름휴가 {fmt(r.summerDays)}일
-                                {r.pendingDays > 0 && <> · 대기 {fmt(r.pendingDays)}일</>}
-                              </div>
-                            </div>
-                          )}
-                        </TableCell>
-                      </TableRow>
-                    )}
-                  </Fragment>
-                );
-              })}
-              {rows.length === 0 && (
-                <TableRow><TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">데이터가 없습니다.</TableCell></TableRow>
-              )}
-            </TableBody>
-          </Table>
+                {/* 합계 한 줄 */}
+                <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2 border-b text-[11px] text-muted-foreground">
+                  <span>연차성 <b className="text-foreground">{fmt(r.approvedAnnual)}일</b></span>
+                  <span>월차 <b className="text-foreground">{fmt(r.approvedMonthly)}일</b></span>
+                  <span>여름휴가 <b className="text-orange-600">{fmt(r.summerDays)}일</b></span>
+                  {r.pendingDays > 0 && (
+                    <span className="text-warning">대기 {fmt(r.pendingDays)}일 → 승인 시 잔여 <b>{fmt(r.projected)}일</b></span>
+                  )}
+                </div>
+
+                {/* 신청내역 */}
+                <div className="px-3 py-2 space-y-1 max-h-56 overflow-y-auto">
+                  {r.list.length === 0 ? (
+                    <p className="text-xs text-muted-foreground text-center py-3">{year}년 신청내역이 없습니다.</p>
+                  ) : r.list.map(req => (
+                    <div key={req.id} className="flex flex-wrap items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-xs">
+                      <Badge variant="outline" className={LEAVE_TYPE_COLOR[req.leave_type] ?? ''}>
+                        {req.leave_type === 'monthly' ? '월차' : (LEAVE_TYPE_LABEL[req.leave_type] ?? req.leave_type)}
+                      </Badge>
+                      <span className="font-medium">
+                        {req.start_date}{req.end_date !== req.start_date ? ` ~ ${req.end_date}` : ''}
+                      </span>
+                      {req.half_day_period && (
+                        <span className="text-muted-foreground">{req.half_day_period === 'am' ? '오전' : '오후'}</span>
+                      )}
+                      <span className="text-muted-foreground">{fmt(Number(req.days || 0))}일</span>
+                      <Badge variant="outline" className={STATUS_STYLE[req.status] ?? ''}>{STATUS_LABEL[req.status] ?? req.status}</Badge>
+                      {req.reason && <span className="text-muted-foreground truncate max-w-[220px]">· {req.reason}</span>}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            );
+          })}
+          {rows.length === 0 && (
+            <p className="col-span-full text-center text-sm text-muted-foreground py-8">데이터가 없습니다.</p>
+          )}
         </div>
       </CardContent>
     </Card>
