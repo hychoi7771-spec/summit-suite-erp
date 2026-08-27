@@ -575,7 +575,7 @@ function TeamLeaveTable({
   onYearChange: (y: number) => void;
   myProfileId?: string;
 }) {
-  const [expanded, setExpanded] = useState<string | null>(null);
+  
 
   // 해당 연도 신청내역을 담당자별로 묶음 (내 신청 + 전체 신청 통합)
   const reqByUser = useMemo(() => {
