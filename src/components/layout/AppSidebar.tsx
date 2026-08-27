@@ -12,7 +12,6 @@ import {
   ClipboardList,
   UserCog,
   Vote,
-  BookOpen,
   Globe,
   ChevronRight,
   FileText,
