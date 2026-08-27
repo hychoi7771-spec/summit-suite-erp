@@ -654,7 +654,12 @@ function TeamLeaveTable({
                 <div className="px-3 py-2 space-y-1">
                   {r.list.length === 0 ? (
                     <p className="text-xs text-muted-foreground text-center py-3">해당 회계연도 신청내역이 없습니다.</p>
-                  ) : r.list.map(req => (
+                  ) : r.list.map(req => {
+                    const canCancelOwn = onCancel && req.user_id === myProfileId && req.status === 'pending';
+                    const canAdminCancel = onCancel && isAdmin && (req.status === 'approved' || req.status === 'pending');
+                    const canCancel = canCancelOwn || canAdminCancel;
+                    const cancelLabel = req.status === 'approved' ? '승인 취소' : '취소';
+                    return (
                     <div key={req.id} className="flex flex-wrap items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-xs">
                       <Badge variant="outline" className={LEAVE_TYPE_COLOR[req.leave_type] ?? ''}>
                         {req.leave_type === 'monthly' ? '월차' : (LEAVE_TYPE_LABEL[req.leave_type] ?? req.leave_type)}
@@ -668,8 +673,40 @@ function TeamLeaveTable({
                       <span className="text-muted-foreground">{fmt(Number(req.days || 0))}일</span>
                       <Badge variant="outline" className={STATUS_STYLE[req.status] ?? ''}>{STATUS_LABEL[req.status] ?? req.status}</Badge>
                       {req.reason && <span className="text-muted-foreground truncate max-w-[160px] sm:max-w-[220px]">· {req.reason}</span>}
+                      <span className="ml-auto flex items-center gap-1">
+                        {canCancel && (
+                          <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => onCancel!(req.id)}>{cancelLabel}</Button>
+                        )}
+                        {isAdmin && onDelete && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>휴가 신청 삭제</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {r.profile.name_kr}님의 {LEAVE_TYPE_LABEL[req.leave_type] ?? req.leave_type} 신청({req.start_date}{req.start_date !== req.end_date && ` ~ ${req.end_date}`})을 삭제합니다. 연결된 결재 및 캘린더 일정도 함께 삭제되며, 되돌릴 수 없습니다.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>취소</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => onDelete(req)}
+                                >
+                                  삭제
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </span>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* 이전 회계연도 이력 */}
