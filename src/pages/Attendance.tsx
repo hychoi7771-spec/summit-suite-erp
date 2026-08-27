@@ -577,24 +577,30 @@ function TeamLeaveTable({
 }) {
   
 
-  // 해당 연도 신청내역을 담당자별로 묶음 (내 신청 + 전체 신청 통합)
+  // 신청내역을 담당자별로 묶음 (내 신청 + 전체 신청 통합)
   const reqByUser = useMemo(() => {
     const map = new Map<string, any[]>();
     requests.forEach(r => {
-      if (new Date(r.start_date).getFullYear() !== year) return;
       const arr = map.get(r.user_id) || [];
       arr.push(r);
       map.set(r.user_id, arr);
     });
     map.forEach(arr => arr.sort((a, b) => a.start_date.localeCompare(b.start_date)));
     return map;
-  }, [requests, year]);
+  }, [requests]);
 
   const rows = useMemo(() => {
     return profiles.map(p => {
       const bal = balances.find(b => b.user_id === p.id);
       const role = userRoles.find(r => r.user_id === p.user_id)?.role;
-      const list = reqByUser.get(p.id) || [];
+
+      // 회계연도(입사일 기준) 구간 — 없으면 달력연도로 대체
+      const fiscalStart: string = bal?.fiscal_start ?? `${year}-01-01`;
+      const fiscalEnd: string = bal?.fiscal_end ?? `${year + 1}-01-01`;
+
+      const list = (reqByUser.get(p.id) || []).filter(
+        r => r.start_date >= fiscalStart && r.start_date < fiscalEnd,
+      );
 
       const sum = (filter: (r: any) => boolean) =>
         list.filter(filter).reduce((s, r) => s + Number(r.days || 0), 0);
@@ -620,12 +626,14 @@ function TeamLeaveTable({
 
       return {
         profile: p, role, list, isMonthlyMode,
-        total, used, mTotal, mUsed,
+        total, used, mTotal, mUsed, fiscalStart, fiscalEnd,
+        nextGrant: bal?.next_grant_date as string | undefined,
         baseTotal, baseUsed, remaining, projected,
         approvedAnnual, approvedMonthly, pendingDays, summerDays, usageRate,
       };
     });
-  }, [balances, profiles, userRoles, reqByUser]);
+  }, [balances, profiles, userRoles, reqByUser, year]);
+
 
   const totals = useMemo(() => rows.reduce((acc, r) => ({
     total: acc.total + r.baseTotal,
