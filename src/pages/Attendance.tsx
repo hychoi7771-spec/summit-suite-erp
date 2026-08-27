@@ -331,18 +331,20 @@ export default function Attendance() {
       </div>
 
       <Tabs defaultValue="calendar">
-        <TabsList className="w-full sm:w-auto overflow-x-auto justify-start">
-          <TabsTrigger value="calendar" className="shrink-0">월별 캘린더</TabsTrigger>
-          <TabsTrigger value="my" className="shrink-0">내 신청 내역</TabsTrigger>
-          <TabsTrigger value="all" className="shrink-0">전체 신청</TabsTrigger>
-          <TabsTrigger value="team" className="shrink-0">담당별 현황</TabsTrigger>
-          <TabsTrigger value="summer" className="shrink-0">🏖️ 여름휴가 현황</TabsTrigger>
-        </TabsList>
+        <div className="-mx-1 overflow-x-auto px-1">
+          <TabsList className="w-max min-w-full justify-start">
+            <TabsTrigger value="calendar" className="shrink-0 text-xs sm:text-sm">월별 캘린더</TabsTrigger>
+            <TabsTrigger value="my" className="shrink-0 text-xs sm:text-sm">내 신청 내역</TabsTrigger>
+            <TabsTrigger value="all" className="shrink-0 text-xs sm:text-sm">전체 신청</TabsTrigger>
+            <TabsTrigger value="team" className="shrink-0 text-xs sm:text-sm">담당별 현황</TabsTrigger>
+            <TabsTrigger value="summer" className="shrink-0 text-xs sm:text-sm">🏖️ 여름휴가</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* 월별 캘린더 */}
         <TabsContent value="calendar" className="space-y-4 mt-4">
           <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardHeader className="flex-col items-start gap-2 space-y-0 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">{format(currentMonth, 'yyyy년 M월', { locale: ko })}</CardTitle>
               <div className="flex items-center gap-2">
                 <Button size="icon" variant="outline" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
@@ -354,12 +356,13 @@ export default function Attendance() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-2 sm:px-6">
+
               <div className="grid grid-cols-7 gap-px bg-border rounded-md overflow-hidden">
                 {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
                   <div
                     key={d}
-                    className={`bg-muted px-2 py-1.5 text-xs font-medium text-center ${
+                    className={`bg-muted px-1 py-1.5 text-[10px] sm:text-xs font-medium text-center ${
                       i === 0 ? 'text-destructive' : i === 6 ? 'text-blue-600 dark:text-blue-400' : 'text-muted-foreground'
                     }`}
                   >
@@ -381,7 +384,7 @@ export default function Attendance() {
                   return (
                     <div
                       key={day.toISOString()}
-                      className={`min-h-[90px] p-1.5 ${nonWorking ? 'bg-muted/40' : 'bg-background'} ${!inMonth ? 'opacity-40' : ''}`}
+                      className={`min-h-[64px] sm:min-h-[90px] p-1 sm:p-1.5 ${nonWorking ? 'bg-muted/40' : 'bg-background'} ${!inMonth ? 'opacity-40' : ''}`}
                     >
                       <div className="flex items-center gap-1 mb-1">
                         <div className={`text-xs font-medium ${isToday ? 'inline-flex items-center justify-center h-5 w-5 rounded-full bg-primary text-primary-foreground' : dayNumColor}`}>
@@ -504,7 +507,7 @@ function RequestList({
         const canCancel = canCancelOwn || canAdminCancel;
         const cancelLabel = r.status === 'approved' ? '승인 취소' : '취소';
         return (
-          <div key={r.id} className="flex items-center justify-between p-3 rounded-md border border-border hover:bg-muted/30 transition-colors">
+          <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-md border border-border hover:bg-muted/30 transition-colors">
             <div className="flex items-center gap-3 min-w-0">
               {showOwner && (
                 <Avatar className="h-8 w-8 shrink-0"><AvatarFallback className="text-[10px]">{p?.avatar}</AvatarFallback></Avatar>
@@ -525,7 +528,7 @@ function RequestList({
                 </div>
               </div>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
+            <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
               {canCancel && (
                 <Button size="sm" variant="ghost" onClick={() => onCancel!(r.id)}>{cancelLabel}</Button>
               )}
@@ -672,9 +675,9 @@ function TeamLeaveTable({
 
   return (
     <Card>
-      <CardHeader className="flex-row items-center justify-between space-y-0">
-        <CardTitle className="text-base flex items-center gap-2">
-          <Users className="h-4 w-4" />담당별 연차·월차 현황 · 입사일 기준 회계연도 ({year}년)
+      <CardHeader className="flex-col items-start gap-2 space-y-0 sm:flex-row sm:items-center sm:justify-between">
+        <CardTitle className="text-sm sm:text-base flex items-center gap-2">
+          <Users className="h-4 w-4 shrink-0" /><span>담당별 연차·월차 현황 · 입사일 기준 회계연도 ({year}년)</span>
         </CardTitle>
         <div className="flex items-center gap-2">
           <Button size="icon" variant="outline" onClick={() => onYearChange(year - 1)}><ChevronLeft className="h-4 w-4" /></Button>
@@ -682,9 +685,9 @@ function TeamLeaveTable({
           <Button size="icon" variant="outline" onClick={() => onYearChange(year + 1)}><ChevronRight className="h-4 w-4" /></Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 px-3 sm:px-6">
         {/* 전체 요약 */}
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3">
           {[
             { label: '총 적립', value: totals.total, cls: '' },
             { label: '총 사용', value: totals.used, cls: '' },
@@ -714,7 +717,7 @@ function TeamLeaveTable({
             return (
               <div key={r.profile.id} className="rounded-lg border bg-card overflow-hidden">
                 {/* 헤더: 인물 + 요약 수치 */}
-                <div className="flex items-center justify-between gap-3 px-4 py-3 border-b bg-muted/30">
+                <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-3 px-3 sm:px-4 py-3 border-b bg-muted/30">
                   <div className="flex items-center gap-2 min-w-0">
                     <Avatar className="h-8 w-8 shrink-0"><AvatarFallback className="text-[10px]">{r.profile.avatar}</AvatarFallback></Avatar>
                     <div className="min-w-0">
@@ -731,7 +734,7 @@ function TeamLeaveTable({
 
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 text-center shrink-0">
+                  <div className="flex items-center gap-3 text-center shrink-0 self-stretch sm:self-auto">
                     <div>
                       <div className="text-[10px] text-muted-foreground">적립</div>
                       <div className="text-sm font-bold">{fmt(r.baseTotal)}</div>
@@ -744,7 +747,7 @@ function TeamLeaveTable({
                       <div className="text-[10px] text-muted-foreground">잔여</div>
                       <div className={`text-sm font-bold ${r.remaining <= 2 ? 'text-destructive' : 'text-primary'}`}>{fmt(r.remaining)}</div>
                     </div>
-                    <div className="w-16">
+                    <div className="flex-1 sm:flex-none sm:w-16 min-w-[56px]">
                       <Progress value={r.usageRate} className="h-1.5" indicatorClassName={barColor} />
                       <div className="text-[9px] text-muted-foreground mt-0.5">{r.usageRate}% 사용</div>
                     </div>
@@ -778,7 +781,7 @@ function TeamLeaveTable({
                       )}
                       <span className="text-muted-foreground">{fmt(Number(req.days || 0))}일</span>
                       <Badge variant="outline" className={STATUS_STYLE[req.status] ?? ''}>{STATUS_LABEL[req.status] ?? req.status}</Badge>
-                      {req.reason && <span className="text-muted-foreground truncate max-w-[220px]">· {req.reason}</span>}
+                      {req.reason && <span className="text-muted-foreground truncate max-w-[160px] sm:max-w-[220px]">· {req.reason}</span>}
                     </div>
                   ))}
                 </div>
