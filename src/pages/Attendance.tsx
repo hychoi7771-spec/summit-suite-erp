@@ -21,6 +21,7 @@ import {
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { LeaveRequestDialog } from '@/components/attendance/LeaveRequestDialog';
+import { Progress } from '@/components/ui/progress';
 import { isNonWorkingDay, isWeekend, getHolidayName } from '@/lib/holidays';
 
 const LEAVE_TYPE_LABEL: Record<string, string> = {
@@ -329,6 +330,7 @@ export default function Attendance() {
           <TabsTrigger value="calendar" className="shrink-0">월별 캘린더</TabsTrigger>
           <TabsTrigger value="my" className="shrink-0">내 신청 내역</TabsTrigger>
           <TabsTrigger value="all" className="shrink-0">전체 신청</TabsTrigger>
+          <TabsTrigger value="team" className="shrink-0">담당별 현황</TabsTrigger>
           <TabsTrigger value="summer" className="shrink-0">🏖️ 여름휴가 현황</TabsTrigger>
         </TabsList>
 
