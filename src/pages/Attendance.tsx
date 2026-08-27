@@ -331,18 +331,20 @@ export default function Attendance() {
       </div>
 
       <Tabs defaultValue="calendar">
-        <TabsList className="w-full sm:w-auto overflow-x-auto justify-start">
-          <TabsTrigger value="calendar" className="shrink-0">월별 캘린더</TabsTrigger>
-          <TabsTrigger value="my" className="shrink-0">내 신청 내역</TabsTrigger>
-          <TabsTrigger value="all" className="shrink-0">전체 신청</TabsTrigger>
-          <TabsTrigger value="team" className="shrink-0">담당별 현황</TabsTrigger>
-          <TabsTrigger value="summer" className="shrink-0">🏖️ 여름휴가 현황</TabsTrigger>
-        </TabsList>
+        <div className="-mx-1 overflow-x-auto px-1">
+          <TabsList className="w-max min-w-full justify-start">
+            <TabsTrigger value="calendar" className="shrink-0 text-xs sm:text-sm">월별 캘린더</TabsTrigger>
+            <TabsTrigger value="my" className="shrink-0 text-xs sm:text-sm">내 신청 내역</TabsTrigger>
+            <TabsTrigger value="all" className="shrink-0 text-xs sm:text-sm">전체 신청</TabsTrigger>
+            <TabsTrigger value="team" className="shrink-0 text-xs sm:text-sm">담당별 현황</TabsTrigger>
+            <TabsTrigger value="summer" className="shrink-0 text-xs sm:text-sm">🏖️ 여름휴가</TabsTrigger>
+          </TabsList>
+        </div>
 
         {/* 월별 캘린더 */}
         <TabsContent value="calendar" className="space-y-4 mt-4">
           <Card>
-            <CardHeader className="flex-row items-center justify-between space-y-0">
+            <CardHeader className="flex-col items-start gap-2 space-y-0 sm:flex-row sm:items-center sm:justify-between">
               <CardTitle className="text-base">{format(currentMonth, 'yyyy년 M월', { locale: ko })}</CardTitle>
               <div className="flex items-center gap-2">
                 <Button size="icon" variant="outline" onClick={() => setCurrentMonth(subMonths(currentMonth, 1))}>
@@ -354,7 +356,8 @@ export default function Attendance() {
                 </Button>
               </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="px-2 sm:px-6">
+
               <div className="grid grid-cols-7 gap-px bg-border rounded-md overflow-hidden">
                 {['일', '월', '화', '수', '목', '금', '토'].map((d, i) => (
                   <div
