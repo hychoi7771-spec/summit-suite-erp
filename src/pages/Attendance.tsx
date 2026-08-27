@@ -81,9 +81,10 @@ export default function Attendance() {
   };
 
   const fetchData = async () => {
-    const [reqRes, balRes, profRes, roleRes] = await Promise.all([
+    const [reqRes, balRes, allBalRes, profRes, roleRes] = await Promise.all([
       supabase.from('leave_requests').select('*').order('start_date', { ascending: false }),
       supabase.from('leave_balances').select('*').eq('year', year),
+      supabase.from('leave_balances').select('*').order('year', { ascending: false }),
       supabase.from('profiles').select('id, user_id, name_kr, avatar, hire_date'),
       supabase.from('user_roles').select('user_id, role'),
     ]);
@@ -95,9 +96,11 @@ export default function Attendance() {
     });
     setRequests(reqRes.data || []);
     setBalances(balRes.data || []);
+    setAllBalances(allBalRes.data || []);
     setProfiles(sorted);
     setUserRoles(roles);
   };
+
 
   const recalculateAll = async () => {
     await withRecalc(async () => {
