@@ -572,9 +572,10 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 function TeamLeaveTable({
-  balances, profiles, userRoles, requests, year, onYearChange, myProfileId,
+  balances, allBalances = [], profiles, userRoles, requests, year, onYearChange, myProfileId,
 }: {
   balances: any[];
+  allBalances?: any[];
   profiles: any[];
   userRoles: any[];
   requests: any[];
@@ -582,6 +583,7 @@ function TeamLeaveTable({
   onYearChange: (y: number) => void;
   myProfileId?: string;
 }) {
+
   
 
   // 신청내역을 담당자별로 묶음 (내 신청 + 전체 신청 통합)
