@@ -445,7 +445,16 @@ export default function Attendance() {
 
         {/* 담당별 사용/잔여 현황표 */}
         <TabsContent value="team" className="space-y-4 mt-4">
-          <TeamLeaveTable balances={balances} profiles={profiles} userRoles={userRoles} year={year} onYearChange={setYear} />
+          <TeamLeaveTable
+            balances={balances}
+            profiles={profiles}
+            userRoles={userRoles}
+            requests={requests}
+            year={year}
+            onYearChange={setYear}
+            myProfileId={profile?.id}
+          />
+
         </TabsContent>
 
         {/* 🏖️ 여름휴가 현황 */}
@@ -556,37 +565,83 @@ const ROLE_LABEL: Record<string, string> = {
 };
 
 function TeamLeaveTable({
-  balances, profiles, userRoles, year, onYearChange,
+  balances, profiles, userRoles, requests, year, onYearChange, myProfileId,
 }: {
   balances: any[];
   profiles: any[];
   userRoles: any[];
+  requests: any[];
   year: number;
   onYearChange: (y: number) => void;
+  myProfileId?: string;
 }) {
+  const [expanded, setExpanded] = useState<string | null>(null);
+
+  // 해당 연도 신청내역을 담당자별로 묶음 (내 신청 + 전체 신청 통합)
+  const reqByUser = useMemo(() => {
+    const map = new Map<string, any[]>();
+    requests.forEach(r => {
+      if (new Date(r.start_date).getFullYear() !== year) return;
+      const arr = map.get(r.user_id) || [];
+      arr.push(r);
+      map.set(r.user_id, arr);
+    });
+    map.forEach(arr => arr.sort((a, b) => a.start_date.localeCompare(b.start_date)));
+    return map;
+  }, [requests, year]);
+
   const rows = useMemo(() => {
     return profiles.map(p => {
       const bal = balances.find(b => b.user_id === p.id);
       const role = userRoles.find(r => r.user_id === p.user_id)?.role;
+      const list = reqByUser.get(p.id) || [];
+
+      const sum = (filter: (r: any) => boolean) =>
+        list.filter(filter).reduce((s, r) => s + Number(r.days || 0), 0);
+
+      // 연차 차감 대상: 연차·반차·병가 / 월차는 별도 / 여름휴가는 차감 제외
+      const isAnnualKind = (r: any) => ['annual', 'half_day', 'sick', 'family_event', 'other'].includes(r.leave_type);
+      const approvedAnnual = sum(r => r.status === 'approved' && isAnnualKind(r));
+      const approvedMonthly = sum(r => r.status === 'approved' && r.leave_type === 'monthly');
+      const pendingDays = sum(r => r.status === 'pending' && r.leave_type !== 'summer');
+      const summerDays = sum(r => ['approved', 'pending'].includes(r.status) && r.leave_type === 'summer');
+
       const total = Number(bal?.total_days ?? 0);
-      const used = Number(bal?.used_days ?? 0);
-      const remaining = total - used;
       const mTotal = Number(bal?.monthly_total_days ?? 0);
+      const isMonthlyMode = mTotal > 0; // 입사 1년 미만 → 월차 기준
+      const used = isMonthlyMode ? 0 : Number(bal?.used_days ?? 0);
       const mUsed = Number(bal?.monthly_used_days ?? 0);
-      const usageRate = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
-      return { profile: p, role, total, used, remaining, mTotal, mUsed, mRemaining: mTotal - mUsed, usageRate };
+
+      const baseTotal = isMonthlyMode ? mTotal : total;
+      const baseUsed = isMonthlyMode ? mUsed : used;
+      const remaining = baseTotal - baseUsed;
+      const projected = remaining - pendingDays; // 대기건 승인 시 예상 잔여
+      const usageRate = baseTotal > 0 ? Math.min(100, Math.round((baseUsed / baseTotal) * 100)) : 0;
+
+      return {
+        profile: p, role, list, isMonthlyMode,
+        total, used, mTotal, mUsed,
+        baseTotal, baseUsed, remaining, projected,
+        approvedAnnual, approvedMonthly, pendingDays, summerDays, usageRate,
+      };
     });
-  }, [balances, profiles, userRoles]);
+  }, [balances, profiles, userRoles, reqByUser]);
 
   const totals = useMemo(() => rows.reduce((acc, r) => ({
-    total: acc.total + r.total, used: acc.used + r.used, remaining: acc.remaining + r.remaining,
-  }), { total: 0, used: 0, remaining: 0 }), [rows]);
+    total: acc.total + r.baseTotal,
+    used: acc.used + r.baseUsed,
+    remaining: acc.remaining + r.remaining,
+    pending: acc.pending + r.pendingDays,
+    summer: acc.summer + r.summerDays,
+  }), { total: 0, used: 0, remaining: 0, pending: 0, summer: 0 }), [rows]);
+
+  const fmt = (n: number) => (Math.round(n * 10) / 10).toString();
 
   return (
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base flex items-center gap-2">
-          <Users className="h-4 w-4" />{year}년 담당별 연차·월차 현황
+          <Users className="h-4 w-4" />{year}년 담당별 연차·월차 현황 (신청내역 통합)
         </CardTitle>
         <div className="flex items-center gap-2">
           <Button size="icon" variant="outline" onClick={() => onYearChange(year - 1)}><ChevronLeft className="h-4 w-4" /></Button>
@@ -596,20 +651,24 @@ function TeamLeaveTable({
       </CardHeader>
       <CardContent className="space-y-4">
         {/* 전체 요약 */}
-        <div className="grid grid-cols-3 gap-3">
-          <div className="rounded-lg border bg-muted/30 p-3 text-center">
-            <div className="text-xs text-muted-foreground">총 적립</div>
-            <div className="text-xl font-bold">{totals.total}일</div>
-          </div>
-          <div className="rounded-lg border bg-muted/30 p-3 text-center">
-            <div className="text-xs text-muted-foreground">총 사용</div>
-            <div className="text-xl font-bold">{totals.used}일</div>
-          </div>
-          <div className="rounded-lg border bg-muted/30 p-3 text-center">
-            <div className="text-xs text-muted-foreground">총 잔여</div>
-            <div className="text-xl font-bold text-primary">{totals.remaining}일</div>
-          </div>
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          {[
+            { label: '총 적립', value: totals.total, cls: '' },
+            { label: '총 사용', value: totals.used, cls: '' },
+            { label: '총 잔여', value: totals.remaining, cls: 'text-primary' },
+            { label: '승인 대기', value: totals.pending, cls: 'text-warning' },
+            { label: '여름휴가', value: totals.summer, cls: 'text-orange-600' },
+          ].map(k => (
+            <div key={k.label} className="rounded-lg border bg-muted/30 p-3 text-center">
+              <div className="text-xs text-muted-foreground">{k.label}</div>
+              <div className={`text-xl font-bold ${k.cls}`}>{fmt(k.value)}일</div>
+            </div>
+          ))}
         </div>
+
+        <p className="text-xs text-muted-foreground">
+          담당자 행을 클릭하면 해당 연도의 신청내역(내 신청 · 전체 신청)이 펼쳐집니다. 잔여는 승인건 기준이며, 대기건은 “승인 시 잔여”로 별도 계산됩니다. 여름휴가는 연차에서 차감되지 않습니다.
+        </p>
 
         <div className="overflow-x-auto">
           <Table>
@@ -617,11 +676,14 @@ function TeamLeaveTable({
               <TableRow>
                 <TableHead>담당자</TableHead>
                 <TableHead className="text-center">입사일</TableHead>
-                <TableHead className="text-center">연차 적립</TableHead>
+                <TableHead className="text-center">적립</TableHead>
                 <TableHead className="text-center">사용</TableHead>
                 <TableHead className="text-center">잔여</TableHead>
-                <TableHead className="text-center">월차 (사용/적립)</TableHead>
-                <TableHead className="w-[180px]">사용률</TableHead>
+                <TableHead className="text-center">대기</TableHead>
+                <TableHead className="text-center">승인 시 잔여</TableHead>
+                <TableHead className="text-center">여름휴가</TableHead>
+                <TableHead className="text-center">신청</TableHead>
+                <TableHead className="w-[160px]">사용률</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -631,37 +693,90 @@ function TeamLeaveTable({
                   : r.usageRate >= 70
                     ? 'bg-warning'
                     : undefined;
+                const isOpen = expanded === r.profile.id;
                 return (
-                  <TableRow key={r.profile.id}>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Avatar className="h-7 w-7"><AvatarFallback className="text-[10px]">{r.profile.avatar}</AvatarFallback></Avatar>
-                        <div>
-                          <div className="font-medium text-sm">{r.profile.name_kr}</div>
-                          {r.role && <div className="text-[10px] text-muted-foreground">{ROLE_LABEL[r.role] ?? r.role}</div>}
+                  <Fragment key={r.profile.id}>
+                    <TableRow
+                      className="cursor-pointer hover:bg-muted/40"
+                      onClick={() => setExpanded(isOpen ? null : r.profile.id)}
+                    >
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Avatar className="h-7 w-7"><AvatarFallback className="text-[10px]">{r.profile.avatar}</AvatarFallback></Avatar>
+                          <div>
+                            <div className="font-medium text-sm flex items-center gap-1">
+                              {r.profile.name_kr}
+                              {r.profile.id === myProfileId && <Badge variant="outline" className="text-[9px] px-1 py-0">나</Badge>}
+                            </div>
+                            <div className="text-[10px] text-muted-foreground">
+                              {r.role ? (ROLE_LABEL[r.role] ?? r.role) : ''}{r.isMonthlyMode ? ' · 월차 기준' : ''}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground">{r.profile.hire_date ?? '-'}</TableCell>
-                    <TableCell className="text-center">{r.total}일</TableCell>
-                    <TableCell className="text-center">{r.used}일</TableCell>
-                    <TableCell className={`text-center font-semibold ${r.remaining <= 2 ? 'text-destructive' : 'text-primary'}`}>
-                      {r.remaining}일
-                    </TableCell>
-                    <TableCell className="text-center text-xs text-muted-foreground">
-                      {r.mTotal > 0 ? `${r.mUsed} / ${r.mTotal}일` : '-'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <Progress value={r.usageRate} className="h-2 flex-1" indicatorClassName={barColor} />
-                        <span className="text-xs text-muted-foreground w-9 text-right">{r.usageRate}%</span>
-                      </div>
-                    </TableCell>
-                  </TableRow>
+                      </TableCell>
+                      <TableCell className="text-center text-xs text-muted-foreground">{r.profile.hire_date ?? '-'}</TableCell>
+                      <TableCell className="text-center">{fmt(r.baseTotal)}일</TableCell>
+                      <TableCell className="text-center">{fmt(r.baseUsed)}일</TableCell>
+                      <TableCell className={`text-center font-semibold ${r.remaining <= 2 ? 'text-destructive' : 'text-primary'}`}>
+                        {fmt(r.remaining)}일
+                      </TableCell>
+                      <TableCell className="text-center text-xs">
+                        {r.pendingDays > 0
+                          ? <span className="text-warning font-medium">{fmt(r.pendingDays)}일</span>
+                          : <span className="text-muted-foreground">-</span>}
+                      </TableCell>
+                      <TableCell className={`text-center text-xs ${r.pendingDays > 0 ? 'font-semibold' : 'text-muted-foreground'}`}>
+                        {r.pendingDays > 0 ? `${fmt(r.projected)}일` : '-'}
+                      </TableCell>
+                      <TableCell className="text-center text-xs text-muted-foreground">
+                        {r.summerDays > 0 ? `${fmt(r.summerDays)}일` : '-'}
+                      </TableCell>
+                      <TableCell className="text-center text-xs text-muted-foreground">{r.list.length}건</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <Progress value={r.usageRate} className="h-2 flex-1" indicatorClassName={barColor} />
+                          <span className="text-xs text-muted-foreground w-9 text-right">{r.usageRate}%</span>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+
+                    {isOpen && (
+                      <TableRow className="bg-muted/20 hover:bg-muted/20">
+                        <TableCell colSpan={10} className="py-3">
+                          {r.list.length === 0 ? (
+                            <p className="text-sm text-muted-foreground text-center py-3">{year}년 신청내역이 없습니다.</p>
+                          ) : (
+                            <div className="space-y-1">
+                              {r.list.map(req => (
+                                <div key={req.id} className="flex flex-wrap items-center gap-2 rounded-md border bg-background px-3 py-2 text-xs">
+                                  <Badge variant="outline" className={LEAVE_TYPE_COLOR[req.leave_type] ?? ''}>
+                                    {req.leave_type === 'monthly' ? '월차' : (LEAVE_TYPE_LABEL[req.leave_type] ?? req.leave_type)}
+                                  </Badge>
+                                  <span className="font-medium">
+                                    {req.start_date}{req.end_date !== req.start_date ? ` ~ ${req.end_date}` : ''}
+                                  </span>
+                                  {req.half_day_period && (
+                                    <span className="text-muted-foreground">{req.half_day_period === 'am' ? '오전' : '오후'}</span>
+                                  )}
+                                  <span className="text-muted-foreground">{fmt(Number(req.days || 0))}일</span>
+                                  <Badge variant="outline" className={STATUS_STYLE[req.status] ?? ''}>{STATUS_LABEL[req.status] ?? req.status}</Badge>
+                                  {req.reason && <span className="text-muted-foreground truncate max-w-[240px]">· {req.reason}</span>}
+                                </div>
+                              ))}
+                              <div className="pt-2 text-xs text-muted-foreground">
+                                승인 합계 — 연차성 {fmt(r.approvedAnnual)}일 / 월차 {fmt(r.approvedMonthly)}일 / 여름휴가 {fmt(r.summerDays)}일
+                                {r.pendingDays > 0 && <> · 대기 {fmt(r.pendingDays)}일</>}
+                              </div>
+                            </div>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
                 );
               })}
               {rows.length === 0 && (
-                <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">데이터가 없습니다.</TableCell></TableRow>
+                <TableRow><TableCell colSpan={10} className="text-center text-sm text-muted-foreground py-8">데이터가 없습니다.</TableCell></TableRow>
               )}
             </TableBody>
           </Table>
@@ -670,6 +785,7 @@ function TeamLeaveTable({
     </Card>
   );
 }
+
 
 // ─────────────────────────────────────────────────────────────────────
 // 🏖️ 여름휴가 현황 (담당자별 일정 모니터링)
