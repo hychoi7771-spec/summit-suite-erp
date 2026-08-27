@@ -420,6 +420,7 @@ export default function Attendance() {
 
         {/* 연차 잔여 */}
         <TabsContent value="balances" className="space-y-4 mt-4">
+          <LeaveBalanceOverview year={year} profiles={profiles} balanceFor={balanceFor} />
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <div className="flex items-center gap-2">
