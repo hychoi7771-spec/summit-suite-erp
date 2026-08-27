@@ -334,8 +334,6 @@ export default function Attendance() {
         <div className="-mx-1 overflow-x-auto px-1">
           <TabsList className="w-max min-w-full justify-start">
             <TabsTrigger value="calendar" className="shrink-0 text-xs sm:text-sm">월별 캘린더</TabsTrigger>
-            <TabsTrigger value="my" className="shrink-0 text-xs sm:text-sm">내 신청 내역</TabsTrigger>
-            <TabsTrigger value="all" className="shrink-0 text-xs sm:text-sm">전체 신청</TabsTrigger>
             <TabsTrigger value="team" className="shrink-0 text-xs sm:text-sm">담당별 현황</TabsTrigger>
             <TabsTrigger value="summer" className="shrink-0 text-xs sm:text-sm">🏖️ 여름휴가</TabsTrigger>
           </TabsList>
@@ -411,42 +409,6 @@ export default function Attendance() {
                   );
                 })}
               </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* 내 신청 내역 */}
-        <TabsContent value="my" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base">내 휴가 신청 내역</CardTitle></CardHeader>
-            <CardContent>
-              <RequestList
-                requests={myRequests}
-                profiles={profiles}
-                showOwner={false}
-                onCancel={cancelMyRequest}
-                onDelete={isAdmin ? deleteRequest : undefined}
-                isAdmin={isAdmin}
-                myProfileId={profile?.id}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* 전체 신청 */}
-        <TabsContent value="all" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base">전체 휴가 신청</CardTitle></CardHeader>
-            <CardContent>
-              <RequestList
-                requests={requests}
-                profiles={profiles}
-                showOwner
-                onCancel={isAdmin ? cancelMyRequest : undefined}
-                onDelete={isAdmin ? deleteRequest : undefined}
-                isAdmin={isAdmin}
-                myProfileId={profile?.id}
-              />
             </CardContent>
           </Card>
         </TabsContent>
