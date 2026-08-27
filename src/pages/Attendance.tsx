@@ -425,6 +425,9 @@ export default function Attendance() {
             year={year}
             onYearChange={setYear}
             myProfileId={profile?.id}
+            isAdmin={isAdmin}
+            onCancel={cancelMyRequest}
+            onDelete={isAdmin ? deleteRequest : undefined}
           />
 
         </TabsContent>
