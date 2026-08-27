@@ -22,6 +22,7 @@ import {
 import { ko } from 'date-fns/locale';
 import { LeaveRequestDialog } from '@/components/attendance/LeaveRequestDialog';
 import { MyLeaveTimeline } from '@/components/attendance/MyLeaveTimeline';
+import LeaveBalanceOverview from '@/components/attendance/LeaveBalanceOverview';
 import { isNonWorkingDay, isWeekend, getHolidayName } from '@/lib/holidays';
 
 const LEAVE_TYPE_LABEL: Record<string, string> = {
@@ -420,6 +421,7 @@ export default function Attendance() {
 
         {/* 연차 잔여 */}
         <TabsContent value="balances" className="space-y-4 mt-4">
+          <LeaveBalanceOverview year={year} profiles={profiles} balanceFor={balanceFor} />
           <Card>
             <CardHeader className="flex-row items-center justify-between space-y-0">
               <div className="flex items-center gap-2">
