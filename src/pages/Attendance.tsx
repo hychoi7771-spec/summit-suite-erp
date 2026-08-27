@@ -972,11 +972,24 @@ function SummerLeaveOverview({
           {allReqs.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">{year}년 여름휴가 신청 내역이 없습니다.</p>
           ) : (
-            <RequestList
-              requests={allReqs.slice().sort((a, b) => a.start_date.localeCompare(b.start_date))}
-              profiles={profiles}
-              showOwner
-            />
+            <div className="space-y-2">
+              {allReqs.slice().sort((a, b) => a.start_date.localeCompare(b.start_date)).map(r => {
+                const p = profiles.find(pp => pp.id === r.user_id);
+                return (
+                  <div key={r.id} className="flex flex-wrap items-center gap-2 rounded-md border bg-background px-3 py-2 text-xs">
+                    <Avatar className="h-6 w-6 shrink-0"><AvatarFallback className="text-[9px]">{p?.avatar}</AvatarFallback></Avatar>
+                    <span className="font-medium">{p?.name_kr}</span>
+                    <Badge variant="outline" className={LEAVE_TYPE_COLOR[r.leave_type] ?? ''}>
+                      {LEAVE_TYPE_LABEL[r.leave_type] ?? r.leave_type}
+                    </Badge>
+                    <span>{r.start_date}{r.end_date !== r.start_date ? ` ~ ${r.end_date}` : ''}</span>
+                    <span className="text-muted-foreground">{Number(r.days || 0)}일</span>
+                    <Badge variant="outline" className={STATUS_STYLE[r.status] ?? ''}>{STATUS_LABEL[r.status] ?? r.status}</Badge>
+                    {r.reason && <span className="text-muted-foreground truncate max-w-[200px]">· {r.reason}</span>}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </CardContent>
       </Card>
