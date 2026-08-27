@@ -254,7 +254,7 @@ export default function Attendance() {
     fetchData();
   };
 
-  const myRequests = requests.filter(r => r.user_id === profile?.id);
+  
   const pendingCount = requests.filter(r => r.status === 'pending').length;
 
   return (
@@ -334,8 +334,6 @@ export default function Attendance() {
         <div className="-mx-1 overflow-x-auto px-1">
           <TabsList className="w-max min-w-full justify-start">
             <TabsTrigger value="calendar" className="shrink-0 text-xs sm:text-sm">월별 캘린더</TabsTrigger>
-            <TabsTrigger value="my" className="shrink-0 text-xs sm:text-sm">내 신청 내역</TabsTrigger>
-            <TabsTrigger value="all" className="shrink-0 text-xs sm:text-sm">전체 신청</TabsTrigger>
             <TabsTrigger value="team" className="shrink-0 text-xs sm:text-sm">담당별 현황</TabsTrigger>
             <TabsTrigger value="summer" className="shrink-0 text-xs sm:text-sm">🏖️ 여름휴가</TabsTrigger>
           </TabsList>
@@ -415,42 +413,6 @@ export default function Attendance() {
           </Card>
         </TabsContent>
 
-        {/* 내 신청 내역 */}
-        <TabsContent value="my" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base">내 휴가 신청 내역</CardTitle></CardHeader>
-            <CardContent>
-              <RequestList
-                requests={myRequests}
-                profiles={profiles}
-                showOwner={false}
-                onCancel={cancelMyRequest}
-                onDelete={isAdmin ? deleteRequest : undefined}
-                isAdmin={isAdmin}
-                myProfileId={profile?.id}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        {/* 전체 신청 */}
-        <TabsContent value="all" className="space-y-4 mt-4">
-          <Card>
-            <CardHeader><CardTitle className="text-base">전체 휴가 신청</CardTitle></CardHeader>
-            <CardContent>
-              <RequestList
-                requests={requests}
-                profiles={profiles}
-                showOwner
-                onCancel={isAdmin ? cancelMyRequest : undefined}
-                onDelete={isAdmin ? deleteRequest : undefined}
-                isAdmin={isAdmin}
-                myProfileId={profile?.id}
-              />
-            </CardContent>
-          </Card>
-        </TabsContent>
-
         {/* 담당별 사용/잔여 현황표 */}
         <TabsContent value="team" className="space-y-4 mt-4">
           <TeamLeaveTable
@@ -463,6 +425,9 @@ export default function Attendance() {
             year={year}
             onYearChange={setYear}
             myProfileId={profile?.id}
+            isAdmin={isAdmin}
+            onCancel={cancelMyRequest}
+            onDelete={isAdmin ? deleteRequest : undefined}
           />
 
         </TabsContent>
@@ -483,89 +448,6 @@ export default function Attendance() {
   );
 }
 
-function RequestList({
-  requests, profiles, showOwner, onCancel, onDelete, isAdmin, myProfileId,
-}: {
-  requests: any[];
-  profiles: any[];
-  showOwner: boolean;
-  onCancel?: (id: string) => void;
-  onDelete?: (req: any) => void;
-  isAdmin?: boolean;
-  myProfileId?: string;
-}) {
-  const getProfile = (id: string) => profiles.find(p => p.id === id);
-  if (requests.length === 0) {
-    return <p className="text-sm text-muted-foreground text-center py-8">신청 내역이 없습니다.</p>;
-  }
-  return (
-    <div className="space-y-2">
-      {requests.map(r => {
-        const p = getProfile(r.user_id);
-        const canCancelOwn = onCancel && r.user_id === myProfileId && r.status === 'pending';
-        const canAdminCancel = onCancel && isAdmin && (r.status === 'approved' || r.status === 'pending');
-        const canCancel = canCancelOwn || canAdminCancel;
-        const cancelLabel = r.status === 'approved' ? '승인 취소' : '취소';
-        return (
-          <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-md border border-border hover:bg-muted/30 transition-colors">
-            <div className="flex items-center gap-3 min-w-0">
-              {showOwner && (
-                <Avatar className="h-8 w-8 shrink-0"><AvatarFallback className="text-[10px]">{p?.avatar}</AvatarFallback></Avatar>
-              )}
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {showOwner && <span className="font-medium text-sm">{p?.name_kr}</span>}
-                  <Badge variant="outline" className={`${LEAVE_TYPE_COLOR[r.leave_type]} text-xs`}>
-                    {LEAVE_TYPE_LABEL[r.leave_type]}
-                  </Badge>
-                  <Badge variant="outline" className={`${STATUS_STYLE[r.status]} text-xs`}>
-                    {STATUS_LABEL[r.status]}
-                  </Badge>
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {r.start_date}{r.start_date !== r.end_date && ` ~ ${r.end_date}`} · {Number(r.days)}일
-                  {r.reason && ` · ${r.reason}`}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
-              {canCancel && (
-                <Button size="sm" variant="ghost" onClick={() => onCancel!(r.id)}>{cancelLabel}</Button>
-              )}
-              {isAdmin && onDelete && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>휴가 신청 삭제</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {p?.name_kr}님의 {LEAVE_TYPE_LABEL[r.leave_type]} 신청({r.start_date}{r.start_date !== r.end_date && ` ~ ${r.end_date}`})을 삭제합니다. 연결된 결재 및 캘린더 일정도 함께 삭제되며, 되돌릴 수 없습니다.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>취소</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        onClick={() => onDelete(r)}
-                      >
-                        삭제
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
-
 // ─────────────────────────────────────────────────────────────────────
 // 📊 담당별 연차/월차 사용·잔여 현황표
 // ─────────────────────────────────────────────────────────────────────
@@ -576,6 +458,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 function TeamLeaveTable({
   balances, allBalances = [], profiles, userRoles, requests, year, onYearChange, myProfileId,
+  isAdmin, onCancel, onDelete,
 }: {
   balances: any[];
   allBalances?: any[];
@@ -585,6 +468,9 @@ function TeamLeaveTable({
   year: number;
   onYearChange: (y: number) => void;
   myProfileId?: string;
+  isAdmin?: boolean;
+  onCancel?: (id: string) => void;
+  onDelete?: (req: any) => void;
 }) {
 
   
@@ -768,7 +654,12 @@ function TeamLeaveTable({
                 <div className="px-3 py-2 space-y-1">
                   {r.list.length === 0 ? (
                     <p className="text-xs text-muted-foreground text-center py-3">해당 회계연도 신청내역이 없습니다.</p>
-                  ) : r.list.map(req => (
+                  ) : r.list.map(req => {
+                    const canCancelOwn = onCancel && req.user_id === myProfileId && req.status === 'pending';
+                    const canAdminCancel = onCancel && isAdmin && (req.status === 'approved' || req.status === 'pending');
+                    const canCancel = canCancelOwn || canAdminCancel;
+                    const cancelLabel = req.status === 'approved' ? '승인 취소' : '취소';
+                    return (
                     <div key={req.id} className="flex flex-wrap items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-xs">
                       <Badge variant="outline" className={LEAVE_TYPE_COLOR[req.leave_type] ?? ''}>
                         {req.leave_type === 'monthly' ? '월차' : (LEAVE_TYPE_LABEL[req.leave_type] ?? req.leave_type)}
@@ -782,8 +673,40 @@ function TeamLeaveTable({
                       <span className="text-muted-foreground">{fmt(Number(req.days || 0))}일</span>
                       <Badge variant="outline" className={STATUS_STYLE[req.status] ?? ''}>{STATUS_LABEL[req.status] ?? req.status}</Badge>
                       {req.reason && <span className="text-muted-foreground truncate max-w-[160px] sm:max-w-[220px]">· {req.reason}</span>}
+                      <span className="ml-auto flex items-center gap-1">
+                        {canCancel && (
+                          <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => onCancel!(req.id)}>{cancelLabel}</Button>
+                        )}
+                        {isAdmin && onDelete && (
+                          <AlertDialog>
+                            <AlertDialogTrigger asChild>
+                              <Button size="sm" variant="ghost" className="h-6 w-6 p-0 text-destructive hover:text-destructive">
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </Button>
+                            </AlertDialogTrigger>
+                            <AlertDialogContent>
+                              <AlertDialogHeader>
+                                <AlertDialogTitle>휴가 신청 삭제</AlertDialogTitle>
+                                <AlertDialogDescription>
+                                  {r.profile.name_kr}님의 {LEAVE_TYPE_LABEL[req.leave_type] ?? req.leave_type} 신청({req.start_date}{req.start_date !== req.end_date && ` ~ ${req.end_date}`})을 삭제합니다. 연결된 결재 및 캘린더 일정도 함께 삭제되며, 되돌릴 수 없습니다.
+                                </AlertDialogDescription>
+                              </AlertDialogHeader>
+                              <AlertDialogFooter>
+                                <AlertDialogCancel>취소</AlertDialogCancel>
+                                <AlertDialogAction
+                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  onClick={() => onDelete(req)}
+                                >
+                                  삭제
+                                </AlertDialogAction>
+                              </AlertDialogFooter>
+                            </AlertDialogContent>
+                          </AlertDialog>
+                        )}
+                      </span>
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
 
                 {/* 이전 회계연도 이력 */}
@@ -1049,11 +972,24 @@ function SummerLeaveOverview({
           {allReqs.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-8">{year}년 여름휴가 신청 내역이 없습니다.</p>
           ) : (
-            <RequestList
-              requests={allReqs.slice().sort((a, b) => a.start_date.localeCompare(b.start_date))}
-              profiles={profiles}
-              showOwner
-            />
+            <div className="space-y-2">
+              {allReqs.slice().sort((a, b) => a.start_date.localeCompare(b.start_date)).map(r => {
+                const p = profiles.find(pp => pp.id === r.user_id);
+                return (
+                  <div key={r.id} className="flex flex-wrap items-center gap-2 rounded-md border bg-background px-3 py-2 text-xs">
+                    <Avatar className="h-6 w-6 shrink-0"><AvatarFallback className="text-[9px]">{p?.avatar}</AvatarFallback></Avatar>
+                    <span className="font-medium">{p?.name_kr}</span>
+                    <Badge variant="outline" className={LEAVE_TYPE_COLOR[r.leave_type] ?? ''}>
+                      {LEAVE_TYPE_LABEL[r.leave_type] ?? r.leave_type}
+                    </Badge>
+                    <span>{r.start_date}{r.end_date !== r.start_date ? ` ~ ${r.end_date}` : ''}</span>
+                    <span className="text-muted-foreground">{Number(r.days || 0)}일</span>
+                    <Badge variant="outline" className={STATUS_STYLE[r.status] ?? ''}>{STATUS_LABEL[r.status] ?? r.status}</Badge>
+                    {r.reason && <span className="text-muted-foreground truncate max-w-[200px]">· {r.reason}</span>}
+                  </div>
+                );
+              })}
+            </div>
           )}
         </CardContent>
       </Card>
