@@ -458,6 +458,7 @@ const ROLE_LABEL: Record<string, string> = {
 
 function TeamLeaveTable({
   balances, allBalances = [], profiles, userRoles, requests, year, onYearChange, myProfileId,
+  isAdmin, onCancel, onDelete,
 }: {
   balances: any[];
   allBalances?: any[];
@@ -467,6 +468,9 @@ function TeamLeaveTable({
   year: number;
   onYearChange: (y: number) => void;
   myProfileId?: string;
+  isAdmin?: boolean;
+  onCancel?: (id: string) => void;
+  onDelete?: (req: any) => void;
 }) {
 
   
