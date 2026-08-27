@@ -443,6 +443,11 @@ export default function Attendance() {
           </Card>
         </TabsContent>
 
+        {/* 담당별 사용/잔여 현황표 */}
+        <TabsContent value="team" className="space-y-4 mt-4">
+          <TeamLeaveTable balances={balances} profiles={profiles} userRoles={userRoles} year={year} onYearChange={setYear} />
+        </TabsContent>
+
         {/* 🏖️ 여름휴가 현황 */}
         <TabsContent value="summer" className="space-y-4 mt-4">
           <SummerLeaveOverview
