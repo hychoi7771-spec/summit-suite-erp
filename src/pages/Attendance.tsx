@@ -649,7 +649,7 @@ function TeamLeaveTable({
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base flex items-center gap-2">
-          <Users className="h-4 w-4" />{year}년 담당별 연차·월차 현황 (신청내역 통합)
+          <Users className="h-4 w-4" />담당별 연차·월차 현황 · 입사일 기준 회계연도 ({year}년)
         </CardTitle>
         <div className="flex items-center gap-2">
           <Button size="icon" variant="outline" onClick={() => onYearChange(year - 1)}><ChevronLeft className="h-4 w-4" /></Button>
