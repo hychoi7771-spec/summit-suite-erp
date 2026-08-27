@@ -254,7 +254,7 @@ export default function Attendance() {
     fetchData();
   };
 
-  const myRequests = requests.filter(r => r.user_id === profile?.id);
+  
   const pendingCount = requests.filter(r => r.status === 'pending').length;
 
   return (
@@ -444,89 +444,6 @@ export default function Attendance() {
       </Tabs>
 
       <LeaveRequestDialog open={showRequest} onOpenChange={setShowRequest} onCreated={fetchData} />
-    </div>
-  );
-}
-
-function RequestList({
-  requests, profiles, showOwner, onCancel, onDelete, isAdmin, myProfileId,
-}: {
-  requests: any[];
-  profiles: any[];
-  showOwner: boolean;
-  onCancel?: (id: string) => void;
-  onDelete?: (req: any) => void;
-  isAdmin?: boolean;
-  myProfileId?: string;
-}) {
-  const getProfile = (id: string) => profiles.find(p => p.id === id);
-  if (requests.length === 0) {
-    return <p className="text-sm text-muted-foreground text-center py-8">신청 내역이 없습니다.</p>;
-  }
-  return (
-    <div className="space-y-2">
-      {requests.map(r => {
-        const p = getProfile(r.user_id);
-        const canCancelOwn = onCancel && r.user_id === myProfileId && r.status === 'pending';
-        const canAdminCancel = onCancel && isAdmin && (r.status === 'approved' || r.status === 'pending');
-        const canCancel = canCancelOwn || canAdminCancel;
-        const cancelLabel = r.status === 'approved' ? '승인 취소' : '취소';
-        return (
-          <div key={r.id} className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 p-3 rounded-md border border-border hover:bg-muted/30 transition-colors">
-            <div className="flex items-center gap-3 min-w-0">
-              {showOwner && (
-                <Avatar className="h-8 w-8 shrink-0"><AvatarFallback className="text-[10px]">{p?.avatar}</AvatarFallback></Avatar>
-              )}
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  {showOwner && <span className="font-medium text-sm">{p?.name_kr}</span>}
-                  <Badge variant="outline" className={`${LEAVE_TYPE_COLOR[r.leave_type]} text-xs`}>
-                    {LEAVE_TYPE_LABEL[r.leave_type]}
-                  </Badge>
-                  <Badge variant="outline" className={`${STATUS_STYLE[r.status]} text-xs`}>
-                    {STATUS_LABEL[r.status]}
-                  </Badge>
-                </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  {r.start_date}{r.start_date !== r.end_date && ` ~ ${r.end_date}`} · {Number(r.days)}일
-                  {r.reason && ` · ${r.reason}`}
-                </div>
-              </div>
-            </div>
-            <div className="flex items-center gap-1 shrink-0 self-end sm:self-auto">
-              {canCancel && (
-                <Button size="sm" variant="ghost" onClick={() => onCancel!(r.id)}>{cancelLabel}</Button>
-              )}
-              {isAdmin && onDelete && (
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button size="sm" variant="ghost" className="text-destructive hover:text-destructive">
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>휴가 신청 삭제</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        {p?.name_kr}님의 {LEAVE_TYPE_LABEL[r.leave_type]} 신청({r.start_date}{r.start_date !== r.end_date && ` ~ ${r.end_date}`})을 삭제합니다. 연결된 결재 및 캘린더 일정도 함께 삭제되며, 되돌릴 수 없습니다.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>취소</AlertDialogCancel>
-                      <AlertDialogAction
-                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                        onClick={() => onDelete(r)}
-                      >
-                        삭제
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              )}
-            </div>
-          </div>
-        );
-      })}
     </div>
   );
 }
