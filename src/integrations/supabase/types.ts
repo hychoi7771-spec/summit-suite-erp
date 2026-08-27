@@ -867,6 +867,8 @@ export type Database = {
       leave_balances: {
         Row: {
           created_at: string
+          fiscal_end: string | null
+          fiscal_start: string | null
           id: string
           monthly_total_days: number
           monthly_used_days: number
@@ -880,6 +882,8 @@ export type Database = {
         }
         Insert: {
           created_at?: string
+          fiscal_end?: string | null
+          fiscal_start?: string | null
           id?: string
           monthly_total_days?: number
           monthly_used_days?: number
@@ -893,6 +897,8 @@ export type Database = {
         }
         Update: {
           created_at?: string
+          fiscal_end?: string | null
+          fiscal_start?: string | null
           id?: string
           monthly_total_days?: number
           monthly_used_days?: number
@@ -2633,6 +2639,10 @@ export type Database = {
         Returns: string
       }
       profile_is_director: { Args: { _profile_id: string }; Returns: boolean }
+      recalc_leave_grant: {
+        Args: { _profile_id: string; _today?: string }
+        Returns: undefined
+      }
       run_monthly_leave_grant: { Args: never; Returns: number }
       send_notifications: {
         Args: {
