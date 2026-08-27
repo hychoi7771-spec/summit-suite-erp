@@ -140,14 +140,16 @@ export default function Attendance() {
 
   const getProfile = (id: string) => profiles.find(p => p.id === id);
 
-  // 오늘 휴무자 (주말/공휴일이면 전원 비근무)
-  const today = new Date();
+  // 오늘 휴무자 (한국시간 기준, 시작/종료일 포함)
+  const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
+  const today = parseISO(todayStr);
   const todayIsNonWorking = isNonWorkingDay(today);
   const todayHolidayName = getHolidayName(today);
   const todayLeaves = requests.filter(r =>
     r.status === 'approved' &&
-    isWithinInterval(today, { start: parseISO(r.start_date), end: parseISO(r.end_date) }),
+    r.start_date <= todayStr && todayStr <= r.end_date,
   );
+
   const workingMembers = todayIsNonWorking
     ? []
     : profiles.filter(p => !todayLeaves.some(l => l.user_id === p.id));
