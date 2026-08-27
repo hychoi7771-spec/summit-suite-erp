@@ -21,6 +21,7 @@ import {
 } from 'date-fns';
 import { ko } from 'date-fns/locale';
 import { LeaveRequestDialog } from '@/components/attendance/LeaveRequestDialog';
+import { Progress } from '@/components/ui/progress';
 import { isNonWorkingDay, isWeekend, getHolidayName } from '@/lib/holidays';
 
 const LEAVE_TYPE_LABEL: Record<string, string> = {
@@ -329,6 +330,7 @@ export default function Attendance() {
           <TabsTrigger value="calendar" className="shrink-0">월별 캘린더</TabsTrigger>
           <TabsTrigger value="my" className="shrink-0">내 신청 내역</TabsTrigger>
           <TabsTrigger value="all" className="shrink-0">전체 신청</TabsTrigger>
+          <TabsTrigger value="team" className="shrink-0">담당별 현황</TabsTrigger>
           <TabsTrigger value="summer" className="shrink-0">🏖️ 여름휴가 현황</TabsTrigger>
         </TabsList>
 
@@ -441,6 +443,11 @@ export default function Attendance() {
           </Card>
         </TabsContent>
 
+        {/* 담당별 사용/잔여 현황표 */}
+        <TabsContent value="team" className="space-y-4 mt-4">
+          <TeamLeaveTable balances={balances} profiles={profiles} userRoles={userRoles} year={year} onYearChange={setYear} />
+        </TabsContent>
+
         {/* 🏖️ 여름휴가 현황 */}
         <TabsContent value="summer" className="space-y-4 mt-4">
           <SummerLeaveOverview
@@ -537,6 +544,130 @@ function RequestList({
         );
       })}
     </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────
+// 📊 담당별 연차/월차 사용·잔여 현황표
+// ─────────────────────────────────────────────────────────────────────
+const ROLE_LABEL: Record<string, string> = {
+  ceo: '대표', general_director: '총괄이사', managing_director: '실장', deputy_gm: '부장',
+  md: 'MD', designer: '디자이너', assistant_manager: '대리', staff: '사원',
+};
+
+function TeamLeaveTable({
+  balances, profiles, userRoles, year, onYearChange,
+}: {
+  balances: any[];
+  profiles: any[];
+  userRoles: any[];
+  year: number;
+  onYearChange: (y: number) => void;
+}) {
+  const rows = useMemo(() => {
+    return profiles.map(p => {
+      const bal = balances.find(b => b.user_id === p.id);
+      const role = userRoles.find(r => r.user_id === p.user_id)?.role;
+      const total = Number(bal?.total_days ?? 0);
+      const used = Number(bal?.used_days ?? 0);
+      const remaining = total - used;
+      const mTotal = Number(bal?.monthly_total_days ?? 0);
+      const mUsed = Number(bal?.monthly_used_days ?? 0);
+      const usageRate = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
+      return { profile: p, role, total, used, remaining, mTotal, mUsed, mRemaining: mTotal - mUsed, usageRate };
+    });
+  }, [balances, profiles, userRoles]);
+
+  const totals = useMemo(() => rows.reduce((acc, r) => ({
+    total: acc.total + r.total, used: acc.used + r.used, remaining: acc.remaining + r.remaining,
+  }), { total: 0, used: 0, remaining: 0 }), [rows]);
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0">
+        <CardTitle className="text-base flex items-center gap-2">
+          <Users className="h-4 w-4" />{year}년 담당별 연차·월차 현황
+        </CardTitle>
+        <div className="flex items-center gap-2">
+          <Button size="icon" variant="outline" onClick={() => onYearChange(year - 1)}><ChevronLeft className="h-4 w-4" /></Button>
+          <Button size="sm" variant="outline" onClick={() => onYearChange(new Date().getFullYear())}>올해</Button>
+          <Button size="icon" variant="outline" onClick={() => onYearChange(year + 1)}><ChevronRight className="h-4 w-4" /></Button>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* 전체 요약 */}
+        <div className="grid grid-cols-3 gap-3">
+          <div className="rounded-lg border bg-muted/30 p-3 text-center">
+            <div className="text-xs text-muted-foreground">총 적립</div>
+            <div className="text-xl font-bold">{totals.total}일</div>
+          </div>
+          <div className="rounded-lg border bg-muted/30 p-3 text-center">
+            <div className="text-xs text-muted-foreground">총 사용</div>
+            <div className="text-xl font-bold">{totals.used}일</div>
+          </div>
+          <div className="rounded-lg border bg-muted/30 p-3 text-center">
+            <div className="text-xs text-muted-foreground">총 잔여</div>
+            <div className="text-xl font-bold text-primary">{totals.remaining}일</div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>담당자</TableHead>
+                <TableHead className="text-center">입사일</TableHead>
+                <TableHead className="text-center">연차 적립</TableHead>
+                <TableHead className="text-center">사용</TableHead>
+                <TableHead className="text-center">잔여</TableHead>
+                <TableHead className="text-center">월차 (사용/적립)</TableHead>
+                <TableHead className="w-[180px]">사용률</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {rows.map(r => {
+                const barColor = r.remaining <= 2
+                  ? 'bg-destructive'
+                  : r.usageRate >= 70
+                    ? 'bg-warning'
+                    : undefined;
+                return (
+                  <TableRow key={r.profile.id}>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Avatar className="h-7 w-7"><AvatarFallback className="text-[10px]">{r.profile.avatar}</AvatarFallback></Avatar>
+                        <div>
+                          <div className="font-medium text-sm">{r.profile.name_kr}</div>
+                          {r.role && <div className="text-[10px] text-muted-foreground">{ROLE_LABEL[r.role] ?? r.role}</div>}
+                        </div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-center text-xs text-muted-foreground">{r.profile.hire_date ?? '-'}</TableCell>
+                    <TableCell className="text-center">{r.total}일</TableCell>
+                    <TableCell className="text-center">{r.used}일</TableCell>
+                    <TableCell className={`text-center font-semibold ${r.remaining <= 2 ? 'text-destructive' : 'text-primary'}`}>
+                      {r.remaining}일
+                    </TableCell>
+                    <TableCell className="text-center text-xs text-muted-foreground">
+                      {r.mTotal > 0 ? `${r.mUsed} / ${r.mTotal}일` : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-2">
+                        <Progress value={r.usageRate} className="h-2 flex-1" indicatorClassName={barColor} />
+                        <span className="text-xs text-muted-foreground w-9 text-right">{r.usageRate}%</span>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                );
+              })}
+              {rows.length === 0 && (
+                <TableRow><TableCell colSpan={7} className="text-center text-sm text-muted-foreground py-8">데이터가 없습니다.</TableCell></TableRow>
+              )}
+            </TableBody>
+          </Table>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
