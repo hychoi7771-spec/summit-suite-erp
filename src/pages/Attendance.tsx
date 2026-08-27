@@ -577,24 +577,30 @@ function TeamLeaveTable({
 }) {
   
 
-  // 해당 연도 신청내역을 담당자별로 묶음 (내 신청 + 전체 신청 통합)
+  // 신청내역을 담당자별로 묶음 (내 신청 + 전체 신청 통합)
   const reqByUser = useMemo(() => {
     const map = new Map<string, any[]>();
     requests.forEach(r => {
-      if (new Date(r.start_date).getFullYear() !== year) return;
       const arr = map.get(r.user_id) || [];
       arr.push(r);
       map.set(r.user_id, arr);
     });
     map.forEach(arr => arr.sort((a, b) => a.start_date.localeCompare(b.start_date)));
     return map;
-  }, [requests, year]);
+  }, [requests]);
 
   const rows = useMemo(() => {
     return profiles.map(p => {
       const bal = balances.find(b => b.user_id === p.id);
       const role = userRoles.find(r => r.user_id === p.user_id)?.role;
-      const list = reqByUser.get(p.id) || [];
+
+      // 회계연도(입사일 기준) 구간 — 없으면 달력연도로 대체
+      const fiscalStart: string = bal?.fiscal_start ?? `${year}-01-01`;
+      const fiscalEnd: string = bal?.fiscal_end ?? `${year + 1}-01-01`;
+
+      const list = (reqByUser.get(p.id) || []).filter(
+        r => r.start_date >= fiscalStart && r.start_date < fiscalEnd,
+      );
 
       const sum = (filter: (r: any) => boolean) =>
         list.filter(filter).reduce((s, r) => s + Number(r.days || 0), 0);
@@ -620,12 +626,14 @@ function TeamLeaveTable({
 
       return {
         profile: p, role, list, isMonthlyMode,
-        total, used, mTotal, mUsed,
+        total, used, mTotal, mUsed, fiscalStart, fiscalEnd,
+        nextGrant: bal?.next_grant_date as string | undefined,
         baseTotal, baseUsed, remaining, projected,
         approvedAnnual, approvedMonthly, pendingDays, summerDays, usageRate,
       };
     });
-  }, [balances, profiles, userRoles, reqByUser]);
+  }, [balances, profiles, userRoles, reqByUser, year]);
+
 
   const totals = useMemo(() => rows.reduce((acc, r) => ({
     total: acc.total + r.baseTotal,
@@ -641,7 +649,7 @@ function TeamLeaveTable({
     <Card>
       <CardHeader className="flex-row items-center justify-between space-y-0">
         <CardTitle className="text-base flex items-center gap-2">
-          <Users className="h-4 w-4" />{year}년 담당별 연차·월차 현황 (신청내역 통합)
+          <Users className="h-4 w-4" />담당별 연차·월차 현황 · 입사일 기준 회계연도 ({year}년)
         </CardTitle>
         <div className="flex items-center gap-2">
           <Button size="icon" variant="outline" onClick={() => onYearChange(year - 1)}><ChevronLeft className="h-4 w-4" /></Button>
@@ -690,8 +698,12 @@ function TeamLeaveTable({
                         {r.profile.id === myProfileId && <Badge variant="outline" className="text-[9px] px-1 py-0">나</Badge>}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        {r.role ? (ROLE_LABEL[r.role] ?? r.role) : ''} · 입사 {r.profile.hire_date ?? '-'}{r.isMonthlyMode ? ' · 월차 기준' : ''}
+                        {r.role ? (ROLE_LABEL[r.role] ?? r.role) : ''} · 입사 {r.profile.hire_date ?? '-'}{r.isMonthlyMode ? ' · 월차 기준(1년 미만)' : ' · 연차 15일'}
                       </div>
+                      <div className="text-[10px] text-muted-foreground">
+                        회계연도 {r.fiscalStart} ~ {r.fiscalEnd}{r.nextGrant ? ` · 다음 적립 ${r.nextGrant}` : ''}
+                      </div>
+
                     </div>
                   </div>
                   <div className="flex items-center gap-3 text-center shrink-0">
@@ -727,7 +739,7 @@ function TeamLeaveTable({
                 {/* 신청내역 */}
                 <div className="px-3 py-2 space-y-1">
                   {r.list.length === 0 ? (
-                    <p className="text-xs text-muted-foreground text-center py-3">{year}년 신청내역이 없습니다.</p>
+                    <p className="text-xs text-muted-foreground text-center py-3">해당 회계연도 신청내역이 없습니다.</p>
                   ) : r.list.map(req => (
                     <div key={req.id} className="flex flex-wrap items-center gap-2 rounded-md border bg-background px-3 py-1.5 text-xs">
                       <Badge variant="outline" className={LEAVE_TYPE_COLOR[req.leave_type] ?? ''}>
