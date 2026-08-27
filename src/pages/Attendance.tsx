@@ -633,15 +633,31 @@ function TeamLeaveTable({
       const projected = remaining - pendingDays; // 대기건 승인 시 예상 잔여
       const usageRate = baseTotal > 0 ? Math.min(100, Math.round((baseUsed / baseTotal) * 100)) : 0;
 
+      // 이전 회계연도 이력 (입사 1년 미만 월차 기간 포함)
+      const priorPeriods = allBalances
+        .filter(b => b.user_id === p.id && b.id !== bal?.id && (b.fiscal_start ?? '') < fiscalStart)
+        .sort((a, b) => String(b.fiscal_start ?? '').localeCompare(String(a.fiscal_start ?? '')))
+        .map(b => {
+          const ps: string = b.fiscal_start ?? `${b.year}-01-01`;
+          const pe: string = b.fiscal_end ?? `${b.year + 1}-01-01`;
+          const plist = (reqByUser.get(p.id) || []).filter(r => r.start_date >= ps && r.start_date < pe);
+          const pMonthly = Number(b.monthly_total_days ?? 0) > 0;
+          const pTotal = pMonthly ? Number(b.monthly_total_days ?? 0) : Number(b.total_days ?? 0);
+          const pUsed = pMonthly ? Number(b.monthly_used_days ?? 0) : Number(b.used_days ?? 0);
+          return { id: b.id, ps, pe, pMonthly, pTotal, pUsed, remaining: pTotal - pUsed, list: plist };
+        });
+
       return {
         profile: p, role, list, isMonthlyMode,
         total, used, mTotal, mUsed, fiscalStart, fiscalEnd,
         nextGrant: bal?.next_grant_date as string | undefined,
         baseTotal, baseUsed, remaining, projected,
         approvedAnnual, approvedMonthly, pendingDays, summerDays, usageRate,
+        priorPeriods,
       };
     });
-  }, [balances, profiles, userRoles, reqByUser, year]);
+  }, [balances, allBalances, profiles, userRoles, reqByUser, year]);
+
 
 
   const totals = useMemo(() => rows.reduce((acc, r) => ({
