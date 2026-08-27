@@ -12,7 +12,6 @@ import {
   ClipboardList,
   UserCog,
   Vote,
-  BookOpen,
   Globe,
   ChevronRight,
   FileText,
@@ -97,7 +96,6 @@ const personalNavItems: NavItem[] = [];
 const adminNavItems: NavItem[] = [
   { title: '팀원관리', url: '/team', icon: UserCog, managerOnly: true },
   { title: '사내 휴무일', url: '/company-holidays', icon: CalendarOff, managerOnly: true },
-  { title: '사용 매뉴얼', url: '/manual', icon: BookOpen },
   { title: '도메인 연결 상태', url: '/domain-status', icon: Globe, managerOnly: true },
 ];
 
