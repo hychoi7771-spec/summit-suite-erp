@@ -5,7 +5,6 @@ import {
   ListTodo,
   Palette,
   CalendarDays,
-  FolderArchive,
   Settings,
   Receipt,
   BarChart3,
