@@ -725,7 +725,7 @@ function TeamLeaveTable({
                 </div>
 
                 {/* 신청내역 */}
-                <div className="px-3 py-2 space-y-1 max-h-56 overflow-y-auto">
+                <div className="px-3 py-2 space-y-1">
                   {r.list.length === 0 ? (
                     <p className="text-xs text-muted-foreground text-center py-3">{year}년 신청내역이 없습니다.</p>
                   ) : r.list.map(req => (
