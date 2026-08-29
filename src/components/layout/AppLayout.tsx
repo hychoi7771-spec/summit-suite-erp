@@ -1,5 +1,6 @@
 import { ReactNode, useState, useEffect } from 'react';
 import { AppSidebar } from './AppSidebar';
+import { MobileTabBar } from './MobileTabBar';
 import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Bell, Search, LogOut, Trash2, Settings, Eye } from 'lucide-react';
@@ -220,11 +221,12 @@ export function AppLayout({ children }: AppLayoutProps) {
               </DropdownMenu>
             </div>
           </header>
-          <main className="flex-1 p-4 md:p-6 overflow-auto">
+          <main className="flex-1 p-4 md:p-6 overflow-auto pb-24 md:pb-6">
             {children}
           </main>
         </div>
       </div>
+      <MobileTabBar />
       <NoticePopupOnLogin />
       <PendingApprovalToast />
       <CEOPendingApprovalDialog />
