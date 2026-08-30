@@ -171,18 +171,20 @@ export default function Attendance() {
   const updateBalance = async (userId: string, total: number) => {
     await withRecalc(async () => {
       const existing = balanceFor(userId);
+      const patch = isSubYear(userId) ? { monthly_total_days: total } : { total_days: total };
       if (existing) {
         const { error } = await supabase.from('leave_balances')
-          .update({ total_days: total }).eq('id', existing.id);
+          .update(patch).eq('id', existing.id);
         if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
       } else {
         const { error } = await supabase.from('leave_balances')
-          .insert({ user_id: userId, year, total_days: total, used_days: 0 });
+          .insert({ user_id: userId, year, total_days: 0, used_days: 0, ...patch });
         if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
       }
-      toast({ title: '연차 적립일수가 업데이트되었습니다' });
+      toast({ title: '적립일수가 업데이트되었습니다' });
     });
   };
+
 
   const isSubYear = (profileId: string) => {
     const p = profiles.find(x => x.id === profileId);
@@ -338,6 +340,9 @@ export default function Attendance() {
             <TabsTrigger value="calendar" className="shrink-0 text-xs sm:text-sm">월별 캘린더</TabsTrigger>
             <TabsTrigger value="team" className="shrink-0 text-xs sm:text-sm">담당별 현황</TabsTrigger>
             <TabsTrigger value="summer" className="shrink-0 text-xs sm:text-sm">🏖️ 여름휴가</TabsTrigger>
+            {isBalanceAdmin && (
+              <TabsTrigger value="balances" className="shrink-0 text-xs sm:text-sm">연차 관리</TabsTrigger>
+            )}
           </TabsList>
         </div>
 
@@ -443,6 +448,87 @@ export default function Attendance() {
             onYearChange={setYear}
           />
         </TabsContent>
+        {/* 연차 관리 (관리자 전용) */}
+        {isBalanceAdmin && (
+          <TabsContent value="balances" className="space-y-4 mt-4">
+            <Card>
+              <CardHeader className="flex-col items-start gap-2 space-y-0 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <CardTitle className="text-base">입사일 · 연차/월차 관리</CardTitle>
+                  <p className="text-xs text-muted-foreground mt-1">입사일 기준 회계연도로 자동 계산됩니다. 필요시 적립·사용일수를 직접 보정하세요.</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={recalculateAll} disabled={recalculating}>
+                  {recalculating ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <CalendarCheck className="h-4 w-4 mr-1" />}
+                  자동 재계산
+                </Button>
+              </CardHeader>
+              <CardContent className="overflow-x-auto px-2 sm:px-6">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead className="min-w-[100px]">이름</TableHead>
+                      <TableHead className="min-w-[150px]">입사일</TableHead>
+                      <TableHead className="min-w-[110px]">적립일수</TableHead>
+                      <TableHead className="min-w-[110px]">사용일수</TableHead>
+                      <TableHead className="min-w-[80px]">잔여</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {profiles.map(p => {
+                      const bal = balanceFor(p.id);
+                      const subYear = isSubYear(p.id);
+                      const total = subYear ? Number(bal?.monthly_total_days ?? 0) : Number(bal?.total_days ?? 0);
+                      const used = subYear ? Number(bal?.monthly_used_days ?? 0) : Number(bal?.used_days ?? 0);
+                      return (
+                        <TableRow key={p.id}>
+                          <TableCell className="font-medium">
+                            {p.name_kr}
+                            {subYear && <Badge variant="outline" className="ml-2 text-[10px]">월차</Badge>}
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="date"
+                              className="h-8 w-[150px]"
+                              defaultValue={p.hire_date ?? ''}
+                              onBlur={e => {
+                                if (e.target.value !== (p.hire_date ?? '')) updateHireDate(p.id, e.target.value);
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              className="h-8 w-[90px]"
+                              defaultValue={total}
+                              onBlur={e => {
+                                const v = Number(e.target.value);
+                                if (!Number.isNaN(v) && v !== total) updateBalance(p.id, v);
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell>
+                            <Input
+                              type="number"
+                              step="0.5"
+                              className="h-8 w-[90px]"
+                              defaultValue={used}
+                              onBlur={e => {
+                                const v = Number(e.target.value);
+                                if (!Number.isNaN(v) && v !== used) updateUsedDays(p.id, v);
+                              }}
+                            />
+                          </TableCell>
+                          <TableCell className="font-semibold">{(total - used).toFixed(1)}일</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
       </Tabs>
 
       <LeaveRequestDialog open={showRequest} onOpenChange={setShowRequest} onCreated={fetchData} />

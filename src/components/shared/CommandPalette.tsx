@@ -79,13 +79,15 @@ type Cmd = {
   icon: any;
   keywords?: string;
   managerOnly?: boolean;
+  /** 특정 역할만 노출 (라우트 가드와 일치) */
+  roles?: string[];
 };
 
 const workspace: Cmd[] = [
   { label: "대시보드", to: "/", icon: LayoutDashboard, keywords: "dashboard home" },
   { label: "업무", to: "/tasks", icon: ListTodo, keywords: "task todo" },
   { label: "디자인 시안", to: "/design-reviews", icon: Palette, keywords: "design" },
-  { label: "회의록", to: "/meetings", icon: ClipboardList, keywords: "meeting" },
+  { label: "회의록", to: "/meetings", icon: ClipboardList, keywords: "meeting", roles: ["general_director"] },
   { label: "일정", to: "/calendar", icon: CalendarDays, keywords: "calendar" },
   { label: "공지 게시판", to: "/notices-board", icon: Megaphone, keywords: "notice" },
   { label: "설문/투표", to: "/surveys", icon: Vote, keywords: "survey vote" },
@@ -105,9 +107,9 @@ const insights: Cmd[] = [
 ];
 
 const assets: Cmd[] = [
-  { label: "업무 자산함", to: "/assets/tasks", icon: ListChecks },
-  { label: "일일보고 자산함", to: "/assets/daily-reports", icon: NotebookPen },
-  { label: "결재문서 자산함", to: "/assets/approvals", icon: FileCheck2 },
+  { label: "업무 자산함", to: "/assets/tasks", icon: ListChecks, roles: ["managing_director"] },
+  { label: "일일보고 자산함", to: "/assets/daily-reports", icon: NotebookPen, roles: ["managing_director"] },
+  { label: "결재문서 자산함", to: "/assets/approvals", icon: FileCheck2, roles: ["managing_director"] },
 ];
 
 const personal: Cmd[] = [
@@ -182,8 +184,16 @@ export function CommandPalette({
     };
   }, [query]);
 
+  const visibleHits = hits.filter(
+    (h) => h.kind !== "meeting" || userRole === "general_director",
+  );
+
   const filterRole = (items: Cmd[]) =>
-    items.filter((i) => !i.managerOnly || isManager);
+    items.filter(
+      (i) =>
+        (!i.managerOnly || isManager) &&
+        (!i.roles || (userRole ? i.roles.includes(userRole) : false)),
+    );
 
   return (
     <CommandDialog open={open} onOpenChange={onOpenChange}>
@@ -197,10 +207,10 @@ export function CommandPalette({
           {searching ? "검색 중..." : "검색 결과가 없습니다."}
         </CommandEmpty>
 
-        {hits.length > 0 && (
+        {visibleHits.length > 0 && (
           <>
             <CommandGroup heading="검색 결과">
-              {hits.map((h) => {
+              {visibleHits.map((h) => {
                 const m = hitMeta[h.kind] ?? fallbackMeta;
                 return (
                   <CommandItem
