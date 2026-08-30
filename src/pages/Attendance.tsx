@@ -338,6 +338,9 @@ export default function Attendance() {
             <TabsTrigger value="calendar" className="shrink-0 text-xs sm:text-sm">월별 캘린더</TabsTrigger>
             <TabsTrigger value="team" className="shrink-0 text-xs sm:text-sm">담당별 현황</TabsTrigger>
             <TabsTrigger value="summer" className="shrink-0 text-xs sm:text-sm">🏖️ 여름휴가</TabsTrigger>
+            {isBalanceAdmin && (
+              <TabsTrigger value="balances" className="shrink-0 text-xs sm:text-sm">연차 관리</TabsTrigger>
+            )}
           </TabsList>
         </div>
 
