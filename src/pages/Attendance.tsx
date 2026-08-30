@@ -171,18 +171,20 @@ export default function Attendance() {
   const updateBalance = async (userId: string, total: number) => {
     await withRecalc(async () => {
       const existing = balanceFor(userId);
+      const patch = isSubYear(userId) ? { monthly_total_days: total } : { total_days: total };
       if (existing) {
         const { error } = await supabase.from('leave_balances')
-          .update({ total_days: total }).eq('id', existing.id);
+          .update(patch).eq('id', existing.id);
         if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
       } else {
         const { error } = await supabase.from('leave_balances')
-          .insert({ user_id: userId, year, total_days: total, used_days: 0 });
+          .insert({ user_id: userId, year, total_days: 0, used_days: 0, ...patch });
         if (error) { toast({ title: '저장 실패', description: error.message, variant: 'destructive' }); return; }
       }
-      toast({ title: '연차 적립일수가 업데이트되었습니다' });
+      toast({ title: '적립일수가 업데이트되었습니다' });
     });
   };
+
 
   const isSubYear = (profileId: string) => {
     const p = profiles.find(x => x.id === profileId);
