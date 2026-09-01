@@ -79,7 +79,7 @@ function ManagingDirectorOnlyRoute({ children }: { children: React.ReactNode }) 
 }
 
 function AppRoutes() {
-  const { user, loading } = useAuth();
+  const { user, loading, isManager } = useAuth();
 
   if (loading) {
     return (
@@ -91,7 +91,21 @@ function AppRoutes() {
 
   return (
     <Routes>
-      <Route path="/auth" element={user ? <Navigate to="/" replace /> : <Auth />} />
+      <Route
+        path="/auth"
+        element={
+          user ? (
+            // 관리자는 로그인 상태에서도 직원 계정 생성 탭 접근 가능
+            window.location.search.includes('tab=signup') && isManager ? (
+              <Auth />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          ) : (
+            <Auth />
+          )
+        }
+      />
       <Route path="/vote/:token" element={<PublicVote />} />
       <Route
         path="/*"
