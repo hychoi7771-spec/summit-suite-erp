@@ -86,13 +86,16 @@ export default function Auth() {
           <div className="flex justify-center">
             <img src={logo} alt="SHFoodHub" className="h-16 w-16 object-contain" />
           </div>
-          <CardTitle className="text-xl">SHFoodHub</CardTitle>
+          <CardTitle className="text-xl">{isManagerCreating ? '직원 계정 생성' : 'SHFoodHub'}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">로그인</TabsTrigger>
-              <TabsTrigger value="signup">회원가입</TabsTrigger>
+          <Tabs value={activeTab} onValueChange={(v) => {
+            setActiveTab(v as 'login' | 'signup');
+            setSearchParams(v === 'signup' ? { tab: 'signup' } : {});
+          }}>
+            <TabsList className={`grid w-full ${isManagerCreating ? 'grid-cols-1' : 'grid-cols-2'}`}>
+              {!isManagerCreating && <TabsTrigger value="login">로그인</TabsTrigger>}
+              <TabsTrigger value="signup">{isManagerCreating ? '계정 생성' : '회원가입'}</TabsTrigger>
             </TabsList>
             <TabsContent value="login" className="pt-4">
               <form onSubmit={handleLogin} className="space-y-4">
