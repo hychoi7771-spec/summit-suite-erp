@@ -13,6 +13,11 @@ import logo from '@/assets/logo.jpg';
 const EMAIL_DOMAIN = 'shfoodhub.local';
 
 export default function Auth() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') === 'signup' ? 'signup' : 'login';
+  const { user, isManager } = useAuth();
+  const isManagerCreating = !!user && tabParam === 'signup' && isManager;
+
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -24,6 +29,7 @@ export default function Auth() {
   const [signPassword, setSignPassword] = useState('');
   const [signPasswordConfirm, setSignPasswordConfirm] = useState('');
   const [signLoading, setSignLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState(tabParam);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
