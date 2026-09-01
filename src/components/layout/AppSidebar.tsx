@@ -11,6 +11,7 @@ import {
   Megaphone,
   ClipboardList,
   UserCog,
+  UserPlus,
   Vote,
   Globe,
   ChevronRight,
