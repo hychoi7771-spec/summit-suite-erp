@@ -68,8 +68,12 @@ export default function Auth() {
     if (error) {
       toast({ title: '가입 실패', description: error.message.includes('already registered') ? '이미 사용 중인 아이디입니다.' : error.message, variant: 'destructive' });
     } else {
-      toast({ title: '가입 완료', description: '가입이 완료되었습니다. 로그인 탭에서 로그인해주세요.' });
-      setLoginId(signLoginId.trim());
+      if (isManagerCreating) {
+        toast({ title: '계정 생성 완료', description: `${signNameKr.trim()} 직원 계정이 생성되었습니다.` });
+      } else {
+        toast({ title: '가입 완료', description: '가입이 완료되었습니다. 로그인 탭에서 로그인해주세요.' });
+        setLoginId(signLoginId.trim());
+      }
       setSignName(''); setSignNameKr(''); setSignLoginId(''); setSignPassword(''); setSignPasswordConfirm('');
     }
     setSignLoading(false);
