@@ -131,11 +131,13 @@ export default function Auth() {
                   <Input id="signup-password-confirm" type="password" value={signPasswordConfirm} onChange={e => setSignPasswordConfirm(e.target.value)} placeholder="••••••••" required />
                 </div>
                 <Button type="submit" className="w-full" disabled={signLoading}>
-                  {signLoading ? '가입 중...' : '가입하기'}
+                  {signLoading ? (isManagerCreating ? '생성 중...' : '가입 중...') : (isManagerCreating ? '계정 생성' : '가입하기')}
                 </Button>
               </form>
               <p className="text-xs text-muted-foreground text-center mt-4">
-                가입 즉시 사원(staff) 권한으로 등록되며, 입사일은 가입일로 자동 기록됩니다.
+                {isManagerCreating
+                  ? '관리자가 생성한 계정은 즉시 활성화되며, 사원(staff) 권한과 오늘 날짜 입사일로 자동 등록됩니다.'
+                  : '가입 즉시 사원(staff) 권한으로 등록되며, 입사일은 가입일로 자동 기록됩니다.'}
               </p>
             </TabsContent>
           </Tabs>
