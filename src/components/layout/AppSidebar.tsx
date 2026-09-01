@@ -11,6 +11,7 @@ import {
   Megaphone,
   ClipboardList,
   UserCog,
+  UserPlus,
   Vote,
   Globe,
   ChevronRight,
@@ -95,6 +96,7 @@ const personalNavItems: NavItem[] = [];
 // 관리
 const adminNavItems: NavItem[] = [
   { title: '팀원관리', url: '/team', icon: UserCog, managerOnly: true },
+  { title: '계정 생성', url: '/auth?tab=signup', icon: UserPlus, managerOnly: true },
   { title: '사내 휴무일', url: '/company-holidays', icon: CalendarOff, managerOnly: true },
   { title: '도메인 연결 상태', url: '/domain-status', icon: Globe, managerOnly: true },
 ];

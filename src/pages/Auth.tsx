@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -6,11 +6,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/contexts/AuthContext';
+import { useSearchParams } from 'react-router-dom';
 import logo from '@/assets/logo.jpg';
 
 const EMAIL_DOMAIN = 'shfoodhub.local';
 
 export default function Auth() {
+  const [searchParams, setSearchParams] = useSearchParams();
+  const tabParam = searchParams.get('tab') === 'signup' ? 'signup' : 'login';
+  const { user, isManager } = useAuth();
+  const isManagerCreating = !!user && tabParam === 'signup' && isManager;
+
   const [loginId, setLoginId] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -22,6 +29,7 @@ export default function Auth() {
   const [signPassword, setSignPassword] = useState('');
   const [signPasswordConfirm, setSignPasswordConfirm] = useState('');
   const [signLoading, setSignLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState(tabParam);
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,8 +68,12 @@ export default function Auth() {
     if (error) {
       toast({ title: '가입 실패', description: error.message.includes('already registered') ? '이미 사용 중인 아이디입니다.' : error.message, variant: 'destructive' });
     } else {
-      toast({ title: '가입 완료', description: '가입이 완료되었습니다. 로그인 탭에서 로그인해주세요.' });
-      setLoginId(signLoginId.trim());
+      if (isManagerCreating) {
+        toast({ title: '계정 생성 완료', description: `${signNameKr.trim()} 직원 계정이 생성되었습니다.` });
+      } else {
+        toast({ title: '가입 완료', description: '가입이 완료되었습니다. 로그인 탭에서 로그인해주세요.' });
+        setLoginId(signLoginId.trim());
+      }
       setSignName(''); setSignNameKr(''); setSignLoginId(''); setSignPassword(''); setSignPasswordConfirm('');
     }
     setSignLoading(false);
@@ -74,13 +86,16 @@ export default function Auth() {
           <div className="flex justify-center">
             <img src={logo} alt="SHFoodHub" className="h-16 w-16 object-contain" />
           </div>
-          <CardTitle className="text-xl">SHFoodHub</CardTitle>
+          <CardTitle className="text-xl">{isManagerCreating ? '직원 계정 생성' : 'SHFoodHub'}</CardTitle>
         </CardHeader>
         <CardContent>
-          <Tabs defaultValue="login">
-            <TabsList className="grid w-full grid-cols-2">
-              <TabsTrigger value="login">로그인</TabsTrigger>
-              <TabsTrigger value="signup">회원가입</TabsTrigger>
+          <Tabs value={activeTab} onValueChange={(v) => {
+            setActiveTab(v as 'login' | 'signup');
+            setSearchParams(v === 'signup' ? { tab: 'signup' } : {});
+          }}>
+            <TabsList className={`grid w-full ${isManagerCreating ? 'grid-cols-1' : 'grid-cols-2'}`}>
+              {!isManagerCreating && <TabsTrigger value="login">로그인</TabsTrigger>}
+              <TabsTrigger value="signup">{isManagerCreating ? '계정 생성' : '회원가입'}</TabsTrigger>
             </TabsList>
             <TabsContent value="login" className="pt-4">
               <form onSubmit={handleLogin} className="space-y-4">
@@ -116,11 +131,13 @@ export default function Auth() {
                   <Input id="signup-password-confirm" type="password" value={signPasswordConfirm} onChange={e => setSignPasswordConfirm(e.target.value)} placeholder="••••••••" required />
                 </div>
                 <Button type="submit" className="w-full" disabled={signLoading}>
-                  {signLoading ? '가입 중...' : '가입하기'}
+                  {signLoading ? (isManagerCreating ? '생성 중...' : '가입 중...') : (isManagerCreating ? '계정 생성' : '가입하기')}
                 </Button>
               </form>
               <p className="text-xs text-muted-foreground text-center mt-4">
-                가입 즉시 사원(staff) 권한으로 등록되며, 입사일은 가입일로 자동 기록됩니다.
+                {isManagerCreating
+                  ? '관리자가 생성한 계정은 즉시 활성화되며, 사원(staff) 권한과 오늘 날짜 입사일로 자동 등록됩니다.'
+                  : '가입 즉시 사원(staff) 권한으로 등록되며, 입사일은 가입일로 자동 기록됩니다.'}
               </p>
             </TabsContent>
           </Tabs>
