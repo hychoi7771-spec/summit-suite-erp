@@ -236,13 +236,13 @@ export default function TeamManagement() {
         <Card className="stat-card">
           <CardContent className="p-0">
             <p className="text-xs font-medium text-muted-foreground uppercase">근무 중</p>
-            <p className="text-2xl font-bold mt-1">{profiles.filter(p => p.presence === 'working').length}명</p>
+            <p className="text-2xl font-bold mt-1">{profiles.filter(p => effectivePresence(p) === 'working').length}명</p>
           </CardContent>
         </Card>
         <Card className="stat-card">
           <CardContent className="p-0">
             <p className="text-xs font-medium text-muted-foreground uppercase">자리비움/오프라인</p>
-            <p className="text-2xl font-bold mt-1">{profiles.filter(p => p.presence !== 'working').length}명</p>
+            <p className="text-2xl font-bold mt-1">{profiles.filter(p => effectivePresence(p) !== 'working').length}명</p>
           </CardContent>
         </Card>
       </div>
@@ -274,7 +274,7 @@ export default function TeamManagement() {
                             <Avatar className="h-8 w-8 bg-primary">
                               <AvatarFallback className="bg-primary text-primary-foreground text-xs">{member.avatar}</AvatarFallback>
                             </Avatar>
-                            <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card ${presenceColors[member.presence] || 'bg-muted-foreground/40'}`} />
+                            <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card ${presenceColors[effectivePresence(member)] || 'bg-muted-foreground/40'}`} />
                           </div>
                           <span className="text-sm font-medium">{member.name_kr}</span>
                         </div>
@@ -296,8 +296,8 @@ export default function TeamManagement() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-[10px]">
-                          <span className={`h-2 w-2 rounded-full mr-1.5 inline-block ${presenceColors[member.presence]}`} />
-                          {presenceLabels[member.presence] || member.presence}
+                          <span className={`h-2 w-2 rounded-full mr-1.5 inline-block ${presenceColors[effectivePresence(member)]}`} />
+                          {presenceLabels[effectivePresence(member)]}
                         </Badge>
                       </TableCell>
                       {isAdmin && <TableCell className="text-sm text-muted-foreground">{new Date(member.created_at).toLocaleDateString('ko-KR')}</TableCell>}
