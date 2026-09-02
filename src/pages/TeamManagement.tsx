@@ -50,7 +50,21 @@ export default function TeamManagement() {
 
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
 
-  useEffect(() => { if (isManager) fetchData(); }, [isManager]);
+  // 접속 현황 실시간 반영 + 주기적 재조회
+  useEffect(() => {
+    if (!isManager) return;
+    fetchData();
+    const channel = supabase
+      .channel('team-presence')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, () => fetchData())
+      .subscribe();
+    const timer = window.setInterval(fetchData, 60_000);
+    return () => {
+      supabase.removeChannel(channel);
+      window.clearInterval(timer);
+    };
+  }, [isManager]);
+
 
   if (!authLoading && !isManager) {
     return (
