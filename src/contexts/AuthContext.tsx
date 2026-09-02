@@ -120,11 +120,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     document.addEventListener('visibilitychange', handleVisibility);
     window.addEventListener('beforeunload', handleBeforeUnload);
 
+    // 접속 상태 하트비트: 60초마다 갱신해 다른 사용자 화면에서 실시간으로 보이도록 함
+    const heartbeat = window.setInterval(() => {
+      if (document.visibilityState === 'hidden') return;
+      updatePresence(user.id, 'working');
+    }, 60_000);
+
     return () => {
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.clearInterval(heartbeat);
     };
   }, [user, session]);
+
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
