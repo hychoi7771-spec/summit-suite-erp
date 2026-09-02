@@ -37,6 +37,16 @@ const roles = [...Constants.public.Enums.app_role].sort(
 const presenceLabels: Record<string, string> = { working: '근무 중', away: '자리비움', offline: '오프라인' };
 const presenceColors: Record<string, string> = { working: 'bg-success', away: 'bg-warning', offline: 'bg-muted-foreground/40' };
 
+/** 5분 이상 갱신이 없으면 오프라인으로 간주(하트비트 기준) */
+const STALE_MS = 5 * 60 * 1000;
+const effectivePresence = (p: any): string => {
+  if (!p?.presence || p.presence === 'offline') return 'offline';
+  const ts = p.updated_at ? new Date(p.updated_at).getTime() : 0;
+  if (!ts || Date.now() - ts > STALE_MS) return 'offline';
+  return p.presence;
+};
+
+
 export default function TeamManagement() {
   const { user, userRole, isManager, loading: authLoading } = useAuth();
   const { toast } = useToast();
