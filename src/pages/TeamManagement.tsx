@@ -37,6 +37,16 @@ const roles = [...Constants.public.Enums.app_role].sort(
 const presenceLabels: Record<string, string> = { working: '근무 중', away: '자리비움', offline: '오프라인' };
 const presenceColors: Record<string, string> = { working: 'bg-success', away: 'bg-warning', offline: 'bg-muted-foreground/40' };
 
+/** 5분 이상 갱신이 없으면 오프라인으로 간주(하트비트 기준) */
+const STALE_MS = 5 * 60 * 1000;
+const effectivePresence = (p: any): string => {
+  if (!p?.presence || p.presence === 'offline') return 'offline';
+  const ts = p.updated_at ? new Date(p.updated_at).getTime() : 0;
+  if (!ts || Date.now() - ts > STALE_MS) return 'offline';
+  return p.presence;
+};
+
+
 export default function TeamManagement() {
   const { user, userRole, isManager, loading: authLoading } = useAuth();
   const { toast } = useToast();
@@ -50,7 +60,21 @@ export default function TeamManagement() {
 
   const isAdmin = userRole === 'ceo' || userRole === 'general_director';
 
-  useEffect(() => { if (isManager) fetchData(); }, [isManager]);
+  // 접속 현황 실시간 반영 + 주기적 재조회
+  useEffect(() => {
+    if (!isManager) return;
+    fetchData();
+    const channel = supabase
+      .channel('team-presence')
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, () => fetchData())
+      .subscribe();
+    const timer = window.setInterval(fetchData, 60_000);
+    return () => {
+      supabase.removeChannel(channel);
+      window.clearInterval(timer);
+    };
+  }, [isManager]);
+
 
   if (!authLoading && !isManager) {
     return (
@@ -212,13 +236,13 @@ export default function TeamManagement() {
         <Card className="stat-card">
           <CardContent className="p-0">
             <p className="text-xs font-medium text-muted-foreground uppercase">근무 중</p>
-            <p className="text-2xl font-bold mt-1">{profiles.filter(p => p.presence === 'working').length}명</p>
+            <p className="text-2xl font-bold mt-1">{profiles.filter(p => effectivePresence(p) === 'working').length}명</p>
           </CardContent>
         </Card>
         <Card className="stat-card">
           <CardContent className="p-0">
             <p className="text-xs font-medium text-muted-foreground uppercase">자리비움/오프라인</p>
-            <p className="text-2xl font-bold mt-1">{profiles.filter(p => p.presence !== 'working').length}명</p>
+            <p className="text-2xl font-bold mt-1">{profiles.filter(p => effectivePresence(p) !== 'working').length}명</p>
           </CardContent>
         </Card>
       </div>
@@ -250,7 +274,7 @@ export default function TeamManagement() {
                             <Avatar className="h-8 w-8 bg-primary">
                               <AvatarFallback className="bg-primary text-primary-foreground text-xs">{member.avatar}</AvatarFallback>
                             </Avatar>
-                            <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card ${presenceColors[member.presence] || 'bg-muted-foreground/40'}`} />
+                            <span className={`absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-card ${presenceColors[effectivePresence(member)] || 'bg-muted-foreground/40'}`} />
                           </div>
                           <span className="text-sm font-medium">{member.name_kr}</span>
                         </div>
@@ -272,8 +296,8 @@ export default function TeamManagement() {
                       </TableCell>
                       <TableCell>
                         <Badge variant="outline" className="text-[10px]">
-                          <span className={`h-2 w-2 rounded-full mr-1.5 inline-block ${presenceColors[member.presence]}`} />
-                          {presenceLabels[member.presence] || member.presence}
+                          <span className={`h-2 w-2 rounded-full mr-1.5 inline-block ${presenceColors[effectivePresence(member)]}`} />
+                          {presenceLabels[effectivePresence(member)]}
                         </Badge>
                       </TableCell>
                       {isAdmin && <TableCell className="text-sm text-muted-foreground">{new Date(member.created_at).toLocaleDateString('ko-KR')}</TableCell>}
