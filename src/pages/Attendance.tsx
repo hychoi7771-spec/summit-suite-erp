@@ -487,6 +487,7 @@ export default function Attendance() {
                           </TableCell>
                           <TableCell>
                             <Input
+                              key={`hire-${p.id}-${p.hire_date ?? ''}`}
                               type="date"
                               className="h-8 w-[150px]"
                               defaultValue={p.hire_date ?? ''}
@@ -497,6 +498,7 @@ export default function Attendance() {
                           </TableCell>
                           <TableCell>
                             <Input
+                              key={`total-${p.id}-${total}`}
                               type="number"
                               step="0.5"
                               className="h-8 w-[90px]"
@@ -509,6 +511,7 @@ export default function Attendance() {
                           </TableCell>
                           <TableCell>
                             <Input
+                              key={`used-${p.id}-${used}`}
                               type="number"
                               step="0.5"
                               className="h-8 w-[90px]"
