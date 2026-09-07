@@ -498,6 +498,7 @@ export default function Attendance() {
                           </TableCell>
                           <TableCell>
                             <Input
+                              key={`total-${p.id}-${total}`}
                               type="number"
                               step="0.5"
                               className="h-8 w-[90px]"
