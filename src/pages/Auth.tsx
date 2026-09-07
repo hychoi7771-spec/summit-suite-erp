@@ -58,15 +58,38 @@ export default function Auth() {
     }
     setSignLoading(true);
     const email = signLoginId.includes('@') ? signLoginId.trim() : `${signLoginId.trim()}@${EMAIL_DOMAIN}`;
-    const { error } = await supabase.auth.signUp({
-      email,
-      password: signPassword,
-      options: {
-        data: { name: signName.trim() || signNameKr.trim(), name_kr: signNameKr.trim(), login_id: signLoginId.trim() },
-      },
-    });
+    let error: { message: string } | null = null;
+
+    if (isManagerCreating) {
+      // 관리자가 로그인한 상태에서 계정을 만들 때는 서버(관리자 API)로 생성해
+      // 관리자의 로그인 세션이 새 계정으로 바뀌지 않도록 한다.
+      const { data, error: fnError } = await supabase.functions.invoke('create-user', {
+        body: {
+          login_id: signLoginId.trim(),
+          password: signPassword,
+          name: signName.trim() || signNameKr.trim(),
+          name_kr: signNameKr.trim(),
+          role: 'staff',
+        },
+      });
+      error = fnError
+        ? { message: fnError.message }
+        : (data as any)?.error
+          ? { message: String((data as any).error) }
+          : null;
+    } else {
+      const res = await supabase.auth.signUp({
+        email,
+        password: signPassword,
+        options: {
+          data: { name: signName.trim() || signNameKr.trim(), name_kr: signNameKr.trim(), login_id: signLoginId.trim() },
+        },
+      });
+      error = res.error;
+    }
+
     if (error) {
-      toast({ title: '가입 실패', description: error.message.includes('already registered') ? '이미 사용 중인 아이디입니다.' : error.message, variant: 'destructive' });
+      toast({ title: isManagerCreating ? '생성 실패' : '가입 실패', description: error.message.includes('already registered') || error.message.includes('already been registered') ? '이미 사용 중인 아이디입니다.' : error.message, variant: 'destructive' });
     } else {
       if (isManagerCreating) {
         toast({ title: '계정 생성 완료', description: `${signNameKr.trim()} 직원 계정이 생성되었습니다.` });
