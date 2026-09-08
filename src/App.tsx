@@ -37,7 +37,7 @@ import StockAlerts from "./pages/StockAlerts";
 import OneOnOne from "./pages/OneOnOne";
 
 import Attendance from "./pages/Attendance";
-import BusinessTrips from "./pages/BusinessTrips";
+
 import AccountSettings from "./pages/AccountSettings";
 import CompanyHolidays from "./pages/CompanyHolidays";
 import DomainStatus from "./pages/DomainStatus";
