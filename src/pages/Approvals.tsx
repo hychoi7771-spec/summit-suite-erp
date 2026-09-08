@@ -567,6 +567,7 @@ export default function Approvals() {
           <BusinessTrips embedded />
         </TabsContent>
 
+        {tab !== 'trips' && (
         <TabsContent value={tab} className="mt-4">
           {filtered.length === 0 ? (
             <EmptyState icon={Inbox} title="결재 내역이 없습니다" description="현재 탭에 해당하는 결재 건이 없어요." tone="slate" />
@@ -624,6 +625,7 @@ export default function Approvals() {
             </div>
           )}
         </TabsContent>
+        )}
       </Tabs>
 
       {/* Create Dialog */}
