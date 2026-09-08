@@ -28,7 +28,7 @@ const tripDays = (t: any) => {
   return Math.round((e.getTime() - s.getTime()) / 86400000) + 1;
 };
 
-export default function BusinessTrips() {
+export default function BusinessTrips({ embedded = false }: { embedded?: boolean }) {
   const { profile, userRole } = useAuth();
   const { toast } = useToast();
   const [trips, setTrips] = useState<any[]>([]);
@@ -150,17 +150,25 @@ export default function BusinessTrips() {
 
   return (
     <div className="space-y-6">
-      <PageHeader
-        icon={Plane}
-        tone="cyan"
-        title="출장 신청"
-        description="지방·현장 출장을 신청하고 결재 진행 상황과 일정을 한 곳에서 관리합니다."
-        actions={
+      {embedded ? (
+        <div className="flex justify-end">
           <Button onClick={() => { setEditTarget(null); setDialogOpen(true); }}>
             <Plus className="mr-1 h-4 w-4" />출장 신청
           </Button>
-        }
-      />
+        </div>
+      ) : (
+        <PageHeader
+          icon={Plane}
+          tone="cyan"
+          title="출장 신청"
+          description="지방·현장 출장을 신청하고 결재 진행 상황과 일정을 한 곳에서 관리합니다."
+          actions={
+            <Button onClick={() => { setEditTarget(null); setDialogOpen(true); }}>
+              <Plus className="mr-1 h-4 w-4" />출장 신청
+            </Button>
+          }
+        />
+      )}
 
       <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
         {[
