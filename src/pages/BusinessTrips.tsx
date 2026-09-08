@@ -151,9 +151,11 @@ export default function BusinessTrips() {
   return (
     <div className="space-y-6">
       <PageHeader
+        icon={Plane}
+        tone="cyan"
         title="출장 신청"
         description="지방·현장 출장을 신청하고 결재 진행 상황과 일정을 한 곳에서 관리합니다."
-        action={
+        actions={
           <Button onClick={() => { setEditTarget(null); setDialogOpen(true); }}>
             <Plus className="mr-1 h-4 w-4" />출장 신청
           </Button>
