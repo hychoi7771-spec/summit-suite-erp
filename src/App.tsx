@@ -37,6 +37,7 @@ import StockAlerts from "./pages/StockAlerts";
 import OneOnOne from "./pages/OneOnOne";
 
 import Attendance from "./pages/Attendance";
+import BusinessTrips from "./pages/BusinessTrips";
 import AccountSettings from "./pages/AccountSettings";
 import CompanyHolidays from "./pages/CompanyHolidays";
 import DomainStatus from "./pages/DomainStatus";
@@ -138,6 +139,7 @@ function AppRoutes() {
                 <Route path="/project-folders" element={<ProjectFolders />} />
                 <Route path="/daily-report" element={<Navigate to="/tasks" replace />} />
                 <Route path="/attendance" element={<Attendance />} />
+                <Route path="/business-trips" element={<BusinessTrips />} />
                 <Route path="/stock-alerts" element={<StockAlerts />} />
                 
                 <Route path="/one-on-one" element={<OneOnOne />} />

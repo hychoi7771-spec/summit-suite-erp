@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
-import { Plus, FileText, Receipt, Briefcase, CalendarDays, CheckCircle2, XCircle, Clock, ChevronRight, Trash2, AlertCircle, Inbox, Send, ThumbsUp, ThumbsDown, Paperclip, Eye, X as XIcon, Upload, Stamp } from 'lucide-react';
+import { Plus, FileText, Receipt, Briefcase, CalendarDays, CheckCircle2, XCircle, Clock, ChevronRight, Trash2, AlertCircle, Inbox, Send, ThumbsUp, ThumbsDown, Paperclip, Eye, X as XIcon, Upload, Stamp, Plane } from 'lucide-react';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -66,6 +66,7 @@ const typeLabels: Record<string, string> = {
   expense: '경비 결재',
   project: '프로젝트 제출',
   leave: '휴가/근태 신청',
+  trip: '출장 신청',
 };
 
 const typeIcons: Record<string, any> = {
@@ -73,6 +74,7 @@ const typeIcons: Record<string, any> = {
   expense: Receipt,
   project: Briefcase,
   leave: CalendarDays,
+  trip: Plane,
 };
 
 const statusLabels: Record<string, string> = {
