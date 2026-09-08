@@ -20,7 +20,7 @@ import {
   FileEdit,
   FolderOpen,
   CalendarClock,
-  Plane,
+  
   CalendarOff,
   Lightbulb,
   PartyPopper,
