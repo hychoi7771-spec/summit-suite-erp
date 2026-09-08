@@ -121,7 +121,7 @@ export default function Dashboard() {
   };
 
   const roleOrder: Record<string, number> = {
-    ceo: 0, general_director: 1, managing_director: 2, deputy_gm: 3, md: 4, designer: 5, assistant_manager: 6, staff: 7,
+    ceo: 0, managing_director: 1, deputy_gm: 2, md: 3, designer: 4, assistant_manager: 5, staff: 6, general_director: 99,
   };
 
   const sortedProfiles = [...profiles].sort((a, b) => {
