@@ -20,7 +20,7 @@ const roleLabels: Record<string, string> = {
   md: '차장', designer: '대리', assistant_manager: '주임', staff: '사원',
 };
 const roleOrder: Record<string, number> = {
-  ceo: 0, general_director: 1, managing_director: 2, deputy_gm: 3, md: 4, designer: 5, assistant_manager: 6, staff: 7,
+  ceo: 0, managing_director: 1, deputy_gm: 2, md: 3, designer: 4, assistant_manager: 5, staff: 6, general_director: 99,
 };
 const priorityWeight: Record<string, number> = { urgent: 0, high: 1, medium: 2, low: 3 };
 
