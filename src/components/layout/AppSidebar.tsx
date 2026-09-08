@@ -20,6 +20,7 @@ import {
   FileEdit,
   FolderOpen,
   CalendarClock,
+  Plane,
   CalendarOff,
   Lightbulb,
   PartyPopper,
@@ -73,6 +74,7 @@ const workspaceNavItems: NavItem[] = [
 const approvalNavItems: NavItem[] = [
   { title: '전자결재', url: '/approvals', icon: Inbox },
   { title: '지출 통합 관리', url: '/expenses', icon: Receipt },
+  { title: '출장 신청', url: '/business-trips', icon: Plane },
   { title: '근태관리', url: '/attendance', icon: CalendarClock },
 ];
 
