@@ -25,6 +25,7 @@ import { format } from 'date-fns';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
 import { AttachmentViewer, AttachmentEntry, getExt } from '@/components/approvals/AttachmentViewer';
 import { APPROVAL_CATEGORIES, getCategoryByKey, type ApprovalCategoryKey } from '@/lib/approvalCategories';
+import BusinessTrips from '@/pages/BusinessTrips';
 
 const ALLOWED_EXTS = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'ppt', 'pptx', 'png', 'jpg', 'jpeg', 'gif', 'webp'];
 const ATTACH_ACCEPT = '.pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.png,.jpg,.jpeg,.gif,.webp';
@@ -559,7 +560,12 @@ export default function Approvals() {
           <TabsTrigger value="approved" className="gap-1.5"><CheckCircle2 className="h-3.5 w-3.5" /> 승인</TabsTrigger>
           <TabsTrigger value="rejected" className="gap-1.5"><XCircle className="h-3.5 w-3.5" /> 반려</TabsTrigger>
           <TabsTrigger value="all">전체</TabsTrigger>
+          <TabsTrigger value="trips" className="gap-1.5"><Plane className="h-3.5 w-3.5" /> 출장 신청</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="trips" className="mt-4">
+          <BusinessTrips embedded />
+        </TabsContent>
 
         <TabsContent value={tab} className="mt-4">
           {filtered.length === 0 ? (
