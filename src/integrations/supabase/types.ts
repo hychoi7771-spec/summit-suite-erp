@@ -169,6 +169,104 @@ export type Database = {
           },
         ]
       }
+      business_trips: {
+        Row: {
+          accommodation: boolean
+          approval_id: string | null
+          approved_at: string | null
+          approved_by: string | null
+          calendar_event_id: string | null
+          companions: string | null
+          created_at: string
+          destination: string
+          end_date: string
+          end_time: string | null
+          estimated_cost: number | null
+          id: string
+          note: string | null
+          purpose: string | null
+          start_date: string
+          start_time: string | null
+          status: Database["public"]["Enums"]["approval_status"]
+          transport: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          accommodation?: boolean
+          approval_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          calendar_event_id?: string | null
+          companions?: string | null
+          created_at?: string
+          destination: string
+          end_date: string
+          end_time?: string | null
+          estimated_cost?: number | null
+          id?: string
+          note?: string | null
+          purpose?: string | null
+          start_date: string
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["approval_status"]
+          transport?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          accommodation?: boolean
+          approval_id?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
+          calendar_event_id?: string | null
+          companions?: string | null
+          created_at?: string
+          destination?: string
+          end_date?: string
+          end_time?: string | null
+          estimated_cost?: number | null
+          id?: string
+          note?: string | null
+          purpose?: string | null
+          start_date?: string
+          start_time?: string | null
+          status?: Database["public"]["Enums"]["approval_status"]
+          transport?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "business_trips_approval_id_fkey"
+            columns: ["approval_id"]
+            isOneToOne: false
+            referencedRelation: "approvals"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_trips_approved_by_fkey"
+            columns: ["approved_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_trips_calendar_event_id_fkey"
+            columns: ["calendar_event_id"]
+            isOneToOne: false
+            referencedRelation: "calendar_events"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "business_trips_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       calendar_events: {
         Row: {
           color: string | null
@@ -2666,7 +2764,7 @@ export type Database = {
         | "assistant_manager"
         | "managing_director"
       approval_status: "pending" | "approved" | "rejected"
-      approval_type: "document" | "expense" | "project" | "leave"
+      approval_type: "document" | "expense" | "project" | "leave" | "trip"
       channel_type: "online" | "offline"
       expense_category: "샘플링" | "마케팅" | "일반" | "출장" | "장비"
       expense_status: "Pending" | "Approved" | "Reimbursed" | "Rejected"
@@ -2845,7 +2943,7 @@ export const Constants = {
         "managing_director",
       ],
       approval_status: ["pending", "approved", "rejected"],
-      approval_type: ["document", "expense", "project", "leave"],
+      approval_type: ["document", "expense", "project", "leave", "trip"],
       channel_type: ["online", "offline"],
       expense_category: ["샘플링", "마케팅", "일반", "출장", "장비"],
       expense_status: ["Pending", "Approved", "Reimbursed", "Rejected"],
