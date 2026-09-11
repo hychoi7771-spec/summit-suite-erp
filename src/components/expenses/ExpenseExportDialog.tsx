@@ -1,5 +1,7 @@
 import { useMemo, useState } from 'react';
 import * as XLSX from 'xlsx';
+import JSZip from 'jszip';
+import { getSignedReceiptUrl } from '@/lib/receiptUrl';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogDescription } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -48,6 +50,8 @@ export default function ExpenseExportDialog({ expenses, profiles }: Props) {
   const [payments, setPayments] = useState<string[]>(PAYMENTS);
   const [vatMode, setVatMode] = useState<'included' | 'none'>('included');
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
+  const [includeReceipts, setIncludeReceipts] = useState(true);
+  const [busy, setBusy] = useState(false);
 
   const getName = (id: string) => profiles.find(p => p.id === id)?.name_kr ?? '';
 
@@ -60,11 +64,12 @@ export default function ExpenseExportDialog({ expenses, profiles }: Props) {
   }, [expenses, from, to, statuses, payments]);
 
   const total = filtered.reduce((a, b) => a + (b.amount || 0), 0);
+  const receiptCount = filtered.filter(e => !!e.receipt_url).length;
 
   const toggle = (arr: string[], set: (v: string[]) => void, key: string) =>
     set(arr.includes(key) ? arr.filter(k => k !== key) : [...arr, key]);
 
-  const buildRows = () =>
+  const buildRows = (receiptNames?: Map<string, string>) =>
     filtered.map(e => {
       const amount = e.amount || 0;
       const supply = vatMode === 'included' ? Math.round(amount / 1.1) : amount;
@@ -78,51 +83,106 @@ export default function ExpenseExportDialog({ expenses, profiles }: Props) {
         supply,
         vat,
         amount,
-        e.receipt_url ? '있음' : '없음',
+        receiptNames?.get(e.id) || (e.receipt_url ? '있음' : '없음'),
         STATUS_LABEL[e.status] || e.status,
       ];
     });
 
-  const handleExport = () => {
+  const download = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  };
+
+  const handleExport = async () => {
     if (filtered.length === 0) {
       toast({ title: '내보낼 내역이 없습니다', description: '기간 또는 조건을 조정해 주세요.', variant: 'destructive' });
       return;
     }
-    const rows = buildRows();
-    const supplyTotal = rows.reduce((a, r) => a + (r[5] as number), 0);
-    const vatTotal = rows.reduce((a, r) => a + (r[6] as number), 0);
-    const footer = ['합계', '', '', '', '', supplyTotal, vatTotal, total, '', `${filtered.length}건`];
-    const fileBase = `지출내역_세무제출_${from || '전체'}_${to || '전체'}`;
+    setBusy(true);
+    try {
+      const fileBase = `지출내역_세무제출_${from || '전체'}_${to || '전체'}`;
+      const receiptNames = new Map<string, string>();
+      const receiptFiles: { name: string; blob: Blob }[] = [];
+      let missing = 0;
 
-    if (format === 'csv') {
-      const csv = [COLUMNS, ...rows, footer]
-        .map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
-        .join('\r\n');
-      const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `${fileBase}.csv`;
-      a.click();
-      URL.revokeObjectURL(url);
-    } else {
-      const header = [
-        ['지출 경비 내역서 (세무 제출용)'],
-        [`대상 기간: ${from || '전체'} ~ ${to || '전체'}`],
-        [`합계 금액: ${total.toLocaleString('ko-KR')}원 / 총 ${filtered.length}건`],
-        [`부가세 처리: ${vatMode === 'included' ? '금액에 부가세 포함 (공급가액/부가세 분리 계산)' : '부가세 미분리'}`],
-        [`작성일: ${todayISO()}`],
-        [],
-      ];
-      const ws = XLSX.utils.aoa_to_sheet([...header, COLUMNS as unknown as string[], ...rows, footer]);
-      ws['!cols'] = WIDTHS.map(w => ({ wch: w }));
-      const wb = XLSX.utils.book_new();
-      XLSX.utils.book_append_sheet(wb, ws, '지출내역');
-      XLSX.writeFile(wb, `${fileBase}.xlsx`);
+      if (includeReceipts) {
+        let i = 1;
+        for (const e of filtered) {
+          if (!e.receipt_url) continue;
+          try {
+            const signed = await getSignedReceiptUrl(e.receipt_url);
+            if (!signed) { missing++; continue; }
+            const res = await fetch(signed);
+            if (!res.ok) { missing++; continue; }
+            const blob = await res.blob();
+            const ext = (signed.split('?')[0].split('.').pop() || 'bin').slice(0, 5);
+            const safeName = `${String(i).padStart(3, '0')}_${e.date}_${getName(e.submitted_by) || '미지정'}_${(e.amount || 0).toLocaleString('ko-KR')}원.${ext}`
+              .replace(/[\\/:*?"<>|]/g, '_');
+            receiptNames.set(e.id, safeName);
+            receiptFiles.push({ name: safeName, blob });
+            i++;
+          } catch {
+            missing++;
+          }
+        }
+      }
+
+      const rows = buildRows(includeReceipts ? receiptNames : undefined);
+      const supplyTotal = rows.reduce((a, r) => a + (r[5] as number), 0);
+      const vatTotal = rows.reduce((a, r) => a + (r[6] as number), 0);
+      const footer = ['합계', '', '', '', '', supplyTotal, vatTotal, total, '', `${filtered.length}건`];
+
+      let docBlob: Blob;
+      let docName: string;
+      if (format === 'csv') {
+        const csv = [COLUMNS, ...rows, footer]
+          .map(r => r.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(','))
+          .join('\r\n');
+        docBlob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' });
+        docName = `${fileBase}.csv`;
+      } else {
+        const header = [
+          ['지출 경비 내역서 (세무 제출용)'],
+          [`대상 기간: ${from || '전체'} ~ ${to || '전체'}`],
+          [`합계 금액: ${total.toLocaleString('ko-KR')}원 / 총 ${filtered.length}건`],
+          [`부가세 처리: ${vatMode === 'included' ? '금액에 부가세 포함 (공급가액/부가세 분리 계산)' : '부가세 미분리'}`],
+          [`작성일: ${todayISO()}`],
+          [],
+        ];
+        const ws = XLSX.utils.aoa_to_sheet([...header, COLUMNS as unknown as string[], ...rows, footer]);
+        ws['!cols'] = WIDTHS.map(w => ({ wch: w }));
+        const wb = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(wb, ws, '지출내역');
+        const buf = XLSX.write(wb, { bookType: 'xlsx', type: 'array' });
+        docBlob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        docName = `${fileBase}.xlsx`;
+      }
+
+      if (includeReceipts) {
+        const zip = new JSZip();
+        zip.file(docName, docBlob);
+        const folder = zip.folder('증빙자료')!;
+        receiptFiles.forEach(f => folder.file(f.name, f.blob));
+        const zipBlob = await zip.generateAsync({ type: 'blob' });
+        download(zipBlob, `${fileBase}.zip`);
+        toast({
+          title: '다운로드 완료',
+          description: `${filtered.length}건 · 증빙 ${receiptFiles.length}개 압축${missing ? ` (${missing}개 실패)` : ''}`,
+        });
+      } else {
+        download(docBlob, docName);
+        toast({ title: '다운로드 완료', description: `${filtered.length}건을 내보냈습니다.` });
+      }
+      setOpen(false);
+    } catch (err: any) {
+      toast({ title: '다운로드 실패', description: err?.message ?? '잠시 후 다시 시도해 주세요.', variant: 'destructive' });
+    } finally {
+      setBusy(false);
     }
-
-    toast({ title: '다운로드 완료', description: `${filtered.length}건을 내보냈습니다.` });
-    setOpen(false);
   };
 
   return (
@@ -202,13 +262,24 @@ export default function ExpenseExportDialog({ expenses, profiles }: Props) {
             </div>
           </div>
 
+          <label className="flex items-start gap-2 rounded-lg border p-3 text-sm cursor-pointer">
+            <Checkbox checked={includeReceipts} onCheckedChange={v => setIncludeReceipts(!!v)} className="mt-0.5" />
+            <span>
+              증빙자료(영수증) 함께 압축 다운로드
+              <span className="block text-xs text-muted-foreground mt-0.5">
+                내역서와 영수증 파일을 하나의 ZIP 파일로 묶어 줍니다. 내역서의 증빙 칸에 파일명이 표기됩니다.
+              </span>
+            </span>
+          </label>
+
           <div className="rounded-lg bg-muted/50 p-3 text-sm">
             선택된 내역 <span className="font-semibold">{filtered.length}건</span> · 합계{' '}
             <span className="font-semibold">₩{total.toLocaleString('ko-KR')}</span>
+            {' · '}증빙 <span className="font-semibold">{receiptCount}건</span>
           </div>
 
-          <Button onClick={handleExport} className="w-full gap-2">
-            <Download className="h-4 w-4" /> 다운로드
+          <Button onClick={handleExport} disabled={busy} className="w-full gap-2">
+            <Download className="h-4 w-4" /> {busy ? '파일 준비 중...' : '다운로드'}
           </Button>
         </div>
       </DialogContent>
