@@ -176,6 +176,8 @@ export default function Expenses() {
         description="경비 청구 및 승인된 구매·계약·출장·행사 품의 통합 현황"
         tone="amber"
         actions={
+          <div className="flex flex-wrap gap-2">
+          <ExpenseExportDialog expenses={expenses} profiles={profiles} />
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2 shrink-0">
