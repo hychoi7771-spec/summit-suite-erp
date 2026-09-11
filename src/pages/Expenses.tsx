@@ -242,6 +242,7 @@ export default function Expenses() {
             </div>
           </DialogContent>
         </Dialog>
+          </div>
         }
       />
 
