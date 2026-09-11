@@ -261,13 +261,24 @@ export default function ExpenseExportDialog({ expenses, profiles }: Props) {
             </div>
           </div>
 
+          <label className="flex items-start gap-2 rounded-lg border p-3 text-sm cursor-pointer">
+            <Checkbox checked={includeReceipts} onCheckedChange={v => setIncludeReceipts(!!v)} className="mt-0.5" />
+            <span>
+              증빙자료(영수증) 함께 압축 다운로드
+              <span className="block text-xs text-muted-foreground mt-0.5">
+                내역서와 영수증 파일을 하나의 ZIP으로 묶습니다. 내역서의 증빙 칸에 파일명이 표기됩니다.
+              </span>
+            </span>
+          </label>
+
           <div className="rounded-lg bg-muted/50 p-3 text-sm">
             선택된 내역 <span className="font-semibold">{filtered.length}건</span> · 합계{' '}
             <span className="font-semibold">₩{total.toLocaleString('ko-KR')}</span>
+            {' · '}증빙 <span className="font-semibold">{receiptCount}건</span>
           </div>
 
-          <Button onClick={handleExport} className="w-full gap-2">
-            <Download className="h-4 w-4" /> 다운로드
+          <Button onClick={handleExport} disabled={busy} className="w-full gap-2">
+            <Download className="h-4 w-4" /> {busy ? '파일 준비 중...' : '다운로드'}
           </Button>
         </div>
       </DialogContent>
