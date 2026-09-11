@@ -68,7 +68,7 @@ export default function ExpenseExportDialog({ expenses, profiles }: Props) {
   const toggle = (arr: string[], set: (v: string[]) => void, key: string) =>
     set(arr.includes(key) ? arr.filter(k => k !== key) : [...arr, key]);
 
-  const buildRows = () =>
+  const buildRows = (receiptNames?: Map<string, string>) =>
     filtered.map(e => {
       const amount = e.amount || 0;
       const supply = vatMode === 'included' ? Math.round(amount / 1.1) : amount;
