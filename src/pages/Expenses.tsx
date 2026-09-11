@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { openReceipt, useSignedReceiptUrl } from '@/lib/receiptUrl';
 import { Constants } from '@/integrations/supabase/types';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
+import ExpenseExportDialog from '@/components/expenses/ExpenseExportDialog';
 
 const formatKRW = (n: number) => `₩${n.toLocaleString('ko-KR')}`;
 const categories = Constants.public.Enums.expense_category;
@@ -176,6 +177,8 @@ export default function Expenses() {
         description="경비 청구 및 승인된 구매·계약·출장·행사 품의 통합 현황"
         tone="amber"
         actions={
+          <div className="flex flex-wrap gap-2">
+          <ExpenseExportDialog expenses={expenses} profiles={profiles} />
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
             <DialogTrigger asChild>
               <Button className="gap-2 shrink-0">
@@ -240,6 +243,7 @@ export default function Expenses() {
             </div>
           </DialogContent>
         </Dialog>
+          </div>
         }
       />
 
