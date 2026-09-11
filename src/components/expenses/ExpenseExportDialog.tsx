@@ -50,6 +50,8 @@ export default function ExpenseExportDialog({ expenses, profiles }: Props) {
   const [payments, setPayments] = useState<string[]>(PAYMENTS);
   const [vatMode, setVatMode] = useState<'included' | 'none'>('included');
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
+  const [includeReceipts, setIncludeReceipts] = useState(true);
+  const [busy, setBusy] = useState(false);
 
   const getName = (id: string) => profiles.find(p => p.id === id)?.name_kr ?? '';
 
