@@ -267,7 +267,7 @@ export default function ExpenseExportDialog({ expenses, profiles }: Props) {
             <span>
               증빙자료(영수증) 함께 압축 다운로드
               <span className="block text-xs text-muted-foreground mt-0.5">
-                내역서와 영수증 파일을 하나의 ZIP으로 묶습니다. 내역서의 증빙 칸에 파일명이 표기됩니다.
+                내역서와 영수증 파일을 하나의 ZIP 파일로 묶어 줍니다. 내역서의 증빙 칸에 파일명이 표기됩니다.
               </span>
             </span>
           </label>
