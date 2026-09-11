@@ -64,6 +64,7 @@ export default function ExpenseExportDialog({ expenses, profiles }: Props) {
   }, [expenses, from, to, statuses, payments]);
 
   const total = filtered.reduce((a, b) => a + (b.amount || 0), 0);
+  const receiptCount = filtered.filter(e => !!e.receipt_url).length;
 
   const toggle = (arr: string[], set: (v: string[]) => void, key: string) =>
     set(arr.includes(key) ? arr.filter(k => k !== key) : [...arr, key]);
