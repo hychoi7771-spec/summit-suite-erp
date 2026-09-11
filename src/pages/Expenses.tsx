@@ -21,6 +21,7 @@ import { useToast } from '@/hooks/use-toast';
 import { openReceipt, useSignedReceiptUrl } from '@/lib/receiptUrl';
 import { Constants } from '@/integrations/supabase/types';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
+import ExpenseExportDialog from '@/components/expenses/ExpenseExportDialog';
 
 const formatKRW = (n: number) => `₩${n.toLocaleString('ko-KR')}`;
 const categories = Constants.public.Enums.expense_category;
