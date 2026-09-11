@@ -82,7 +82,7 @@ export default function ExpenseExportDialog({ expenses, profiles }: Props) {
         supply,
         vat,
         amount,
-        e.receipt_url ? '있음' : '없음',
+        receiptNames?.get(e.id) || (e.receipt_url ? '있음' : '없음'),
         STATUS_LABEL[e.status] || e.status,
       ];
     });
