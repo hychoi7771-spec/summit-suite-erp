@@ -44,7 +44,7 @@ export default function ExpenseExportDialog({ expenses, profiles }: Props) {
     return `${t.slice(0, 7)}-01`;
   });
   const [to, setTo] = useState(todayISO);
-  const [statuses, setStatuses] = useState<string[]>(['Approved', 'Reimbursed']);
+  const [statuses, setStatuses] = useState<string[]>(['Pending', 'Approved', 'Reimbursed', 'Rejected']);
   const [payments, setPayments] = useState<string[]>(PAYMENTS);
   const [vatMode, setVatMode] = useState<'included' | 'none'>('included');
   const [format, setFormat] = useState<'xlsx' | 'csv'>('xlsx');
