@@ -918,12 +918,15 @@ export type Database = {
           category: Database["public"]["Enums"]["expense_category"]
           created_at: string
           date: string
+          department: string | null
           description: string | null
           id: string
+          items: Json
           payment_method: Database["public"]["Enums"]["payment_method"]
           receipt_url: string | null
           status: Database["public"]["Enums"]["expense_status"]
           submitted_by: string
+          title: string | null
           updated_at: string
         }
         Insert: {
@@ -931,12 +934,15 @@ export type Database = {
           category: Database["public"]["Enums"]["expense_category"]
           created_at?: string
           date?: string
+          department?: string | null
           description?: string | null
           id?: string
+          items?: Json
           payment_method?: Database["public"]["Enums"]["payment_method"]
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
           submitted_by: string
+          title?: string | null
           updated_at?: string
         }
         Update: {
@@ -944,12 +950,15 @@ export type Database = {
           category?: Database["public"]["Enums"]["expense_category"]
           created_at?: string
           date?: string
+          department?: string | null
           description?: string | null
           id?: string
+          items?: Json
           payment_method?: Database["public"]["Enums"]["payment_method"]
           receipt_url?: string | null
           status?: Database["public"]["Enums"]["expense_status"]
           submitted_by?: string
+          title?: string | null
           updated_at?: string
         }
         Relationships: [
