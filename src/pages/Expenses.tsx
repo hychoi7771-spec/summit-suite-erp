@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -10,8 +10,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Textarea } from '@/components/ui/textarea';
-import { Plus, Clock, CheckCircle, DollarSign, Upload, Image, Receipt } from 'lucide-react';
+import { Plus, Clock, CheckCircle, DollarSign, Image, Receipt, Sparkles, Trash2, Printer, Loader2 } from 'lucide-react';
+import { ExpenseVoucherSheet, printVoucher, type VoucherItem } from '@/components/expenses/ExpenseVoucherSheet';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
 import { EmptyState } from '@/components/shared/EmptyState';
@@ -39,6 +39,23 @@ const CORPORATE_METHODS: PaymentMethodValue[] = ['corporate_card', 'corporate'];
 const REIMBURSABLE_METHODS: PaymentMethodValue[] = ['personal', 'personal_card', 'card'];
 const paymentMethodLabel = (v: string) => PAYMENT_METHODS.find(p => p.value === v)?.label ?? (v === 'card' ? '카드결제' : v);
 
+const ROLE_LABELS: Record<string, string> = { ceo: '대표', general_director: '이사', managing_director: '이사', deputy_gm: '부장', md: '차장', designer: '디자이너', staff: '사원' };
+const emptyItems = (): VoucherItem[] => [{ name: '', amount: 0, note: '' }];
+const todayKST = () => new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Seoul' });
+const fileToBase64 = (f: File) => new Promise<string>((res, rej) => { const r = new FileReader(); r.onload = () => res(String(r.result).split(',')[1] || ''); r.onerror = rej; r.readAsDataURL(f); });
+const CATEGORY_KEYWORDS: [string, string[]][] = [
+  ['출장', ['출장', '교통', '택시', '기차', 'ktx', '항공', '비행기', '숙박', '호텔', '주유', '톨게이트', '주차']],
+  ['마케팅', ['광고', '마케팅', 'sns', '인스타', '배너', '인플루언서', '체험단', '프로모션', '행사', '팝업', '부스', '전시', '촬영', '콘텐츠']],
+  ['샘플링', ['샘플', '샘플링', '시제품', '목업', '테스트제품', '시험생산', '원료', '부자재', '용기', '포장재']],
+  ['장비', ['장비', '기기', '노트북', '모니터', '키보드', '마우스', '의자', '책상', '프린터', '소프트웨어', '라이선스', '구독']],
+];
+const classifyExpenseCategory = (text: string): string | null => {
+  const t = text.toLowerCase();
+  if (!t.trim()) return null;
+  for (const [cat, words] of CATEGORY_KEYWORDS) if (words.some(w => t.includes(w))) return cat;
+  return null;
+};
+
 export default function Expenses() {
   const { user, profile, userRole } = useAuth();
   const { toast } = useToast();
@@ -52,16 +69,51 @@ export default function Expenses() {
   const [selectedExpense, setSelectedExpense] = useState<any | null>(null);
   const selectedReceiptUrl = useSignedReceiptUrl(selectedExpense?.receipt_url);
   const [form, setForm] = useState({ amount: '', category: '' as string, description: '', payment_method: 'personal' as PaymentMethodValue });
+  const [voucher, setVoucher] = useState({ title: '', department: '', date: todayKST() });
+  const [items, setItems] = useState<VoucherItem[]>(emptyItems());
+  const [scanning, setScanning] = useState(false);
+  const [submitterRoles, setSubmitterRoles] = useState<Record<string, string>>({});
+  const detailSheetRef = useRef<HTMLDivElement>(null);
+  const categoryTouched = useRef(false);
+  const autoClassify = (text: string) => {
+    if (categoryTouched.current) return;
+    const cat = classifyExpenseCategory(text);
+    if (cat) setForm(f => (f.category === cat ? f : { ...f, category: cat }));
+  };
+  const itemsTotal = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
+  const validItems = items.filter(i => i.name.trim() && Number(i.amount) > 0);
+  const updateItem = (idx: number, patch: Partial<VoucherItem>) => setItems(list => list.map((it, i) => i === idx ? { ...it, ...patch } : it));
 
+  const handleReceiptChange = async (file: File | null) => {
+    setReceiptFile(file);
+    if (!file) return;
+    if (!file.type.startsWith('image/') && file.type !== 'application/pdf') return;
+    setScanning(true);
+    try {
+      const image = await fileToBase64(file);
+      const { data, error } = await supabase.functions.invoke('scan-receipt', { body: { image, mimeType: file.type, filename: file.name } });
+      if (error || data?.error) throw new Error(data?.error || '영수증을 읽지 못했어요. 직접 입력해주세요.');
+      const scanned: VoucherItem[] = (data.items || []).filter((i: any) => i?.name).map((i: any) => ({ name: i.name, amount: Number(i.amount) || 0, note: i.note || '' }));
+      if (scanned.length) setItems(prev => [...prev.filter(p => p.name.trim()), ...scanned]);
+      setVoucher(v => ({ ...v, title: v.title || data.title || '', date: data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date) ? data.date : v.date }));
+      if (data.category && !form.category) { categoryTouched.current = true; setForm(f => ({ ...f, category: data.category })); }
+      toast({ title: '영수증 내용을 자동으로 채웠어요', description: '금액과 품목이 맞는지 확인해주세요.' });
+    } catch (e: any) {
+      toast({ title: '자동 입력 실패', description: e.message, variant: 'destructive' });
+    } finally {
+      setScanning(false);
+    }
+  };
 
   useEffect(() => {
     fetchData();
   }, []);
 
   const fetchData = async () => {
-    const [expRes, profRes, apprRes] = await Promise.all([
+    const [expRes, profRes, roleRes, apprRes] = await Promise.all([
       supabase.from('expenses').select('*').order('date', { ascending: false }),
       supabase.from('profiles').select('id, user_id, name, name_kr, avatar'),
+      supabase.from('user_roles').select('user_id, role'),
       supabase
         .from('approvals')
         .select('id, title, type, subcategory, status, requester_id, approved_at, created_at, content')
@@ -71,6 +123,11 @@ export default function Expenses() {
     ]);
     setExpenses(expRes.data || []);
     setProfiles(profRes.data || []);
+    const byUser: Record<string, string> = {};
+    (roleRes.data || []).forEach((r: any) => { byUser[r.user_id] = r.role; });
+    const byProfile: Record<string, string> = {};
+    (profRes.data || []).forEach((p: any) => { if (byUser[p.user_id]) byProfile[p.id] = byUser[p.user_id]; });
+    setSubmitterRoles(byProfile);
     setApprovedApprovals(apprRes.data || []);
     setLoading(false);
   };
@@ -102,14 +159,18 @@ export default function Expenses() {
     const autoApproved = isCeo;
 
     const { error } = await supabase.from('expenses').insert({
-      amount: parseInt(form.amount),
+      amount: itemsTotal,
       category: form.category as any,
-      description: form.description,
+      description: form.description || validItems.map(i => `${i.name} ${Number(i.amount).toLocaleString('ko-KR')}원`).join('\n'),
+      title: voucher.title,
+      department: voucher.department || null,
+      items: validItems as any,
+      date: voucher.date,
       submitted_by: profile.id,
       receipt_url: receiptUrl,
       payment_method: form.payment_method as any,
       status: (autoApproved ? 'Approved' : 'Pending') as any,
-    });
+    } as any);
 
     if (error) {
       toast({ title: '경비 등록 실패', description: error.message, variant: 'destructive' });
@@ -119,13 +180,16 @@ export default function Expenses() {
       } else {
         await notifyAdmins(
           '새 경비 청구',
-          `${profile.name_kr}님이 ${formatKRW(parseInt(form.amount))} 경비를 청구했습니다. (${form.category} / ${paymentMethodLabel(form.payment_method)})`,
+          `${profile.name_kr}님이 ${formatKRW(itemsTotal)} 경비를 청구했습니다. (${form.category} / ${paymentMethodLabel(form.payment_method)})`,
           'expense'
         );
         toast({ title: '경비 등록 완료', description: '대표 승인 대기 중입니다.' });
       }
       setDialogOpen(false);
       setForm({ amount: '', category: '', description: '', payment_method: 'personal' });
+      categoryTouched.current = false;
+      setVoucher({ title: '', department: '', date: todayKST() });
+      setItems(emptyItems());
       setReceiptFile(null);
       fetchData();
     }
@@ -186,61 +250,85 @@ export default function Expenses() {
                 새 경비 청구
               </Button>
             </DialogTrigger>
-            <DialogContent>
+            <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>새 경비 청구</DialogTitle>
+                <DialogTitle>새 경비 청구 · 지출결의서</DialogTitle>
               </DialogHeader>
-              <div className="space-y-4 mt-2">
-                <div className="space-y-2">
-                  <Label>금액 (원)</Label>
-                  <Input type="number" placeholder="250000" value={form.amount} onChange={e => setForm(f => ({ ...f, amount: e.target.value }))} />
+              <div className="grid lg:grid-cols-[minmax(0,420px)_1fr] gap-6 mt-2">
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <Label>영수증 사진 (첨부하면 내역이 자동으로 채워져요)</Label>
+                    <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
+                      <input type="file" accept="image/*,.pdf" className="hidden" id="receipt-upload" onChange={e => handleReceiptChange(e.target.files?.[0] || null)} />
+                      <label htmlFor="receipt-upload" className="cursor-pointer">
+                        {scanning ? (
+                          <div className="flex items-center justify-center gap-2 text-sm"><Loader2 className="h-4 w-4 animate-spin" />영수증 읽는 중...</div>
+                        ) : receiptFile ? (
+                          <div className="flex items-center justify-center gap-2 text-sm"><Image className="h-4 w-4 text-success" /><span className="truncate">{receiptFile.name}</span></div>
+                        ) : (
+                          <div className="flex flex-col items-center gap-1">
+                            <Sparkles className="h-6 w-6 text-primary" />
+                            <span className="text-sm">클릭하여 영수증 업로드</span>
+                            <span className="text-xs text-muted-foreground">이미지 또는 PDF · 품목과 금액 자동 입력</span>
+                          </div>
+                        )}
+                      </label>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>제목</Label>
+                    <Input placeholder="예) 매장 진열소품 구매" value={voucher.title} onChange={e => { setVoucher(v => ({ ...v, title: e.target.value })); autoClassify(e.target.value); }} />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>부서</Label>
+                      <Input placeholder="예) 영업" value={voucher.department} onChange={e => setVoucher(v => ({ ...v, department: e.target.value }))} />
+                    </div>
+                    <div className="space-y-2">
+                      <Label>청구일</Label>
+                      <Input type="date" value={voucher.date} onChange={e => setVoucher(v => ({ ...v, date: e.target.value }))} />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div className="space-y-2">
+                      <Label>분류</Label>
+                      <Select value={form.category} onValueChange={v => { categoryTouched.current = true; setForm(f => ({ ...f, category: v })); }}>
+                        <SelectTrigger><SelectValue placeholder="분류 선택" /></SelectTrigger>
+                        <SelectContent>{categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                    <div className="space-y-2">
+                      <Label>결제수단</Label>
+                      <Select value={form.payment_method} onValueChange={v => setForm(f => ({ ...f, payment_method: v as any }))}>
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>{PAYMENT_METHODS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}</SelectContent>
+                      </Select>
+                    </div>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>내역 (적요 · 금액 · 비고)</Label>
+                    <div className="space-y-2">
+                      {items.map((it, idx) => (
+                        <div key={idx} className="grid grid-cols-[1fr_100px_80px_32px] gap-1.5">
+                          <Input placeholder="적요" value={it.name} onChange={e => { updateItem(idx, { name: e.target.value }); autoClassify(e.target.value); }} />
+                          <Input type="number" placeholder="금액" value={it.amount || ''} onChange={e => updateItem(idx, { amount: parseInt(e.target.value) || 0 })} />
+                          <Input placeholder="비고" value={it.note || ''} onChange={e => updateItem(idx, { note: e.target.value })} />
+                          <Button type="button" variant="ghost" size="icon" onClick={() => setItems(l => l.length > 1 ? l.filter((_, i) => i !== idx) : emptyItems())}><Trash2 className="h-4 w-4" /></Button>
+                        </div>
+                      ))}
+                      <Button type="button" variant="outline" size="sm" className="gap-1" onClick={() => setItems(l => [...l, { name: '', amount: 0, note: '' }])}><Plus className="h-3.5 w-3.5" />항목 추가</Button>
+                    </div>
+                    <p className="text-sm font-semibold text-right">합계 {formatKRW(itemsTotal)}</p>
+                  </div>
+                  <Button onClick={handleSubmit} disabled={submitting || scanning || !voucher.title.trim() || validItems.length === 0 || !form.category} className="w-full">
+                    {submitting ? '등록 중...' : '지출결의서 제출'}
+                  </Button>
                 </div>
-                <div className="space-y-2">
-                  <Label>분류</Label>
-                  <Select value={form.category} onValueChange={v => setForm(f => ({ ...f, category: v }))}>
-                  <SelectTrigger><SelectValue placeholder="분류 선택" /></SelectTrigger>
-                  <SelectContent>
-                    {categories.map(c => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>결제수단</Label>
-                <Select value={form.payment_method} onValueChange={v => setForm(f => ({ ...f, payment_method: v as any }))}>
-                  <SelectTrigger><SelectValue /></SelectTrigger>
-                  <SelectContent>
-                    {PAYMENT_METHODS.map(p => <SelectItem key={p.value} value={p.value}>{p.label}</SelectItem>)}
-                  </SelectContent>
-                </Select>
-              </div>
-              <div className="space-y-2">
-                <Label>내역</Label>
-                <Textarea placeholder="경비 내역을 입력하세요" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
-              </div>
-              <div className="space-y-2">
-                <Label>영수증</Label>
-                <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
-                  <input type="file" accept="image/*,.pdf" className="hidden" id="receipt-upload" onChange={e => setReceiptFile(e.target.files?.[0] || null)} />
-                  <label htmlFor="receipt-upload" className="cursor-pointer">
-                    {receiptFile ? (
-                      <div className="flex items-center justify-center gap-2 text-sm">
-                        <Image className="h-4 w-4 text-success" />
-                        <span>{receiptFile.name}</span>
-                      </div>
-                    ) : (
-                      <div className="flex flex-col items-center gap-1">
-                        <Upload className="h-6 w-6 text-muted-foreground" />
-                        <span className="text-sm text-muted-foreground">클릭하여 영수증 업로드</span>
-                        <span className="text-xs text-muted-foreground">이미지 또는 PDF</span>
-                      </div>
-                    )}
-                  </label>
+                <div className="rounded-xl border bg-muted/30 p-2 overflow-x-auto">
+                  <p className="text-xs text-muted-foreground px-2 pb-2">미리보기 · A4 실제 사이즈 · 입력하는 대로 서식이 채워집니다</p>
+                  <ExpenseVoucherSheet title={voucher.title} name={profile?.name_kr || ''} department={voucher.department} position={ROLE_LABELS[userRole || ''] || ''} items={validItems} date={voucher.date} />
                 </div>
               </div>
-              <Button onClick={handleSubmit} disabled={submitting || !form.amount || !form.category} className="w-full">
-                {submitting ? '등록 중...' : '경비 청구'}
-              </Button>
-            </div>
           </DialogContent>
         </Dialog>
           </div>
@@ -421,7 +509,7 @@ export default function Expenses() {
       </Card>
 
       <Dialog open={!!selectedExpense} onOpenChange={(o) => !o && setSelectedExpense(null)}>
-        <DialogContent className="max-w-lg">
+        <DialogContent className="max-w-4xl max-h-[92vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>경비 청구 상세</DialogTitle>
           </DialogHeader>
@@ -472,6 +560,22 @@ export default function Expenses() {
                     <Button onClick={async () => { await handleStatusChange(selectedExpense.id, 'Reimbursed'); setSelectedExpense(null); }}>정산 완료</Button>
                   </div>
                 )}
+                <div className="pt-2 border-t space-y-2">
+                  <div className="flex justify-end">
+                    <Button size="sm" variant="outline" className="gap-1" onClick={() => printVoucher(detailSheetRef.current)}><Printer className="h-3.5 w-3.5" />A4 인쇄 / PDF 저장</Button>
+                  </div>
+                  <div ref={detailSheetRef} className="rounded-lg border overflow-x-auto">
+                    <ExpenseVoucherSheet
+                      title={selectedExpense.title || selectedExpense.description?.split('\n')[0] || ''}
+                      name={submitter?.name_kr ?? ''}
+                      department={selectedExpense.department}
+                      position={ROLE_LABELS[submitterRoles[selectedExpense.submitted_by] || ''] || ''}
+                      items={Array.isArray(selectedExpense.items) && selectedExpense.items.length ? selectedExpense.items : [{ name: selectedExpense.description || '경비', amount: selectedExpense.amount, note: '' }]}
+                      date={selectedExpense.date}
+                      approvedBy={['Approved', 'Reimbursed'].includes(selectedExpense.status) ? { '대표': '승인' } : {}}
+                    />
+                  </div>
+                </div>
               </div>
             );
           })()}
