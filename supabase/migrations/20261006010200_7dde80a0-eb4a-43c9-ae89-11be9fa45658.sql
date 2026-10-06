@@ -1,0 +1,1 @@
+REVOKE EXECUTE ON FUNCTION public.handle_trip_delete_calendar() FROM PUBLIC, anon, authenticated;
