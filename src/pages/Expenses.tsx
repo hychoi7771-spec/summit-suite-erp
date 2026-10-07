@@ -80,8 +80,8 @@ export default function Expenses() {
     const cat = classifyExpenseCategory(text);
     if (cat) setForm(f => (f.category === cat ? f : { ...f, category: cat }));
   };
-  const itemsTotal = items.reduce((s, i) => s + (Number(i.amount) || 0), 0);
   const validItems = items.filter(i => i.name.trim() && Number(i.amount) > 0);
+  const itemsTotal = validItems.reduce((s, i) => s + (Number(i.amount) || 0), 0);
   const updateItem = (idx: number, patch: Partial<VoucherItem>) => setItems(list => list.map((it, i) => i === idx ? { ...it, ...patch } : it));
 
   const handleReceiptChange = async (file: File | null) => {
