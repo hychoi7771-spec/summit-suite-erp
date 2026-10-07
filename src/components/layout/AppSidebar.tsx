@@ -147,19 +147,16 @@ export function AppSidebar() {
         const active = isItemActive(item.url);
         return (
           <SidebarMenuItem key={item.title}>
-            <SidebarMenuButton asChild isActive={active} tooltip={item.title} className="h-9 rounded-lg">
+            <SidebarMenuButton asChild isActive={active} tooltip={item.title} className="h-10 rounded-xl">
               <NavLink
                 to={item.url}
                 end={item.url === '/'}
-                className={`group relative flex items-center gap-2.5 px-2.5 transition-all ${
+                className={`group relative flex items-center gap-2.5 px-3 transition-all ${
                   active
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-medium'
-                    : 'text-sidebar-foreground/80 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
+                    ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold border-2 border-primary/30'
+                    : 'text-sidebar-foreground/80 border-2 border-transparent hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                 }`}
               >
-                {active && (
-                  <span className="absolute left-0 top-1/2 h-4 w-0.5 -translate-y-1/2 rounded-r-full bg-primary" />
-                )}
                 <item.icon
                   className={`h-[18px] w-[18px] shrink-0 transition-colors ${
                     active ? 'text-primary' : item.accent ? 'text-amber-500' : 'text-sidebar-foreground/60 group-hover:text-sidebar-foreground'
@@ -180,11 +177,10 @@ export function AppSidebar() {
 
   const GroupLabel = ({ children }: { children: React.ReactNode }) => (
     <div className="flex items-center gap-2 px-3 pt-5 pb-2">
-      <span className="h-1.5 w-1.5 rounded-full bg-primary/70 shrink-0" />
-      <span className="text-[11px] font-bold text-sidebar-accent-foreground uppercase tracking-[0.16em]">
+      <span className="text-[11px] font-extrabold text-muted-foreground uppercase tracking-[0.14em]">
         {children}
       </span>
-      <span className="flex-1 h-px bg-sidebar-border/70" />
+      <span className="flex-1 h-0.5 rounded-full bg-sidebar-border/70" />
     </div>
   );
 
@@ -202,7 +198,7 @@ export function AppSidebar() {
     children: React.ReactNode;
   }) => (
     <Collapsible open={open} onOpenChange={onOpenChange}>
-      <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-[13px] font-medium text-sidebar-foreground/80 hover:text-sidebar-foreground transition-colors rounded-lg hover:bg-sidebar-accent/40">
+      <CollapsibleTrigger className="flex items-center justify-between w-full px-3 py-2 text-[13px] font-semibold text-sidebar-foreground/80 hover:text-sidebar-foreground transition-colors rounded-xl hover:bg-sidebar-accent/40">
         <div className="flex items-center gap-2.5">
           <Icon className="h-[18px] w-[18px] text-sidebar-foreground/60" />
           <span className="tracking-tight">{label}</span>
@@ -217,7 +213,7 @@ export function AppSidebar() {
     <Sidebar collapsible="icon" className="border-r border-sidebar-border/60">
       <SidebarHeader className="p-4 pb-3">
         <div className="flex items-center gap-2.5">
-          <img src={logo} alt="SHFoodHub" className="h-8 w-8 rounded-lg object-contain shrink-0 ring-1 ring-sidebar-border/60" />
+          <img src={logo} alt="SHFoodHub" className="h-9 w-9 rounded-xl object-contain shrink-0 border-2 border-sidebar-border/70" />
           {!collapsed && (
             <div className="min-w-0">
               <h2 className="text-[13px] font-bold text-sidebar-foreground truncate tracking-tight">SHFoodHub</h2>

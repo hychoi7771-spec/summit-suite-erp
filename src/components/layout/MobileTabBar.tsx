@@ -39,8 +39,10 @@ export function MobileTabBar() {
                 active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <tab.icon className={`h-5 w-5 ${active ? 'text-primary' : ''}`} />
-              <span className={`text-[10px] ${active ? 'font-semibold' : ''}`}>{tab.title}</span>
+              <span className={`flex items-center justify-center h-7 w-12 rounded-full transition-colors ${active ? 'bg-accent' : ''}`}>
+                <tab.icon className={`h-5 w-5 ${active ? 'text-primary' : ''}`} />
+              </span>
+              <span className={`text-[10px] ${active ? 'font-bold' : ''}`}>{tab.title}</span>
             </NavLink>
           );
         })}
