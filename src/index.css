@@ -6,104 +6,102 @@
 
 @layer base {
   :root {
-    /* Teenage Engineering palette — warm off-white, near-black, signal orange */
-    --background: 40 12% 96%;       /* #f6f5f2 */
-    --foreground: 30 6% 10%;        /* near-black */
+    /* Duolingo-inspired palette — clean white, feather green, playful accents */
+    --background: 0 0% 100%;          /* pure white canvas */
+    --foreground: 240 10% 22%;        /* #3c3c3c-ish dark slate */
 
     --card: 0 0% 100%;
-    --card-foreground: 30 6% 10%;
+    --card-foreground: 240 10% 22%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 30 6% 10%;
+    --popover-foreground: 240 10% 22%;
 
-    /* Primary: TE signal orange */
-    --primary: 22 100% 50%;         /* #ff5c00 */
+    /* Primary: Duolingo feather green #58cc02 */
+    --primary: 97 98% 40%;            /* #58cc02 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 40 9% 92%;
-    --secondary-foreground: 30 6% 12%;
+    --secondary: 210 17% 95%;         /* #eef1f4 soft gray */
+    --secondary-foreground: 240 10% 30%;
 
-    --muted: 40 9% 93%;
-    --muted-foreground: 30 4% 42%;
+    --muted: 210 17% 95%;
+    --muted-foreground: 220 9% 46%;   /* #777 */
 
-    --accent: 22 100% 95%;
-    --accent-foreground: 22 90% 32%;
+    --accent: 97 98% 94%;             /* pale green tint */
+    --accent-foreground: 97 90% 26%;
 
-    --destructive: 4 74% 50%;
+    --destructive: 4 90% 58%;         /* #ff4b4b duolingo red */
     --destructive-foreground: 0 0% 100%;
 
-    --success: 150 60% 34%;
+    --success: 97 98% 40%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 95% 52%;
-    --warning-foreground: 30 60% 14%;
+    --warning: 42 100% 50%;           /* #ffc800 duolingo yellow */
+    --warning-foreground: 42 80% 16%;
 
-    --info: 210 90% 48%;
+    --info: 198 93% 53%;              /* #1cb0f6 duolingo blue */
     --info-foreground: 0 0% 100%;
 
-    /* Hairline borders — TE technical grid feel */
-    --border: 40 7% 84%;
-    --input: 40 7% 80%;
-    --ring: 22 100% 50%;
+    /* Chunky friendly borders */
+    --border: 220 13% 91%;            /* #e5e5e5 */
+    --input: 220 13% 85%;
+    --ring: 97 98% 40%;
 
-    /* Sharp corners, hardware-like */
-    --radius: 0.25rem;
+    /* Big rounded corners — playful, friendly */
+    --radius: 1rem;
 
-    /* Sidebar — paper white with hairline dividers */
-    --sidebar-background: 40 14% 97%;
-    --sidebar-foreground: 30 6% 14%;
-    --sidebar-primary: 22 100% 50%;
+    /* Sidebar — white with soft dividers */
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 10% 26%;
+    --sidebar-primary: 97 98% 40%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 22 100% 95%;
-    --sidebar-accent-foreground: 22 90% 30%;
-    --sidebar-border: 40 7% 85%;
-    --sidebar-ring: 22 100% 50%;
-    --sidebar-muted: 30 4% 44%;
+    --sidebar-accent: 97 98% 94%;
+    --sidebar-accent-foreground: 97 90% 26%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 97 98% 40%;
+    --sidebar-muted: 220 9% 46%;
 
-    --chart-1: 22 100% 50%;
-    --chart-2: 30 6% 12%;
-    --chart-3: 40 8% 60%;
-    --chart-4: 38 95% 52%;
-    --chart-5: 210 90% 48%;
+    --chart-1: 97 98% 40%;            /* green */
+    --chart-2: 198 93% 53%;           /* blue */
+    --chart-3: 42 100% 50%;           /* yellow */
+    --chart-4: 4 90% 58%;             /* red */
+    --chart-5: 280 60% 60%;           /* purple */
 
-    /* Subtle paper gradients */
-    --gradient-pastel-1: linear-gradient(135deg, #faf9f6 0%, #f3f1ec 100%);
-    --gradient-pastel-2: linear-gradient(135deg, #fff4ec 0%, #f6f5f2 100%);
-    --gradient-pastel-3: linear-gradient(135deg, #f3f1ec 0%, #faf9f6 100%);
-    --gradient-pastel-4: linear-gradient(135deg, #faf9f6 0%, #ffefe4 100%);
+    /* Soft playful gradients */
+    --gradient-pastel-1: linear-gradient(135deg, #ffffff 0%, #f0f9e8 100%);
+    --gradient-pastel-2: linear-gradient(135deg, #f0f9e8 0%, #ffffff 100%);
+    --gradient-pastel-3: linear-gradient(135deg, #eaf6ff 0%, #ffffff 100%);
+    --gradient-pastel-4: linear-gradient(135deg, #ffffff 0%, #fff8e0 100%);
   }
-
 
   .dark {
-    --background: 30 6% 8%;
-    --foreground: 40 10% 94%;
-    --card: 30 6% 11%;
-    --card-foreground: 40 10% 94%;
-    --popover: 30 6% 11%;
-    --popover-foreground: 40 10% 94%;
-    --primary: 22 100% 55%;
-    --primary-foreground: 30 6% 8%;
-    --secondary: 30 5% 16%;
-    --secondary-foreground: 40 10% 94%;
-    --muted: 30 5% 16%;
-    --muted-foreground: 40 6% 62%;
-    --accent: 22 60% 22%;
-    --accent-foreground: 22 100% 80%;
-    --destructive: 4 62% 48%;
-    --destructive-foreground: 40 10% 94%;
-    --border: 30 5% 20%;
-    --input: 30 5% 24%;
-    --ring: 22 100% 55%;
-    --sidebar-background: 30 6% 9%;
-    --sidebar-foreground: 40 8% 88%;
-    --sidebar-primary: 22 100% 55%;
-    --sidebar-primary-foreground: 30 6% 8%;
-    --sidebar-accent: 30 5% 16%;
-    --sidebar-accent-foreground: 40 10% 94%;
-    --sidebar-border: 30 5% 20%;
-    --sidebar-ring: 22 100% 55%;
+    --background: 240 8% 10%;
+    --foreground: 0 0% 95%;
+    --card: 240 7% 14%;
+    --card-foreground: 0 0% 95%;
+    --popover: 240 7% 14%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 97 90% 46%;
+    --primary-foreground: 240 8% 10%;
+    --secondary: 240 5% 20%;
+    --secondary-foreground: 0 0% 95%;
+    --muted: 240 5% 20%;
+    --muted-foreground: 220 9% 62%;
+    --accent: 97 50% 18%;
+    --accent-foreground: 97 90% 75%;
+    --destructive: 4 80% 55%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 240 5% 22%;
+    --input: 240 5% 26%;
+    --ring: 97 90% 46%;
+    --sidebar-background: 240 8% 12%;
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 97 90% 46%;
+    --sidebar-primary-foreground: 240 8% 10%;
+    --sidebar-accent: 240 5% 20%;
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 240 5% 22%;
+    --sidebar-ring: 97 90% 46%;
   }
-
 }
 
 @layer base {
@@ -120,10 +118,9 @@
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Outfit', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
-    @apply font-semibold tracking-tight;
+    @apply font-bold tracking-tight;
   }
 
-  /* TE-style mono details: numbers, labels, badges */
   code, kbd, .font-mono {
     font-family: 'JetBrains Mono', 'Pretendard', monospace;
   }
@@ -131,18 +128,35 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-card border border-border rounded-md shadow-[0_1px_2px_rgba(0,0,0,0.04)];
+    @apply bg-card border-2 border-border rounded-2xl shadow-[0_2px_0_hsl(var(--border))];
   }
 
   .stat-card {
-    @apply bg-card rounded-md border border-border p-5 transition-all duration-150 hover:border-foreground/40;
+    @apply bg-card rounded-2xl border-2 border-border p-5 transition-all duration-150 hover:border-primary/60 hover:-translate-y-0.5;
   }
 
   .nav-badge {
-    @apply inline-flex items-center justify-center rounded-sm text-[11px] font-medium px-1.5 py-0.5 font-mono;
+    @apply inline-flex items-center justify-center rounded-full text-[11px] font-bold px-2 py-0.5;
   }
 
-  /* TE technical label — uppercase mono microcopy */
+  /* Duolingo-style chunky 3D button — thick bottom border, press to squash */
+  .duo-btn {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl font-bold
+      bg-primary text-primary-foreground
+      border-b-4 border-[hsl(97_98%_32%)]
+      transition-all duration-100
+      hover:brightness-105
+      active:border-b-2 active:translate-y-[2px];
+  }
+
+  .duo-btn-outline {
+    @apply inline-flex items-center justify-center gap-2 rounded-2xl font-bold
+      bg-card text-foreground border-2 border-border border-b-4
+      transition-all duration-100
+      hover:bg-secondary
+      active:border-b-2 active:translate-y-[2px];
+  }
+
   .te-label {
     @apply font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground;
   }
