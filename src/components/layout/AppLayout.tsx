@@ -112,7 +112,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <button
                 type="button"
                 onClick={() => setPaletteOpen(true)}
-                className="hidden md:flex items-center gap-2 bg-muted hover:bg-muted/80 rounded-lg px-3 py-1.5 transition-colors text-left"
+                className="hidden md:flex items-center gap-2 bg-card border-2 border-border hover:border-primary/50 rounded-xl px-3 py-1.5 transition-colors text-left"
                 aria-label="빠른 검색 (Ctrl+K)"
               >
                 <Search className="h-4 w-4 text-muted-foreground" />
