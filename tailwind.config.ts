@@ -16,6 +16,7 @@ export default {
       fontFamily: {
         sans: ["Figtree", "Pretendard", "Noto Sans KR", "system-ui", "sans-serif"],
         display: ["Outfit", "Pretendard", "Noto Sans KR", "system-ui", "sans-serif"],
+        mono: ["JetBrains Mono", "Pretendard", "monospace"],
       },
       colors: {
         border: "hsl(var(--border))",

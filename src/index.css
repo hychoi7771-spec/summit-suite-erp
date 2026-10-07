@@ -1,4 +1,4 @@
-/* Fonts loaded via @fontsource in src/main.tsx (Outfit + Figtree) */
+/* Fonts loaded via @fontsource in src/main.tsx (Outfit + Figtree + JetBrains Mono) */
 
 @tailwind base;
 @tailwind components;
@@ -6,100 +6,102 @@
 
 @layer base {
   :root {
-    /* Cool Summer palette — fresh aqua / teal */
-    --background: 175 55% 97%;      /* #f0fbfa */
-    --foreground: 185 45% 15%;
+    /* Teenage Engineering palette — warm off-white, near-black, signal orange */
+    --background: 40 12% 96%;       /* #f6f5f2 */
+    --foreground: 30 6% 10%;        /* near-black */
 
     --card: 0 0% 100%;
-    --card-foreground: 185 45% 15%;
+    --card-foreground: 30 6% 10%;
 
     --popover: 0 0% 100%;
-    --popover-foreground: 185 45% 15%;
+    --popover-foreground: 30 6% 10%;
 
-    /* Primary: vivid aqua teal */
-    --primary: 175 80% 42%;         /* #15b8b0-ish */
+    /* Primary: TE signal orange */
+    --primary: 22 100% 50%;         /* #ff5c00 */
     --primary-foreground: 0 0% 100%;
 
-    --secondary: 175 50% 94%;
-    --secondary-foreground: 185 45% 18%;
+    --secondary: 40 9% 92%;
+    --secondary-foreground: 30 6% 12%;
 
-    --muted: 180 38% 94%;
-    --muted-foreground: 185 16% 44%;
+    --muted: 40 9% 93%;
+    --muted-foreground: 30 4% 42%;
 
-    --accent: 160 70% 85%;          /* bright aqua mint */
-    --accent-foreground: 175 55% 20%;
+    --accent: 22 100% 95%;
+    --accent-foreground: 22 90% 32%;
 
-    --destructive: 352 75% 60%;
+    --destructive: 4 74% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --success: 165 62% 42%;
+    --success: 150 60% 34%;
     --success-foreground: 0 0% 100%;
 
-    --warning: 38 92% 62%;
-    --warning-foreground: 30 60% 18%;
+    --warning: 38 95% 52%;
+    --warning-foreground: 30 60% 14%;
 
-    --info: 185 88% 52%;
+    --info: 210 90% 48%;
     --info-foreground: 0 0% 100%;
 
-    --border: 180 38% 87%;
-    --input: 180 38% 87%;
-    --ring: 175 80% 42%;
+    /* Hairline borders — TE technical grid feel */
+    --border: 40 7% 84%;
+    --input: 40 7% 80%;
+    --ring: 22 100% 50%;
 
-    --radius: 1rem;
+    /* Sharp corners, hardware-like */
+    --radius: 0.25rem;
 
-    /* Sidebar — soft aqua */
-    --sidebar-background: 175 60% 95%;
-    --sidebar-foreground: 185 35% 18%;
-    --sidebar-primary: 175 80% 40%;
+    /* Sidebar — paper white with hairline dividers */
+    --sidebar-background: 40 14% 97%;
+    --sidebar-foreground: 30 6% 14%;
+    --sidebar-primary: 22 100% 50%;
     --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 165 70% 90%;
-    --sidebar-accent-foreground: 175 55% 22%;
-    --sidebar-border: 180 38% 86%;
-    --sidebar-ring: 175 80% 42%;
-    --sidebar-muted: 185 16% 46%;
+    --sidebar-accent: 22 100% 95%;
+    --sidebar-accent-foreground: 22 90% 30%;
+    --sidebar-border: 40 7% 85%;
+    --sidebar-ring: 22 100% 50%;
+    --sidebar-muted: 30 4% 44%;
 
-    --chart-1: 175 80% 45%;
-    --chart-2: 160 70% 48%;
-    --chart-3: 185 85% 58%;
-    --chart-4: 38 92% 62%;
-    --chart-5: 260 60% 68%;
+    --chart-1: 22 100% 50%;
+    --chart-2: 30 6% 12%;
+    --chart-3: 40 8% 60%;
+    --chart-4: 38 95% 52%;
+    --chart-5: 210 90% 48%;
 
-    /* Cool gradients */
-    --gradient-pastel-1: linear-gradient(135deg, #d4f8f6 0%, #c9f6f1 100%);
-    --gradient-pastel-2: linear-gradient(135deg, #d8f9f5 0%, #d0f6ef 100%);
-    --gradient-pastel-3: linear-gradient(135deg, #c9f9f0 0%, #d4f8f6 100%);
-    --gradient-pastel-4: linear-gradient(135deg, #e0fbf9 0%, #d8f6ff 100%);
+    /* Subtle paper gradients */
+    --gradient-pastel-1: linear-gradient(135deg, #faf9f6 0%, #f3f1ec 100%);
+    --gradient-pastel-2: linear-gradient(135deg, #fff4ec 0%, #f6f5f2 100%);
+    --gradient-pastel-3: linear-gradient(135deg, #f3f1ec 0%, #faf9f6 100%);
+    --gradient-pastel-4: linear-gradient(135deg, #faf9f6 0%, #ffefe4 100%);
   }
 
 
   .dark {
-    --background: 185 42% 8%;
-    --foreground: 175 25% 96%;
-    --card: 185 40% 11%;
-    --card-foreground: 175 25% 96%;
-    --popover: 185 40% 11%;
-    --popover-foreground: 175 25% 96%;
-    --primary: 172 85% 52%;
-    --primary-foreground: 185 42% 8%;
-    --secondary: 185 30% 18%;
-    --secondary-foreground: 175 25% 96%;
-    --muted: 185 30% 18%;
-    --muted-foreground: 180 16% 68%;
-    --accent: 160 60% 42%;
-    --accent-foreground: 0 0% 100%;
-    --destructive: 352 62% 50%;
-    --destructive-foreground: 175 25% 96%;
-    --border: 185 28% 20%;
-    --input: 185 28% 20%;
-    --ring: 172 85% 52%;
-    --sidebar-background: 185 42% 9%;
-    --sidebar-foreground: 175 22% 90%;
-    --sidebar-primary: 172 85% 52%;
-    --sidebar-primary-foreground: 185 42% 8%;
-    --sidebar-accent: 185 30% 18%;
-    --sidebar-accent-foreground: 175 25% 96%;
-    --sidebar-border: 185 28% 20%;
-    --sidebar-ring: 172 85% 52%;
+    --background: 30 6% 8%;
+    --foreground: 40 10% 94%;
+    --card: 30 6% 11%;
+    --card-foreground: 40 10% 94%;
+    --popover: 30 6% 11%;
+    --popover-foreground: 40 10% 94%;
+    --primary: 22 100% 55%;
+    --primary-foreground: 30 6% 8%;
+    --secondary: 30 5% 16%;
+    --secondary-foreground: 40 10% 94%;
+    --muted: 30 5% 16%;
+    --muted-foreground: 40 6% 62%;
+    --accent: 22 60% 22%;
+    --accent-foreground: 22 100% 80%;
+    --destructive: 4 62% 48%;
+    --destructive-foreground: 40 10% 94%;
+    --border: 30 5% 20%;
+    --input: 30 5% 24%;
+    --ring: 22 100% 55%;
+    --sidebar-background: 30 6% 9%;
+    --sidebar-foreground: 40 8% 88%;
+    --sidebar-primary: 22 100% 55%;
+    --sidebar-primary-foreground: 30 6% 8%;
+    --sidebar-accent: 30 5% 16%;
+    --sidebar-accent-foreground: 40 10% 94%;
+    --sidebar-border: 30 5% 20%;
+    --sidebar-ring: 22 100% 55%;
   }
 
 }
@@ -113,25 +115,36 @@
     @apply bg-background text-foreground font-sans antialiased;
     font-family: 'Figtree', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11', 'ss01';
+    letter-spacing: -0.01em;
   }
 
   h1, h2, h3, h4, h5, h6 {
     font-family: 'Outfit', 'Pretendard', 'Noto Sans KR', system-ui, sans-serif;
     @apply font-semibold tracking-tight;
   }
+
+  /* TE-style mono details: numbers, labels, badges */
+  code, kbd, .font-mono {
+    font-family: 'JetBrains Mono', 'Pretendard', monospace;
+  }
 }
 
 @layer utilities {
   .glass-card {
-    @apply bg-card/80 backdrop-blur-sm border border-border/50 rounded-2xl shadow-[0_2px_10px_-4px_rgba(20,184,166,0.08)];
+    @apply bg-card border border-border rounded-md shadow-[0_1px_2px_rgba(0,0,0,0.04)];
   }
 
   .stat-card {
-    @apply bg-card rounded-2xl border border-border/60 p-5 shadow-[0_2px_10px_-4px_rgba(20,184,166,0.06)] transition-all duration-200 hover:shadow-[0_6px_20px_-6px_rgba(20,184,166,0.14)] hover:border-primary/30;
+    @apply bg-card rounded-md border border-border p-5 transition-all duration-150 hover:border-foreground/40;
   }
 
   .nav-badge {
-    @apply inline-flex items-center justify-center rounded-full text-xs font-medium px-2 py-0.5;
+    @apply inline-flex items-center justify-center rounded-sm text-[11px] font-medium px-1.5 py-0.5 font-mono;
+  }
+
+  /* TE technical label — uppercase mono microcopy */
+  .te-label {
+    @apply font-mono text-[10px] uppercase tracking-[0.14em] text-muted-foreground;
   }
 
   .pastel-gradient-1 { background: var(--gradient-pastel-1); }
@@ -139,5 +152,3 @@
   .pastel-gradient-3 { background: var(--gradient-pastel-3); }
   .pastel-gradient-4 { background: var(--gradient-pastel-4); }
 }
-
-
