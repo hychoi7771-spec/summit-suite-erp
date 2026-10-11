@@ -26,6 +26,7 @@ export default {
         foreground: "hsl(var(--foreground))",
         primary: {
           DEFAULT: "hsl(var(--primary))",
+          depth: "hsl(var(--primary-depth))",
           foreground: "hsl(var(--primary-foreground))",
         },
         secondary: {
@@ -34,6 +35,7 @@ export default {
         },
         destructive: {
           DEFAULT: "hsl(var(--destructive))",
+          depth: "hsl(var(--destructive-depth))",
           foreground: "hsl(var(--destructive-foreground))",
         },
         success: {

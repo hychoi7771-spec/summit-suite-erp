@@ -3,6 +3,8 @@ import { NavLink } from '@/components/NavLink';
 import { useLocation } from 'react-router-dom';
 import { useSidebar } from '@/components/ui/sidebar';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { NavGlyph } from '@/components/shared/NavGlyph';
+import { Button } from '@/components/ui/button';
 
 const tabs = [
   { title: '홈', url: '/', icon: LayoutDashboard },
@@ -35,26 +37,27 @@ export function MobileTabBar() {
               key={tab.url}
               to={tab.url}
               end={tab.url === '/'}
-              className={`flex flex-col items-center gap-0.5 py-2 transition-colors ${
+              className={`nav-glyph-trigger flex flex-col items-center gap-0.5 py-2 transition-colors ${
                 active ? 'text-primary' : 'text-muted-foreground hover:text-foreground'
               }`}
             >
-              <span className={`flex items-center justify-center h-7 w-12 rounded-full transition-colors ${active ? 'bg-accent' : ''}`}>
-                <tab.icon className={`h-5 w-5 ${active ? 'text-primary' : ''}`} />
+              <span className="flex items-center justify-center h-8 w-12">
+                <NavGlyph icon={tab.icon} active={active} tone={tab.url === '/calendar' ? 'info' : 'primary'} className="h-8 w-8" />
               </span>
               <span className={`text-[10px] ${active ? 'font-bold' : ''}`}>{tab.title}</span>
             </NavLink>
           );
         })}
-        <button
+        <Button
+          variant="ghost"
           type="button"
           onClick={() => setOpenMobile(true)}
-          className="flex flex-col items-center gap-0.5 py-2 text-muted-foreground hover:text-foreground transition-colors"
+          className="h-auto rounded-none flex flex-col items-center gap-0.5 py-2 text-muted-foreground hover:text-foreground transition-colors"
           aria-label="전체 메뉴 열기"
         >
-          <Menu className="h-5 w-5" />
+          <span className="flex h-8 items-center"><Menu className="h-5 w-5" /></span>
           <span className="text-[10px]">메뉴</span>
-        </button>
+        </Button>
       </div>
     </nav>
   );

@@ -55,6 +55,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { useAuth } from '@/contexts/AuthContext';
 import logo from '@/assets/logo.jpg';
+import { NavGlyph } from '@/components/shared/NavGlyph';
 
 type NavItem = { title: string; url: string; icon: any; managerOnly?: boolean; ceoOnly?: boolean; managingDirectorOnly?: boolean; accent?: boolean };
 
@@ -147,23 +148,19 @@ export function AppSidebar() {
         const active = isItemActive(item.url);
         return (
           <SidebarMenuItem key={item.title}>
-            <SidebarMenuButton asChild isActive={active} tooltip={item.title} className="h-10 rounded-xl">
+            <SidebarMenuButton asChild isActive={active} tooltip={item.title} className="h-11 rounded-xl">
               <NavLink
                 to={item.url}
                 end={item.url === '/'}
-                className={`group relative flex items-center gap-2.5 px-3 transition-all ${
+                className={`nav-glyph-trigger group relative flex items-center gap-2.5 px-3 transition-all ${
                   active
                     ? 'bg-sidebar-accent text-sidebar-accent-foreground font-bold border-2 border-primary/30'
                     : 'text-sidebar-foreground/80 border-2 border-transparent hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                 }`}
               >
-                <item.icon
-                  className={`h-[18px] w-[18px] shrink-0 transition-colors ${
-                    active ? 'text-primary' : item.accent ? 'text-amber-500' : 'text-sidebar-foreground/60 group-hover:text-sidebar-foreground'
-                  }`}
-                />
+                <NavGlyph icon={item.icon} active={active} tone={item.accent ? 'warning' : ['/calendar', '/sales', '/attendance'].includes(item.url) ? 'info' : 'primary'} className="h-8 w-8" />
                 {!collapsed && (
-                  <span className={`text-[13px] tracking-tight ${item.accent && !active ? 'text-amber-600 dark:text-amber-400 font-medium' : ''}`}>
+                  <span className={`text-[13px] tracking-normal ${item.accent && !active ? 'text-warning-foreground font-medium' : ''}`}>
                     {item.title}
                   </span>
                 )}
