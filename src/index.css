@@ -19,6 +19,8 @@
     /* Primary: Duolingo feather green #58cc02 */
     --primary: 97 98% 40%;            /* #58cc02 */
     --primary-foreground: 0 0% 100%;
+    --primary-depth: 97 98% 32%;
+    --destructive-depth: 4 90% 45%;
 
     --secondary: 210 17% 95%;         /* #eef1f4 soft gray */
     --secondary-foreground: 240 10% 30%;
@@ -82,6 +84,8 @@
     --popover-foreground: 0 0% 95%;
     --primary: 97 90% 46%;
     --primary-foreground: 240 8% 10%;
+    --primary-depth: 97 75% 32%;
+    --destructive-depth: 4 70% 40%;
     --secondary: 240 5% 20%;
     --secondary-foreground: 0 0% 95%;
     --muted: 240 5% 20%;
@@ -165,4 +169,51 @@
   .pastel-gradient-2 { background: var(--gradient-pastel-2); }
   .pastel-gradient-3 { background: var(--gradient-pastel-3); }
   .pastel-gradient-4 { background: var(--gradient-pastel-4); }
+}
+
+/* SVG feedback stays within fixed-size controls and never intercepts input. */
+.nav-glyph { overflow: visible; color: hsl(var(--primary)); --glyph-color: var(--primary); }
+.nav-glyph-info { --glyph-color: var(--info); color: hsl(var(--info)); }
+.nav-glyph-warning { --glyph-color: var(--warning); color: hsl(var(--warning)); }
+.nav-glyph-base { fill: hsl(var(--glyph-color) / .22); }
+.nav-glyph-face { fill: hsl(var(--glyph-color) / .12); stroke: hsl(var(--glyph-color) / .25); stroke-width: 1.5; }
+.nav-glyph-symbol { color: hsl(var(--glyph-color)); transform-origin: 20px 20px; }
+.nav-glyph-spark { opacity: 0; }
+.nav-glyph-active .nav-glyph-face { fill: hsl(var(--glyph-color)); stroke: hsl(var(--glyph-color)); }
+.nav-glyph-active .nav-glyph-base { fill: hsl(var(--glyph-color) / .55); }
+.nav-glyph-active .nav-glyph-symbol { color: hsl(var(--primary-foreground)); }
+.nav-glyph-active { animation: glyph-arrive 420ms ease-out; }
+.nav-glyph-trigger:focus-visible .nav-glyph-symbol { animation: glyph-wiggle 450ms ease-out; }
+.nav-glyph-trigger:active .nav-glyph { transform: translateY(2px); }
+@media (hover: hover) {
+  .nav-glyph-trigger:hover .nav-glyph-symbol { animation: glyph-wiggle 450ms ease-out; }
+  .nav-glyph-trigger:hover .nav-glyph-spark { animation: glyph-spark 500ms ease-out; }
+}
+svg.button-burst {
+  position: absolute; inset: 0; width: 100%; height: 100%;
+  overflow: visible; pointer-events: none; color: hsl(var(--primary));
+  animation: button-burst 480ms ease-out forwards;
+}
+@keyframes glyph-arrive {
+  0% { transform: scale(.85); }
+  55% { transform: scale(1.08); }
+  100% { transform: scale(1); }
+}
+@keyframes glyph-wiggle {
+  30% { transform: rotate(-10deg); }
+  65% { transform: rotate(7deg); }
+  100% { transform: rotate(0); }
+}
+@keyframes glyph-spark {
+  0%, 100% { opacity: 0; }
+  35% { opacity: .8; }
+}
+@keyframes button-burst {
+  0% { opacity: 0; transform: scale(.9); }
+  25% { opacity: .85; }
+  100% { opacity: 0; transform: scale(1.3); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nav-glyph, .nav-glyph-symbol, .nav-glyph-spark { animation: none !important; transform: none !important; }
+  svg.button-burst { display: none; animation-duration: 1ms; }
 }
