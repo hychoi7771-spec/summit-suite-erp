@@ -22,6 +22,7 @@ import { openReceipt, useSignedReceiptUrl } from '@/lib/receiptUrl';
 import { Constants } from '@/integrations/supabase/types';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
 import ExpenseExportDialog from '@/components/expenses/ExpenseExportDialog';
+import { ExpenseVisibilityControl, expenseVisibilityPayload, type ExpenseVisibility } from '@/components/expenses/ExpenseVisibilityControl';
 
 const formatKRW = (n: number) => `₩${n.toLocaleString('ko-KR')}`;
 const categories = Constants.public.Enums.expense_category;
@@ -67,6 +68,9 @@ export default function Expenses() {
   const [submitting, setSubmitting] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [selectedExpense, setSelectedExpense] = useState<any | null>(null);
+  const [visibility, setVisibility] = useState<ExpenseVisibility>({ is_confidential: false, allowed_viewer_ids: [] });
+  const [detailVisibility, setDetailVisibility] = useState<ExpenseVisibility>({ is_confidential: false, allowed_viewer_ids: [] });
+  const [savingVisibility, setSavingVisibility] = useState(false);
   const selectedReceiptUrl = useSignedReceiptUrl(selectedExpense?.receipt_url);
   const [form, setForm] = useState({ amount: '', category: '' as string, description: '', payment_method: 'personal' as PaymentMethodValue });
   const [voucher, setVoucher] = useState({ title: '', department: '', date: todayKST() });
@@ -135,6 +139,26 @@ export default function Expenses() {
 
   const getProfile = (id: string) => profiles.find(p => p.id === id);
 
+  const selectExpense = (expense: any) => {
+    setSelectedExpense(expense);
+    setDetailVisibility({ is_confidential: expense.is_confidential ?? false, allowed_viewer_ids: expense.allowed_viewer_ids ?? [] });
+  };
+
+  const saveVisibility = async () => {
+    if (!selectedExpense) return;
+    setSavingVisibility(true);
+    const payload = expenseVisibilityPayload(detailVisibility);
+    const { data, error } = await supabase.from('expenses').update(payload).eq('id', selectedExpense.id).select('*').single();
+    setSavingVisibility(false);
+    if (error) {
+      toast({ title: '열람 권한 변경 실패', description: error.message, variant: 'destructive' });
+      return;
+    }
+    selectExpense(data);
+    toast({ title: '열람 권한이 저장되었습니다' });
+    await fetchData();
+  };
+
   const handleSubmit = async () => {
     if (!profile || !user) return;
     setSubmitting(true);
@@ -167,6 +191,7 @@ export default function Expenses() {
       items: validItems as any,
       date: voucher.date,
       submitted_by: profile.id,
+      ...expenseVisibilityPayload(visibility),
       receipt_url: receiptUrl,
       payment_method: form.payment_method as any,
       status: (autoApproved ? 'Approved' : 'Pending') as any,
@@ -191,6 +216,7 @@ export default function Expenses() {
       setVoucher({ title: '', department: '', date: todayKST() });
       setItems(emptyItems());
       setReceiptFile(null);
+      setVisibility({ is_confidential: false, allowed_viewer_ids: [] });
       fetchData();
     }
     setSubmitting(false);
@@ -323,6 +349,7 @@ export default function Expenses() {
                   <Button onClick={handleSubmit} disabled={submitting || scanning || !voucher.title.trim() || validItems.length === 0 || !form.category} className="w-full">
                     {submitting ? '등록 중...' : '지출결의서 제출'}
                   </Button>
+                  <ExpenseVisibilityControl value={visibility} onChange={setVisibility} profiles={profiles} submitterId={profile?.id} disabled={submitting} />
                 </div>
                 <div className="rounded-xl border bg-muted/30 p-2 overflow-x-auto">
                   <p className="text-xs text-muted-foreground px-2 pb-2">미리보기 · A4 실제 사이즈 · 입력하는 대로 서식이 채워집니다</p>
@@ -380,11 +407,14 @@ export default function Expenses() {
                   return (
                     <TableRow
                       key={expense.id}
-                      className={isAdmin ? 'cursor-pointer hover:bg-muted/50' : ''}
-                      onClick={isAdmin ? () => setSelectedExpense(expense) : undefined}
+                      className="cursor-pointer hover:bg-muted/50"
+                      onClick={() => selectExpense(expense)}
                     >
                       <TableCell className="text-sm">{expense.date}</TableCell>
-                      <TableCell className="text-sm font-medium max-w-[200px] truncate">{expense.description}</TableCell>
+                      <TableCell className="text-sm font-medium max-w-[200px]">
+                        <Button variant="link" className="p-0 h-auto max-w-full text-foreground" onClick={e => { e.stopPropagation(); selectExpense(expense); }}><span className="truncate">{expense.description}</span></Button>
+                        {expense.is_confidential && <div className="text-xs text-warning mt-1">대외비 · 열람 제한</div>}
+                      </TableCell>
                       <TableCell>
                         <span className="text-xs bg-muted text-muted-foreground px-2 py-0.5 rounded">{expense.category}</span>
                       </TableCell>
@@ -411,9 +441,9 @@ export default function Expenses() {
                       <TableCell className="text-right text-sm font-medium">{formatKRW(expense.amount)}</TableCell>
                       <TableCell>
                         {expense.receipt_url ? (
-                          <button type="button" onClick={(e) => { e.stopPropagation(); openReceipt(expense.receipt_url); }} className="text-xs text-info hover:underline flex items-center gap-1">
+                          <Button variant="link" onClick={(e) => { e.stopPropagation(); openReceipt(expense.receipt_url); }} className="h-auto p-0 text-xs text-info flex items-center gap-1">
                             <Image className="h-3 w-3" /> 보기
-                          </button>
+                          </Button>
                         ) : (
                           <span className="text-xs text-muted-foreground">—</span>
                         )}
@@ -532,6 +562,14 @@ export default function Expenses() {
                   <div className="text-muted-foreground">상태</div>
                   <div className="col-span-2"><StatusBadge status={selectedExpense.status} /></div>
                 </div>
+                {(canApprove || selectedExpense.submitted_by === profile?.id) ? (
+                  <div className="space-y-3">
+                    <ExpenseVisibilityControl value={detailVisibility} onChange={setDetailVisibility} profiles={profiles} submitterId={selectedExpense.submitted_by} disabled={savingVisibility} />
+                    <Button size="sm" variant="outline" disabled={savingVisibility} onClick={saveVisibility}>{savingVisibility ? '저장 중...' : '열람 권한 저장'}</Button>
+                  </div>
+                ) : (
+                  <p className="text-xs text-muted-foreground">{selectedExpense.is_confidential ? '대외비 · 지정 직원 공개' : '전체 직원 공개'}</p>
+                )}
                 <div className="pt-2 border-t">
                   <div className="text-xs text-muted-foreground mb-1">내역</div>
                   <div className="whitespace-pre-wrap rounded-md bg-muted/50 p-3 min-h-[60px]">
@@ -541,9 +579,9 @@ export default function Expenses() {
                 {selectedExpense.receipt_url && (
                   <div>
                     <div className="text-xs text-muted-foreground mb-1">영수증</div>
-                    <button type="button" onClick={() => openReceipt(selectedExpense.receipt_url)} className="text-xs text-info hover:underline inline-flex items-center gap-1">
+                    <Button variant="link" onClick={() => openReceipt(selectedExpense.receipt_url)} className="h-auto p-0 text-xs text-info inline-flex items-center gap-1">
                       <Image className="h-3 w-3" /> 새 창에서 열기
-                    </button>
+                    </Button>
                     {selectedReceiptUrl && /\.(png|jpe?g|gif|webp)/i.test(selectedExpense.receipt_url) && (
                       <img src={selectedReceiptUrl} alt="영수증" className="mt-2 rounded-md border max-h-64 object-contain" />
                     )}
