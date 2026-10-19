@@ -13,7 +13,7 @@ export function extractReceiptPath(url: string | null | undefined): string | nul
   return decodeURIComponent(url.slice(idx + marker.length).split('?')[0]);
 }
 
-export async function getSignedReceiptUrl(url: string | null | undefined, expiresIn = 3600): Promise<string | null> {
+export async function getSignedReceiptUrl(url: string | null | undefined, expiresIn = 300): Promise<string | null> {
   const path = extractReceiptPath(url);
   if (!path) return url ?? null;
   const { data, error } = await supabase.storage.from('receipts').createSignedUrl(path, expiresIn);
@@ -26,6 +26,7 @@ export function useSignedReceiptUrl(url: string | null | undefined) {
 
   useEffect(() => {
     let active = true;
+    setSigned(null);
     if (!url) {
       setSigned(null);
       return;
