@@ -914,6 +914,7 @@ export type Database = {
       }
       expenses: {
         Row: {
+          allowed_viewer_ids: string[]
           amount: number
           category: Database["public"]["Enums"]["expense_category"]
           created_at: string
@@ -921,6 +922,7 @@ export type Database = {
           department: string | null
           description: string | null
           id: string
+          is_confidential: boolean
           items: Json
           payment_method: Database["public"]["Enums"]["payment_method"]
           receipt_url: string | null
@@ -930,6 +932,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          allowed_viewer_ids?: string[]
           amount: number
           category: Database["public"]["Enums"]["expense_category"]
           created_at?: string
@@ -937,6 +940,7 @@ export type Database = {
           department?: string | null
           description?: string | null
           id?: string
+          is_confidential?: boolean
           items?: Json
           payment_method?: Database["public"]["Enums"]["payment_method"]
           receipt_url?: string | null
@@ -946,6 +950,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          allowed_viewer_ids?: string[]
           amount?: number
           category?: Database["public"]["Enums"]["expense_category"]
           created_at?: string
@@ -953,6 +958,7 @@ export type Database = {
           department?: string | null
           description?: string | null
           id?: string
+          is_confidential?: boolean
           items?: Json
           payment_method?: Database["public"]["Enums"]["payment_method"]
           receipt_url?: string | null
@@ -2714,6 +2720,11 @@ export type Database = {
         Args: { _profile_id: string; _today?: string }
         Returns: undefined
       }
+      can_read_expense: {
+        Args: { _confidential: boolean; _submitter: string; _viewers: string[] }
+        Returns: boolean
+      }
+      can_read_expense_receipt: { Args: { _path: string }; Returns: boolean }
       can_view_approval: {
         Args: { _approval_id: string; _user_id: string }
         Returns: boolean
