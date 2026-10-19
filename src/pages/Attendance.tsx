@@ -25,11 +25,12 @@ import { Progress } from '@/components/ui/progress';
 import { isNonWorkingDay, isWeekend, getHolidayName } from '@/lib/holidays';
 
 const LEAVE_TYPE_LABEL: Record<string, string> = {
-  annual: '연차', half_day: '반차', summer: '여름휴가',
+  annual: '연차', monthly: '월차', half_day: '반차', summer: '여름휴가',
   family_event: '경조사', sick: '병가', other: '기타',
 };
 
 const LEAVE_TYPE_COLOR: Record<string, string> = {
+  monthly: 'bg-info/10 text-info border-info/30',
   annual: 'bg-blue-100 text-blue-700 border-blue-300 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800',
   half_day: 'bg-cyan-100 text-cyan-700 border-cyan-300 dark:bg-cyan-950/40 dark:text-cyan-300 dark:border-cyan-800',
   summer: 'bg-orange-100 text-orange-700 border-orange-300 dark:bg-orange-950/40 dark:text-orange-300 dark:border-orange-800',
