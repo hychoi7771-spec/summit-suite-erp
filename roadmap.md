@@ -2,6 +2,11 @@
 
 # Expense visibility
 
+# Calendar monthly leave labels
+
+- [x] Display monthly leave labels for employees under one year, including Kim Juhan and Choi Hayong.
+- [x] Verify both labels in the signed-in calendar with no runtime errors and a successful build; leave balances unchanged (display-only fix).
+
 - [x] Open ordinary expense records and receipts to signed-in staff through row-linked storage permissions.
 - [x] Add confidential expense visibility and selected staff at registration and detail settings.
 - [x] Verify admin registration, selected audience read-back, visibility changes and existing receipt download; three rule tests passed.
