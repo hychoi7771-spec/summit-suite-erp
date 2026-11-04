@@ -1,5 +1,9 @@
 # SVG interaction effects
 
+# Expense administration
+- [ ] Add administrator editing and confirmed deletion for expense records, preserving submitter and approval status.
+- [ ] Verify administrator edit/save/read-back/delete and permission tests.
+
 # Expense visibility
 
 # Calendar monthly leave labels
