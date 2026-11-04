@@ -1,8 +1,8 @@
 # SVG interaction effects
 
 # Expense administration
-- [ ] Add administrator editing and confirmed deletion for expense records, preserving submitter and approval status.
-- [ ] Verify administrator edit/save/read-back/delete and permission tests.
+- [x] Add administrator editing and confirmed deletion for expense records, preserving submitter and approval status.
+- [x] Verify general-director save of another employee's expense without value changes, temporary-record edit/read-back/delete cancellation/confirmed deletion, six permission and visibility tests, and successful build.
 
 # Expense visibility
 
