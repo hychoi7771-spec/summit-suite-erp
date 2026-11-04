@@ -7,10 +7,11 @@ import { StatusBadge } from '@/components/shared/StatusBadge';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter } from '@/components/ui/alert-dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Plus, Clock, CheckCircle, DollarSign, Image, Receipt, Sparkles, Trash2, Printer, Loader2 } from 'lucide-react';
+import { Plus, Clock, CheckCircle, DollarSign, Image, Receipt, Sparkles, Trash2, Pencil, Printer, Loader2 } from 'lucide-react';
 import { ExpenseVoucherSheet, printVoucher, type VoucherItem } from '@/components/expenses/ExpenseVoucherSheet';
 import { PageHeader } from '@/components/shared/PageHeader';
 import { PageSkeleton } from '@/components/shared/PageSkeleton';
@@ -23,6 +24,7 @@ import { Constants } from '@/integrations/supabase/types';
 import { notifyAdmins, notifyUser } from '@/lib/notifications';
 import ExpenseExportDialog from '@/components/expenses/ExpenseExportDialog';
 import { ExpenseVisibilityControl, expenseVisibilityPayload, type ExpenseVisibility } from '@/components/expenses/ExpenseVisibilityControl';
+import { canManageExpenses } from '@/lib/expensePermissions';
 
 const formatKRW = (n: number) => `₩${n.toLocaleString('ko-KR')}`;
 const categories = Constants.public.Enums.expense_category;
@@ -65,6 +67,9 @@ export default function Expenses() {
   const [approvedApprovals, setApprovedApprovals] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingExpense, setEditingExpense] = useState<any | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<any | null>(null);
+  const [deleting, setDeleting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [receiptFile, setReceiptFile] = useState<File | null>(null);
   const [selectedExpense, setSelectedExpense] = useState<any | null>(null);
@@ -144,6 +149,44 @@ export default function Expenses() {
     setDetailVisibility({ is_confidential: expense.is_confidential ?? false, allowed_viewer_ids: expense.allowed_viewer_ids ?? [] });
   };
 
+  const resetForm = () => {
+    setEditingExpense(null);
+    setForm({ amount: '', category: '', description: '', payment_method: 'personal' });
+    categoryTouched.current = false;
+    setVoucher({ title: '', department: '', date: todayKST() });
+    setItems(emptyItems());
+    setReceiptFile(null);
+    setVisibility({ is_confidential: false, allowed_viewer_ids: [] });
+  };
+
+  const startEditing = (expense: any) => {
+    if (!canManageExpenses(userRole)) return;
+    setSelectedExpense(null);
+    setEditingExpense(expense);
+    setForm({ amount: String(expense.amount), category: expense.category, description: expense.description || '', payment_method: expense.payment_method || 'personal' });
+    categoryTouched.current = true;
+    setVoucher({ title: expense.title || expense.description?.split('\n')[0] || '경비', department: expense.department || '', date: expense.date });
+    setItems(Array.isArray(expense.items) && expense.items.length ? expense.items.map((item: VoucherItem) => ({ ...item })) : [{ name: expense.description || expense.title || '경비', amount: expense.amount, note: '' }]);
+    setReceiptFile(null);
+    setVisibility({ is_confidential: expense.is_confidential ?? false, allowed_viewer_ids: expense.allowed_viewer_ids ?? [] });
+    setDialogOpen(true);
+  };
+
+  const deleteExpense = async () => {
+    if (!deleteTarget || !canManageExpenses(userRole)) return;
+    setDeleting(true);
+    const { data, error } = await supabase.from('expenses').delete().eq('id', deleteTarget.id).select('id').single();
+    setDeleting(false);
+    if (error || !data) {
+      toast({ title: '지출 삭제 실패', description: error?.message || '삭제 권한을 확인해주세요.', variant: 'destructive' });
+      return;
+    }
+    if (selectedExpense?.id === deleteTarget.id) setSelectedExpense(null);
+    setDeleteTarget(null);
+    toast({ title: '지출 내역이 삭제되었습니다' });
+    await fetchData();
+  };
+
   const saveVisibility = async () => {
     if (!selectedExpense) return;
     setSavingVisibility(true);
@@ -161,9 +204,11 @@ export default function Expenses() {
 
   const handleSubmit = async () => {
     if (!profile || !user) return;
+    if (editingExpense && !canManageExpenses(userRole)) return;
+    if (!voucher.title.trim() || !voucher.date || !form.category || validItems.length === 0) return;
     setSubmitting(true);
 
-    let receiptUrl: string | null = null;
+    let receiptUrl: string | null = editingExpense?.receipt_url || null;
 
     if (receiptFile) {
       const ext = receiptFile.name.split('.').pop();
@@ -182,7 +227,7 @@ export default function Expenses() {
     // 대표 등록만 즉시 Approved (전결). 법인 결제수단도 대표 결재 필요.
     const autoApproved = isCeo;
 
-    const { error } = await supabase.from('expenses').insert({
+    const payload = {
       amount: itemsTotal,
       category: form.category as any,
       description: form.description || validItems.map(i => `${i.name} ${Number(i.amount).toLocaleString('ko-KR')}원`).join('\n'),
@@ -190,17 +235,20 @@ export default function Expenses() {
       department: voucher.department || null,
       items: validItems as any,
       date: voucher.date,
-      submitted_by: profile.id,
       ...expenseVisibilityPayload(visibility),
       receipt_url: receiptUrl,
       payment_method: form.payment_method as any,
-      status: (autoApproved ? 'Approved' : 'Pending') as any,
-    } as any);
+    };
+    const { error } = editingExpense
+      ? await supabase.from('expenses').update(payload).eq('id', editingExpense.id).select('id').single()
+      : await supabase.from('expenses').insert({ ...payload, submitted_by: profile.id, status: (autoApproved ? 'Approved' : 'Pending') as any });
 
     if (error) {
-      toast({ title: '경비 등록 실패', description: error.message, variant: 'destructive' });
+      toast({ title: editingExpense ? '지출 수정 실패' : '경비 등록 실패', description: error.message, variant: 'destructive' });
     } else {
-      if (isCeo) {
+      if (editingExpense) {
+        toast({ title: '지출 내역이 수정되었습니다' });
+      } else if (isCeo) {
         toast({ title: '전결 완료', description: '대표 권한으로 즉시 승인되었습니다.' });
       } else {
         await notifyAdmins(
@@ -211,12 +259,7 @@ export default function Expenses() {
         toast({ title: '경비 등록 완료', description: '대표 승인 대기 중입니다.' });
       }
       setDialogOpen(false);
-      setForm({ amount: '', category: '', description: '', payment_method: 'personal' });
-      categoryTouched.current = false;
-      setVoucher({ title: '', department: '', date: todayKST() });
-      setItems(emptyItems());
-      setReceiptFile(null);
-      setVisibility({ is_confidential: false, allowed_viewer_ids: [] });
+      resetForm();
       fetchData();
     }
     setSubmitting(false);
@@ -243,7 +286,7 @@ export default function Expenses() {
     }
   };
 
-  const isAdmin = userRole === 'ceo' || userRole === 'general_director';
+  const isAdmin = canManageExpenses(userRole);
 
   const pendingTotal = expenses.filter(e => e.status === 'Pending').reduce((a, b) => a + b.amount, 0);
   const approvedTotal = expenses.filter(e => e.status === 'Approved').reduce((a, b) => a + b.amount, 0);
@@ -269,21 +312,22 @@ export default function Expenses() {
         actions={
           <div className="flex flex-wrap gap-2">
           <ExpenseExportDialog expenses={expenses} profiles={profiles} />
-          <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+          <Dialog open={dialogOpen} onOpenChange={open => { if (submitting || scanning) return; setDialogOpen(open); if (!open) resetForm(); }}>
             <DialogTrigger asChild>
-              <Button className="gap-2 shrink-0">
+              <Button className="gap-2 shrink-0" onClick={resetForm}>
                 <Plus className="h-4 w-4" />
                 새 경비 청구
               </Button>
             </DialogTrigger>
             <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto">
               <DialogHeader>
-                <DialogTitle>새 경비 청구 · 지출결의서</DialogTitle>
+                <DialogTitle>{editingExpense ? '지출 내역 수정 · 지출결의서' : '새 경비 청구 · 지출결의서'}</DialogTitle>
               </DialogHeader>
               <div className="grid lg:grid-cols-[minmax(0,420px)_1fr] gap-6 mt-2">
                 <div className="space-y-4">
                   <div className="space-y-2">
                     <Label>영수증 사진 (첨부하면 내역이 자동으로 채워져요)</Label>
+                    {editingExpense?.receipt_url && <Button variant="link" className="h-auto p-0 text-xs" onClick={() => openReceipt(editingExpense.receipt_url)}>기존 영수증 보기</Button>}
                     <div className="border-2 border-dashed border-border rounded-lg p-4 text-center">
                       <input type="file" accept="image/*,.pdf" className="hidden" id="receipt-upload" onChange={e => handleReceiptChange(e.target.files?.[0] || null)} />
                       <label htmlFor="receipt-upload" className="cursor-pointer">
@@ -346,14 +390,18 @@ export default function Expenses() {
                     </div>
                     <p className="text-sm font-semibold text-right">합계 {formatKRW(itemsTotal)}</p>
                   </div>
+                  <div className="space-y-2">
+                    <Label>설명</Label>
+                    <Input aria-label="지출 설명" value={form.description} onChange={e => setForm(f => ({ ...f, description: e.target.value }))} />
+                  </div>
                   <Button onClick={handleSubmit} disabled={submitting || scanning || !voucher.title.trim() || validItems.length === 0 || !form.category} className="w-full">
-                    {submitting ? '등록 중...' : '지출결의서 제출'}
+                    {submitting ? '저장 중...' : editingExpense ? '수정 내용 저장' : '지출결의서 제출'}
                   </Button>
-                  <ExpenseVisibilityControl value={visibility} onChange={setVisibility} profiles={profiles} submitterId={profile?.id} disabled={submitting} />
+                  <ExpenseVisibilityControl value={visibility} onChange={setVisibility} profiles={profiles} submitterId={editingExpense?.submitted_by || profile?.id} disabled={submitting} />
                 </div>
                 <div className="rounded-xl border bg-muted/30 p-2 overflow-x-auto">
                   <p className="text-xs text-muted-foreground px-2 pb-2">미리보기 · A4 실제 사이즈 · 입력하는 대로 서식이 채워집니다</p>
-                  <ExpenseVoucherSheet title={voucher.title} name={profile?.name_kr || ''} department={voucher.department} position={ROLE_LABELS[userRole || ''] || ''} items={validItems} date={voucher.date} />
+                  <ExpenseVoucherSheet title={voucher.title} name={editingExpense ? getProfile(editingExpense.submitted_by)?.name_kr || '' : profile?.name_kr || ''} department={voucher.department} position={ROLE_LABELS[(editingExpense ? submitterRoles[editingExpense.submitted_by] : userRole) || ''] || ''} items={validItems} date={voucher.date} />
                 </div>
               </div>
           </DialogContent>
@@ -451,6 +499,10 @@ export default function Expenses() {
                       <TableCell><StatusBadge status={expense.status} /></TableCell>
                       {isAdmin && (
                         <TableCell onClick={(e) => e.stopPropagation()}>
+                          <div className="flex gap-1 mb-1">
+                            <Button size="icon" variant="ghost" aria-label="지출 수정" title="수정" onClick={() => startEditing(expense)}><Pencil className="h-4 w-4" /></Button>
+                            <Button size="icon" variant="ghost" aria-label="지출 삭제" title="삭제" className="text-destructive" onClick={() => setDeleteTarget(expense)}><Trash2 className="h-4 w-4" /></Button>
+                          </div>
                           {expense.status === 'Pending' && (
                             <div className="flex gap-1">
                               <Button size="sm" variant="outline" className="h-7 text-xs" onClick={() => handleStatusChange(expense.id, 'Approved')}>승인</Button>
@@ -548,6 +600,10 @@ export default function Expenses() {
             const canApprove = userRole === 'ceo' || userRole === 'general_director';
             return (
               <div className="space-y-3 text-sm">
+                {isAdmin && <div className="flex justify-end gap-2">
+                  <Button variant="outline" size="sm" onClick={() => startEditing(selectedExpense)}><Pencil className="h-4 w-4 mr-1" />수정</Button>
+                  <Button variant="outline" size="sm" className="text-destructive" onClick={() => setDeleteTarget(selectedExpense)}><Trash2 className="h-4 w-4 mr-1" />삭제</Button>
+                </div>}
                 <div className="grid grid-cols-3 gap-2">
                   <div className="text-muted-foreground">청구일</div>
                   <div className="col-span-2">{selectedExpense.date}</div>
@@ -619,6 +675,18 @@ export default function Expenses() {
           })()}
         </DialogContent>
       </Dialog>
+      <AlertDialog open={!!deleteTarget} onOpenChange={open => { if (!open && !deleting) setDeleteTarget(null); }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>지출 내역을 삭제하시겠습니까?</AlertDialogTitle>
+            <AlertDialogDescription>{deleteTarget?.title || deleteTarget?.description || '지출 내역'} · {formatKRW(deleteTarget?.amount || 0)}. 삭제 후 복구할 수 없으며 합계에서도 제외됩니다.</AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <Button variant="outline" disabled={deleting} onClick={() => setDeleteTarget(null)}>취소</Button>
+            <Button variant="destructive" disabled={deleting} onClick={deleteExpense}>{deleting ? '삭제 중...' : '삭제 확인'}</Button>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
 
   );
