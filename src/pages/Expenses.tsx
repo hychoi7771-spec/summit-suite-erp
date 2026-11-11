@@ -163,7 +163,7 @@ export default function Expenses() {
     if (!canManageExpenses(userRole)) return;
     setSelectedExpense(null);
     setEditingExpense(expense);
-    setForm({ amount: String(expense.amount), category: expense.category, description: expense.description || '', payment_method: expense.payment_method || 'personal' });
+    setForm({ amount: String(expense.amount), category: expense.category, description: (() => { const its = Array.isArray(expense.items) ? expense.items : []; const auto = its.filter((i: VoucherItem) => i.name?.trim() && Number(i.amount) > 0).map((i: VoucherItem) => `${i.name} ${Number(i.amount).toLocaleString('ko-KR')}원`).join('\n'); return its.length && expense.description === auto ? '' : (expense.description || ''); })(), payment_method: expense.payment_method || 'personal' });
     categoryTouched.current = true;
     setVoucher({ title: expense.title || expense.description?.split('\n')[0] || '경비', department: expense.department || '', date: expense.date });
     setItems(Array.isArray(expense.items) && expense.items.length ? expense.items.map((item: VoucherItem) => ({ ...item })) : [{ name: expense.description || expense.title || '경비', amount: expense.amount, note: '' }]);
