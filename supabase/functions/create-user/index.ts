@@ -90,6 +90,24 @@ Deno.serve(async (req) => {
         .from("user_roles")
         .update({ role: targetRole })
         .eq("user_id", newUser.user.id);
+
+      // Only this server-authorized admin flow grants shared company access.
+      const { data: profile, error: profileError } = await adminClient
+        .from("profiles")
+        .select("id")
+        .eq("user_id", newUser.user.id)
+        .single();
+      const approvalError = profileError || (profile
+        ? (await adminClient.from("approved_staff").insert({ profile_id: profile.id })).error
+        : new Error("Profile missing"));
+      if (approvalError) {
+        // Do not leave a partially provisioned employee account behind.
+        await adminClient.auth.admin.deleteUser(newUser.user.id);
+        return new Response(JSON.stringify({ error: "직원 계정 등록을 완료하지 못했습니다. 다시 시도해주세요." }), {
+          status: 500,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     return new Response(JSON.stringify({ success: true, user_id: newUser.user?.id }), {

@@ -128,6 +128,26 @@ export type Database = {
           },
         ]
       }
+      approved_staff: {
+        Row: {
+          profile_id: string
+        }
+        Insert: {
+          profile_id: string
+        }
+        Update: {
+          profile_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "approved_staff_profile_id_fkey"
+            columns: ["profile_id"]
+            isOneToOne: true
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       asset_files: {
         Row: {
           category: string
@@ -2750,6 +2770,7 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_approved_staff: { Args: never; Returns: boolean }
       is_sales_admin: { Args: { _uid: string }; Returns: boolean }
       is_step_approver: {
         Args: { _approval_id: string; _user_id: string }

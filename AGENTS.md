@@ -4,3 +4,4 @@
 - Shared button SVG feedback is decorative and pointer-triggered, with reduced-motion overrides; this preserves existing actions and accessible labels.
 - Expense row and receipt access share database-enforced visibility rules; the private receipts bucket issues signed URLs only for authorized audiences, so exports and direct file access cannot bypass confidential settings.
 - Expense creation and administrator editing share the voucher form; updates preserve submitter, approval status and the existing receipt unless replaced, while database RLS authorizes all mutations.
+- Selected company-shared reads require protected approved_staff membership through is_approved_staff(); admin account creation grants membership server-side, never from signup metadata, to preserve collaboration without admitting self-signups.
