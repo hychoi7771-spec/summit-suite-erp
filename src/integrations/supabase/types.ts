@@ -1522,6 +1522,7 @@ export type Database = {
           created_at: string
           hire_date: string | null
           id: string
+          leave_cycle: string
           manager_id: string | null
           name: string
           name_kr: string
@@ -1534,6 +1535,7 @@ export type Database = {
           created_at?: string
           hire_date?: string | null
           id?: string
+          leave_cycle?: string
           manager_id?: string | null
           name: string
           name_kr: string
@@ -1546,6 +1548,7 @@ export type Database = {
           created_at?: string
           hire_date?: string | null
           id?: string
+          leave_cycle?: string
           manager_id?: string | null
           name?: string
           name_kr?: string

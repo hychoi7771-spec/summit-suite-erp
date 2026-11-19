@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo, Fragment } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { leaveExpiryNotice } from '@/lib/leaveCycle';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -88,7 +89,7 @@ export default function Attendance() {
       supabase.from('leave_requests').select('*').order('start_date', { ascending: false }),
       supabase.from('leave_balances').select('*').eq('year', year),
       supabase.from('leave_balances').select('*').order('year', { ascending: false }),
-      supabase.from('profiles').select('id, user_id, name_kr, avatar, hire_date'),
+      supabase.from('profiles').select('id, user_id, name_kr, avatar, hire_date, leave_cycle'),
       supabase.from('user_roles').select('user_id, role'),
     ]);
     const roles = roleRes.data || [];
@@ -581,7 +582,10 @@ function TeamLeaveTable({
 
   const rows = useMemo(() => {
     return profiles.map(p => {
-      const bal = balances.find(b => b.user_id === p.id);
+      const todayStr = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Seoul' }).format(new Date());
+      const ref = year === Number(todayStr.slice(0, 4)) ? todayStr : `${year}-12-31`;
+      const bal = allBalances.find(b => b.user_id === p.id && b.fiscal_start && b.fiscal_end && b.fiscal_start <= ref && ref < b.fiscal_end)
+        ?? balances.find(b => b.user_id === p.id);
       const role = userRoles.find(r => r.user_id === p.user_id)?.role;
 
       // 회계연도(입사일 기준) 구간 — 없으면 달력연도로 대체
@@ -635,6 +639,7 @@ function TeamLeaveTable({
         baseTotal, baseUsed, remaining, projected,
         approvedAnnual, approvedMonthly, pendingDays, summerDays, usageRate,
         priorPeriods,
+        notice: leaveExpiryNotice({ cycle: (p as any).leave_cycle === 'company' ? 'company' : 'hire_anniversary', fiscalEnd: isMonthlyMode ? null : bal?.fiscal_end, today: todayStr, remaining }),
       };
     });
   }, [balances, allBalances, profiles, userRoles, reqByUser, year]);
@@ -704,7 +709,7 @@ function TeamLeaveTable({
                         {r.profile.id === myProfileId && <Badge variant="outline" className="text-[9px] px-1 py-0">나</Badge>}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
-                        {r.role ? (ROLE_LABEL[r.role] ?? r.role) : ''} · 입사 {r.profile.hire_date ?? '-'}{r.isMonthlyMode ? ' · 월차 기준(1년 미만)' : ' · 연차 15일'}
+                        {r.role ? (ROLE_LABEL[r.role] ?? r.role) : ''} · 입사 {r.profile.hire_date ?? '-'}{r.isMonthlyMode ? ' · 월차 기준(1년 미만)' : ` · 연차 ${fmt(r.total)}일`}{(r.profile as any).leave_cycle === 'company' && !r.isMonthlyMode ? ' · 회사 회기(12/1~11/30)' : ''}
                       </div>
                       <div className="text-[10px] text-muted-foreground">
                         회계연도 {r.fiscalStart} ~ {r.fiscalEnd}{r.nextGrant ? ` · 다음 적립 ${r.nextGrant}` : ''}
@@ -731,6 +736,12 @@ function TeamLeaveTable({
                     </div>
                   </div>
                 </div>
+
+                {r.notice && (
+                  <div className="px-3 sm:px-4 py-2 border-b bg-warning/10 text-warning-foreground text-xs leading-relaxed">
+                    ⏰ {r.notice}
+                  </div>
+                )}
 
                 {/* 합계 한 줄 */}
                 <div className="flex flex-wrap gap-x-4 gap-y-1 px-4 py-2 border-b text-[11px] text-muted-foreground">

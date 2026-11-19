@@ -15,6 +15,13 @@
       "when": 1795052508789,
       "tag": "0001_tighten_storage_and_routine_access",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1795052834747,
+      "tag": "0002_company_leave_cycle",
+      "breakpoints": true
     }
   ]
 }
