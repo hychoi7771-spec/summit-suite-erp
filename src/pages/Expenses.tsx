@@ -439,6 +439,7 @@ export default function Expenses() {
               <TableHeader>
                 <TableRow>
                   <TableHead>날짜</TableHead>
+                  <TableHead>제목</TableHead>
                   <TableHead>내역</TableHead>
                   <TableHead>분류</TableHead>
                   <TableHead>결제수단</TableHead>
@@ -459,6 +460,9 @@ export default function Expenses() {
                       onClick={() => selectExpense(expense)}
                     >
                       <TableCell className="text-sm">{expense.date}</TableCell>
+                      <TableCell className="text-sm font-medium max-w-[200px]">
+                        <Button variant="link" className="p-0 h-auto max-w-full text-foreground whitespace-normal text-left" onClick={e => { e.stopPropagation(); selectExpense(expense); }}><span className="break-words">{expense.title?.trim() || '—'}</span></Button>
+                      </TableCell>
                       <TableCell className="text-sm font-medium max-w-[200px]">
                         <Button variant="link" className="p-0 h-auto max-w-full text-foreground" onClick={e => { e.stopPropagation(); selectExpense(expense); }}><span className="truncate">{expense.description}</span></Button>
                         {expense.is_confidential && <div className="text-xs text-warning mt-1">대외비 · 열람 제한</div>}
